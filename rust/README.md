@@ -47,7 +47,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | Unit | Cases | Go source | Functions |
 |------|------:|----------|-----------|
 | `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
-| `traffic-rs`      | 104  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts` |
+| `traffic-rs`      | 800  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` |
 | `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
 | `guard-rs`        | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
 | `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
@@ -125,8 +125,7 @@ parameter type:
 | Function | Params → return | Status |
 |----------|-----------------|--------|
 | `enrich.uniq`, `traffic.uniqueArchiveHosts` | `[]string` → `[]string` | **ported** (`enrich-rs`, `traffic-rs`); JSON arrays, deterministic |
-| `traffic.clipBytes`, `truncateUTF8` | `[]byte` | needs base64 in the harness (`[]byte` marshals to base64 in Go JSON) |
-| `traffic.isBinaryBody`, `binaryTag` | `string, []byte` | base64 + `binaryTypes` var / hex encoding |
+| `traffic.clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` | `[]byte` / `string, []byte` | **ported** (`traffic-rs`); base64 in the harness via `gocompat::encoding`, hex helper for the magic tag |
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | needs a `rewrite.TraceLine` struct port |
@@ -135,9 +134,10 @@ parameter type:
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
-The `[]string` subset was clean enough to port into the existing crates the same
-way as the primitive helpers; the rest need a base64/hex helper in the harness, a
-struct port, or are blocked (regex, map non-determinism).
+The `[]string` and `[]byte` subsets were clean enough to port into the existing
+crates the same way as the primitive helpers (the `[]byte` ones via a base64
+helper in the harness); the rest need a struct port or are blocked (regex, map
+non-determinism).
 
 What stays in Go regardless is the stateful / pointer / IO-heavy bulk.
 "Src"/"Test" below are **code-LOC** (non-blank, non-comment lines; comments and

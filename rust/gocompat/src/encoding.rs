@@ -57,3 +57,38 @@ pub fn base64_std_decode(input: &str) -> Result<Vec<u8>, ()> {
     }
     Ok(out)
 }
+
+/// Go `base64.StdEncoding.EncodeToString`.
+///
+/// Standard alphabet, `=`-padded, encoding each 3-byte group to 4 characters
+/// (the final group to 2 or 3 characters plus `=` padding). The inverse of
+/// [`base64_std_decode`].
+pub fn base64_std_encode(input: &[u8]) -> String {
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
+    let mut chunks = input.chunks_exact(3);
+    for c in &mut chunks {
+        let n = (u32::from(c[0]) << 16) | (u32::from(c[1]) << 8) | u32::from(c[2]);
+        out.push(STD_ALPHABET[((n >> 18) & 63) as usize] as char);
+        out.push(STD_ALPHABET[((n >> 12) & 63) as usize] as char);
+        out.push(STD_ALPHABET[((n >> 6) & 63) as usize] as char);
+        out.push(STD_ALPHABET[(n & 63) as usize] as char);
+    }
+    match chunks.remainder() {
+        [a] => {
+            let n = u32::from(*a) << 16;
+            out.push(STD_ALPHABET[((n >> 18) & 63) as usize] as char);
+            out.push(STD_ALPHABET[((n >> 12) & 63) as usize] as char);
+            out.push('=');
+            out.push('=');
+        }
+        [a, b] => {
+            let n = (u32::from(*a) << 16) | (u32::from(*b) << 8);
+            out.push(STD_ALPHABET[((n >> 18) & 63) as usize] as char);
+            out.push(STD_ALPHABET[((n >> 12) & 63) as usize] as char);
+            out.push(STD_ALPHABET[((n >> 6) & 63) as usize] as char);
+            out.push('=');
+        }
+        _ => {}
+    }
+    out
+}

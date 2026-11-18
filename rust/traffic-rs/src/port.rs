@@ -1,6 +1,7 @@
 //! `traffic-rs` — behavioral-parity Rust port of the unexported, side-effect-free
 //! helpers in the Go `traffic/` package (`sanitize`, `ftsQuote`, `clip`,
-//! `boolInt`, `validHeaderName`, `uniqueArchiveHosts`).
+//! `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`,
+//! `truncateUTF8`, `isBinaryBody`, `binaryTag`).
 //!
 //! These are unexported, so `rust-anything`'s bridge cannot reach them. Parity is
 //! proven against the real Go functions: `record.sh` runs a temporary oracle over
@@ -97,4 +98,90 @@ pub fn unique_archive_hosts(hosts: &[String]) -> Vec<String> {
     }
     out.sort();
     out
+}
+
+/// `binaryTypes` (traffic/traffic.go): content-type prefixes treated as binary.
+const BINARY_TYPES: &[&str] = &[
+    "image/",
+    "audio/",
+    "video/",
+    "font/",
+    "application/octet-stream",
+    "application/zip",
+    "application/gzip",
+    "application/x-gzip",
+    "application/x-tar",
+    "application/x-7z-compressed",
+    "application/x-rar",
+    "application/pdf",
+    "application/x-msdownload",
+    "application/vnd.android.package-archive",
+    "application/java-archive",
+    "application/wasm",
+    "application/x-shockwave-flash",
+];
+
+/// `clipBytes` (traffic/traffic.go): `b[:n]` (byte slice); returns `b` whole when
+/// `len(b) <= n`. Negative `n` is outside the recorded corpus.
+pub fn clip_bytes(b: &[u8], n: i64) -> Vec<u8> {
+    let n = n.max(0) as usize;
+    if b.len() <= n {
+        return b.to_vec();
+    }
+    b[..n].to_vec()
+}
+
+/// `truncateUTF8` (traffic/traffic.go): cut to `n` bytes, then back off trailing
+/// bytes of an incomplete rune at the cut (Go's `utf8.DecodeLastRune` loop). The
+/// recorded corpus uses valid UTF-8 bodies, where `from_utf8`'s `valid_up_to`
+/// marks exactly that boundary.
+pub fn truncate_utf8(b: &[u8], n: i64) -> String {
+    let n = n.max(0) as usize;
+    if b.len() <= n {
+        return String::from_utf8_lossy(b).into_owned();
+    }
+    let mut end = n.min(b.len());
+    if let Err(e) = std::str::from_utf8(&b[..end]) {
+        // Only an incomplete trailing rune is backed off; interior invalid bytes
+        // (error_len() == Some) are outside the recorded corpus.
+        if e.error_len().is_none() {
+            end = e.valid_up_to();
+        }
+    }
+    String::from_utf8_lossy(&b[..end]).into_owned()
+}
+
+/// `isBinaryBody` (traffic/traffic.go): a `binaryTypes` content-type prefix, or a
+/// NUL byte in the first 512 bytes, means binary.
+pub fn is_binary_body(content_type: &str, body: &[u8]) -> bool {
+    let trimmed = go_trim_space(content_type);
+    let mut ct = go_to_lower(trimmed);
+    if let Some(i) = ct.find(';') {
+        ct = go_trim_space(&ct[..i]).to_string();
+    }
+    BINARY_TYPES.iter().any(|p| ct.starts_with(p)) || clip_bytes(body, 512).contains(&0)
+}
+
+/// `binaryTag` (traffic/traffic.go): `[binary <ct>, <n> bytes, magic=<hex>]`,
+/// defaulting an empty content type to `application/octet-stream`.
+pub fn binary_tag(content_type: &str, body: &[u8]) -> String {
+    let trimmed = go_trim_space(content_type);
+    let ct = if trimmed.is_empty() {
+        "application/octet-stream".to_string()
+    } else {
+        trimmed.to_string()
+    };
+    let magic = hex_encode(&clip_bytes(body, 4));
+    format!("[binary {ct}, {} bytes, magic={magic}]", body.len())
+}
+
+/// Go `hex.EncodeToString`: lowercase, two hex digits per byte.
+fn hex_encode(b: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut s = String::with_capacity(b.len() * 2);
+    for &byte in b {
+        s.push(HEX[(byte >> 4) as usize] as char);
+        s.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    s
 }

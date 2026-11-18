@@ -10,6 +10,7 @@ package traffic
 // is always valid UTF-8 and the Rust port can mirror it exactly.
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -55,6 +56,28 @@ var oracleHosts = [][]string{
 	{"  ", "\t", "\n"}, {"MixedCase.NET", "mixedcase.net", "  MixedCase.Net  "},
 }
 
+// oracleBodies are the []byte inputs for clipBytes / truncateUTF8 / isBinaryBody /
+// binaryTag. []byte marshals to base64 in Go's encoding/json; truncateUTF8 is
+// recorded only over VALID UTF-8 bodies, so the byte-cut always lands on a rune
+// boundary the Rust port can reproduce (see truncate_utf8).
+var oracleBodies = [][]byte{
+	[]byte(""), []byte("hello world"), []byte("abcdefghij"),
+	[]byte("日本語テキスト"), []byte("héllo wörld"), []byte("😀emoji"),
+	[]byte("ab\x00cd"), []byte("\x00\x01\x02\x03"), []byte("GIF89a......"),
+	[]byte("münchen"), []byte("line1\nline2\ttab"),
+	bytes.Repeat([]byte("x"), 600),
+}
+
+var oracleContentTypes = []string{
+	"", "image/png", "IMAGE/PNG", " text/plain ", "application/json; charset=utf-8",
+	"application/octet-stream", "audio/mpeg", "font/woff2", "application/zip",
+	"text/html", "application/wasm", "application/x-shockwave-flash",
+	"APPLICATION/PDF", "  ", "image", "application/vnd.android.package-archive; version=1",
+	"video/mp4", "application/gzip",
+}
+
+var oracleByteNs = []int{0, 1, 2, 3, 4, 5, 6, 7, 100, 512, 1000}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -76,5 +99,15 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, hs := range oracleHosts {
 		rec(t, "uniqueArchiveHosts", []any{hs}, uniqueArchiveHosts(hs))
+	}
+	for _, body := range oracleBodies {
+		for _, n := range oracleByteNs {
+			rec(t, "clipBytes", []any{body, n}, clipBytes(body, n))
+			rec(t, "truncateUTF8", []any{body, n}, truncateUTF8(body, n))
+		}
+		for _, ct := range oracleContentTypes {
+			rec(t, "isBinaryBody", []any{ct, body}, isBinaryBody(ct, body))
+			rec(t, "binaryTag", []any{ct, body}, binaryTag(ct, body))
+		}
 	}
 }

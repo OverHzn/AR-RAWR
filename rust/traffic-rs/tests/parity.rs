@@ -30,6 +30,11 @@ fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
         .map(|v| v.as_str().expect("str in array").to_string())
         .collect()
 }
+/// Decode a `[]byte` argument (Go marshals it to a base64 JSON string).
+fn arg_bytes(args: &[Value], i: usize) -> Vec<u8> {
+    let s = args[i].as_str().expect("base64 string arg");
+    gocompat::encoding::base64_std_decode(s).expect("valid base64")
+}
 
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
@@ -39,6 +44,25 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "boolInt" => json!(bool_int(arg_bool(args, 0))),
         "validHeaderName" => json!(valid_header_name(&arg_str(args, 0))),
         "uniqueArchiveHosts" => json!(unique_archive_hosts(&arg_str_slice(args, 0))),
+        "clipBytes" => {
+            let b = arg_bytes(args, 0);
+            let out = clip_bytes(b.as_slice(), arg_i64(args, 1));
+            json!(gocompat::encoding::base64_std_encode(&out))
+        }
+        "truncateUTF8" => {
+            let b = arg_bytes(args, 0);
+            json!(truncate_utf8(b.as_slice(), arg_i64(args, 1)))
+        }
+        "isBinaryBody" => {
+            let ct = arg_str(args, 0);
+            let b = arg_bytes(args, 1);
+            json!(is_binary_body(ct.as_str(), b.as_slice()))
+        }
+        "binaryTag" => {
+            let ct = arg_str(args, 0);
+            let b = arg_bytes(args, 1);
+            json!(binary_tag(ct.as_str(), b.as_slice()))
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
