@@ -1,0 +1,19 @@
+[package]
+name = "llm-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of the pure functions of the external norma/llm message model (Message.Text, Usage.Add, Usage.MergeEcho, …), parity-tested against the real Go llm package"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

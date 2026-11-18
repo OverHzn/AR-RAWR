@@ -58,6 +58,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `agentx-rs`       | 169  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote`, `clipBody`, `nmapWebScheme` (pure int/string/JSON helpers) |
 | `llmpoolx-rs`     | 12   | `llmpool/` | `trimErr` (one-line, 300-byte-capped error rendering; other helpers need regexp/`norma/llm` and stay in Go) |
 | `llmrecx-rs`      | 15   | `llmrec/`  | `parseSession` (`exp<N>-<role>[-suffix]` → taskID, worker; other helpers need `context`/`norma/llm` and stay in Go) |
+| `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho` + the value model (`ContentBlock`/`Message`/`Usage`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -75,7 +76,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 22 crates, each via its own
+To verify **every** unit at once (gocompat build + all 23 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -119,7 +120,8 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
-`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`, `llmpoolx-rs`, `llmrecx-rs`). A further tier of pure
+`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`, `llmpoolx-rs`, `llmrecx-rs`,
+`llm-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
@@ -143,8 +145,8 @@ parameter type:
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
-| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need a slice of the external `norma/llm` ported (Message, ContentBlock, CompletionRequest) + JSON-shape matching |
-| `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | the message model (`Message`, `ContentBlock`, `Usage`) is now ported (`llm-rs`); still needs `llm.CompletionRequest` + `Snapshot`/`Exchange` + JSON-shape matching |
+| `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen`'s `[]llm.ContentBlock` is now available (`llm-rs`) and unblocked; `rotateGroups` still needs `[]*Member` pointers |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
 The `[]string`, `[]byte`, and struct subsets (`guard.TargetBlockMessage`,
@@ -166,9 +168,9 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 | `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
 | `report/` | 438 | 253 / 1 file | 7 string helpers (`reportex-rs`) | markdown/CSV builders (`*db.DBFinding`/`Input`, `text/template`, `time`, `regexp`), `qualityBullets`/`qualityNarrative` (`Quality` struct) |
 | `notify/` | 1768 | 2272 / 12 files | 7 config helpers (`notifyx-rs`) | senders (`dingTalkSignedURL`, `buildEmailMessage`, SMTP/HTTP), `render*` (`text/template`) |
-| `llmrec/` | 423 | 369 / 4 files | — | LLM recommendation (SQL + JSON aggregation) |
+| `llmrec/` | 423 | 369 / 4 files | `parseSession` (`llmrecx-rs`) | LLM recommendation (SQL + JSON aggregation); `thinkingText` now reachable via `llm-rs` but not yet ported |
 | `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
-| `llmpool/` | 348 | 518 / 4 files | — | LLM connection pool; `State::Open` reads `time.Now` |
+| `llmpool/` | 348 | 518 / 4 files | `trimErr` (`llmpoolx-rs`) | LLM connection pool; `State::Open` reads `time.Now`; `blocksLen`/`estimateTokens` reachable via `llm-rs` but not yet ported |
 | `enrich/` | 248 | 0 / 0 files | 3 helpers (`enrich-rs`) | `*Engine` DNS / asset-upsert workers (no tests) |
 | `guard/` | 243 | 1184 / 5 files | 2 helpers (`guard-rs`) | audit-log / decision layer (`*Guard`, DB audit, env) |
 | `cmd/artex/` | 126 | 16 / 1 file | — | process entrypoint |
