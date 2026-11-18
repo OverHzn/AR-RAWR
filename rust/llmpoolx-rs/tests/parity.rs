@@ -3,6 +3,7 @@
 
 use serde_json::{Value, json};
 
+use llm_rs::port::{CompletionRequest, ContentBlock};
 use llmpoolx_rs::port::*;
 
 fn cases() -> Vec<Value> {
@@ -20,6 +21,19 @@ fn arg_str(args: &[Value], i: usize) -> String {
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "trimErr" => json!(trim_err(&arg_str(args, 0))),
+        "blocksLen" => {
+            // Go passes a nil slice as JSON `null`; model that as an empty Vec.
+            let bs: Vec<ContentBlock> =
+                serde_json::from_value::<Option<Vec<ContentBlock>>>(args[0].clone())
+                    .expect("blocks decode")
+                    .unwrap_or_default();
+            json!(blocks_len(&bs))
+        }
+        "estimateTokens" => {
+            let req: CompletionRequest =
+                serde_json::from_value(args[0].clone()).expect("request decode");
+            json!(estimate_tokens(&req))
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

@@ -151,7 +151,7 @@ impl Serialize for ContentBlock {
 }
 
 /// `llm.Message`: a single conversation turn.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Message {
     pub role: String,
     /// Go marshals a nil `Content` as `null` (no `omitempty`); accept both `null`
@@ -221,6 +221,50 @@ impl Usage {
         self.cache_read_tokens = self.cache_read_tokens.max(o.cache_read_tokens);
         self.cache_write_tokens = self.cache_write_tokens.max(o.cache_write_tokens);
     }
+}
+
+/// `llm.ToolSchema`: a tool definition exposed to the model.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ToolSchema {
+    pub name: String,
+    pub description: String,
+    /// Go `map[string]any`; modeled as a JSON value. Only its top-level key count
+    /// (`len` in Go) is read by the downstream token estimate.
+    #[serde(default, rename = "input_schema")]
+    pub input_schema: Value,
+}
+
+impl ToolSchema {
+    /// Go `len(t.InputSchema)`: number of top-level keys (0 for a nil / absent map).
+    pub fn input_schema_len(&self) -> usize {
+        self.input_schema.as_object().map_or(0, |m| m.len())
+    }
+}
+
+/// `llm.CompletionRequest`: a single, provider-neutral model invocation. The Go struct
+/// carries no JSON tags, so it marshals with its PascalCase field names
+/// (`rename_all = "PascalCase"`), and its nil slices marshal as `null` (handled by the
+/// `null`-tolerant deserializer). Only `System`, `Messages`, and `Tools` are read by the
+/// ported helpers; the rest are carried for wire-shape fidelity.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CompletionRequest {
+    #[serde(default, deserialize_with = "de_null_default")]
+    pub system: Vec<String>,
+    #[serde(default)]
+    pub dynamic_boundary: i64,
+    #[serde(default, deserialize_with = "de_null_default")]
+    pub messages: Vec<Message>,
+    #[serde(default, deserialize_with = "de_null_default")]
+    pub tools: Vec<ToolSchema>,
+    #[serde(default)]
+    pub max_tokens: i64,
+    #[serde(default)]
+    pub temperature: Option<f64>,
+    #[serde(default, deserialize_with = "de_null_default")]
+    pub stop: Vec<String>,
+    #[serde(default)]
+    pub thinking: String,
 }
 
 /// Deserialize a field that Go may encode as `null` (nil slice) or omit entirely into

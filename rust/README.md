@@ -56,7 +56,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
 | `agentx-rs`       | 169  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote`, `clipBody`, `nmapWebScheme` (pure int/string/JSON helpers) |
-| `llmpoolx-rs`     | 12   | `llmpool/` | `trimErr` (one-line, 300-byte-capped error rendering; other helpers need regexp/`norma/llm` and stay in Go) |
+| `llmpoolx-rs`     | 23   | `llmpool/` | `trimErr`, `blocksLen`, `estimateTokens` (`blocksLen`/`estimateTokens` over the `norma/llm` model ported in `llm-rs`; other helpers need regexp/`[]*Member` pointers/context and stay in Go) |
 | `llmrecx-rs`      | 15   | `llmrec/`  | `parseSession` (`exp<N>-<role>[-suffix]` → taskID, worker; other helpers need `context`/`norma/llm` and stay in Go) |
 | `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho` + the value model (`ContentBlock`/`Message`/`Usage`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
 
@@ -146,7 +146,7 @@ parameter type:
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
 | `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | the message model (`Message`, `ContentBlock`, `Usage`) is now ported (`llm-rs`); still needs `llm.CompletionRequest` + `Snapshot`/`Exchange` + JSON-shape matching |
-| `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen`'s `[]llm.ContentBlock` is now available (`llm-rs`) and unblocked; `rotateGroups` still needs `[]*Member` pointers |
+| `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen` (+ `estimateTokens`, over `llm-rs`'s `CompletionRequest`) **ported** (`llmpoolx-rs`); `rotateGroups` still needs `[]*Member` pointers |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
 The `[]string`, `[]byte`, and struct subsets (`guard.TargetBlockMessage`,
@@ -170,7 +170,7 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 | `notify/` | 1768 | 2272 / 12 files | 7 config helpers (`notifyx-rs`) | senders (`dingTalkSignedURL`, `buildEmailMessage`, SMTP/HTTP), `render*` (`text/template`) |
 | `llmrec/` | 423 | 369 / 4 files | `parseSession` (`llmrecx-rs`) | LLM recommendation (SQL + JSON aggregation); `thinkingText` now reachable via `llm-rs` but not yet ported |
 | `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
-| `llmpool/` | 348 | 518 / 4 files | `trimErr` (`llmpoolx-rs`) | LLM connection pool; `State::Open` reads `time.Now`; `blocksLen`/`estimateTokens` reachable via `llm-rs` but not yet ported |
+| `llmpool/` | 348 | 518 / 4 files | `trimErr`, `blocksLen`, `estimateTokens` (`llmpoolx-rs`) | LLM connection pool; `State::Open` reads `time.Now`; `rotateGroups` (`[]*Member`) + regex/context helpers stay in Go |
 | `enrich/` | 248 | 0 / 0 files | 3 helpers (`enrich-rs`) | `*Engine` DNS / asset-upsert workers (no tests) |
 | `guard/` | 243 | 1184 / 5 files | 2 helpers (`guard-rs`) | audit-log / decision layer (`*Guard`, DB audit, env) |
 | `cmd/artex/` | 126 | 16 / 1 file | — | process entrypoint |

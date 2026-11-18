@@ -3,13 +3,14 @@ name = "llmpoolx-rs"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Rust port of `llmpool/` unexported pure helpers (trimErr), parity-tested against Go-recorded cases"
+description = "Rust port of `llmpool/` unexported pure helpers (trimErr, blocksLen, estimateTokens), parity-tested against Go-recorded cases"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 gocompat = { path = "../gocompat" }
+llm-rs = { path = "../llm-rs" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [profile.release]

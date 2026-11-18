@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/Autumn-27/norma/llm"
 )
 
 func rec(t *testing.T, fn string, args []any, out any) {
@@ -20,6 +22,11 @@ func rec(t *testing.T, fn string, args []any, out any) {
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
 	b, _ := json.Marshal(c)
 	fmt.Println(string(b))
+}
+
+func mustJSON(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
 }
 
 func TestZZOracle(t *testing.T) {
@@ -40,5 +47,50 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, m := range msgs {
 		rec(t, "trimErr", []any{m}, trimErr(errors.New(m)))
+	}
+
+	// blocksLen(bs []llm.ContentBlock) — Σ len(Text)+len(Thinking)+len(Input)+len(Name), recursive.
+	// Tool inputs are compact ASCII so the re-serialized byte length matches Go's len([]byte).
+	blocks := [][]llm.ContentBlock{
+		nil, // nil slice -> JSON null
+		{},
+		{llm.TextBlock("hello")},
+		{{Type: llm.BlockThinking, Thinking: "reason", Signature: "sig"}},
+		{{Type: llm.BlockToolUse, ID: "t1", Name: "run", Input: json.RawMessage(`{"cmd":"ls"}`)}},
+		{llm.ToolResultText("t1", "output", false)},
+		{llm.TextBlock("ab"), llm.TextBlock("cde")},
+		{{Type: llm.BlockToolResult, ToolUseID: "t9", Content: []llm.ContentBlock{
+			llm.TextBlock("nested"),
+			{Type: llm.BlockToolUse, Name: "deep", Input: json.RawMessage(`{}`)},
+		}}},
+	}
+	for _, bs := range blocks {
+		rec(t, "blocksLen", []any{mustJSON(bs)}, blocksLen(bs))
+	}
+
+	// estimateTokens(req llm.CompletionRequest) — len(System)+blocksLen(Messages)+
+	// Σ(len(Name)+len(Description)+120*#props), then *2/7.
+	reqs := []llm.CompletionRequest{
+		{},
+		{
+			System: []string{"sys one", "sys two"},
+			Messages: []llm.Message{
+				{Role: llm.RoleUser, Content: []llm.ContentBlock{llm.TextBlock("hello")}},
+				{Role: llm.RoleAssistant, Content: []llm.ContentBlock{
+					{Type: llm.BlockToolUse, ID: "t1", Name: "run", Input: json.RawMessage(`{"cmd":"ls"}`)},
+				}},
+			},
+		},
+		{
+			System: []string{"be brief"},
+			Tools: []llm.ToolSchema{
+				{Name: "run", Description: "run a command", InputSchema: map[string]any{"cmd": "string"}},
+				{Name: "grep", Description: "search", InputSchema: map[string]any{"pattern": "string", "path": "string"}},
+				{Name: "noop", Description: "does nothing"}, // nil InputSchema -> len 0
+			},
+		},
+	}
+	for _, req := range reqs {
+		rec(t, "estimateTokens", []any{mustJSON(req)}, estimateTokens(req))
 	}
 }

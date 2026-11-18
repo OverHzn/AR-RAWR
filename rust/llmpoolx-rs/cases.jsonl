@@ -10,3 +10,14 @@
 {"args":["tab\there"],"fn":"trimErr","ok":"tab\there"}
 {"args":["trailing\n\n"],"fn":"trimErr","ok":"trailing"}
 {"args":["unicode: café 世界"],"fn":"trimErr","ok":"unicode: café 世界"}
+{"args":[[]],"fn":"blocksLen","ok":0}
+{"args":[[{"type":"text","text":"ab"},{"type":"text","text":"cde"}]],"fn":"blocksLen","ok":5}
+{"args":[[{"type":"text","text":"hello"}]],"fn":"blocksLen","ok":5}
+{"args":[[{"type":"thinking","thinking":"reason","signature":"sig"}]],"fn":"blocksLen","ok":6}
+{"args":[[{"type":"tool_result","tool_use_id":"t1","content":[{"type":"text","text":"output"}]}]],"fn":"blocksLen","ok":6}
+{"args":[[{"type":"tool_result","tool_use_id":"t9","content":[{"type":"text","text":"nested"},{"type":"tool_use","name":"deep","input":{}}]}]],"fn":"blocksLen","ok":12}
+{"args":[[{"type":"tool_use","id":"t1","name":"run","input":{"cmd":"ls"}}]],"fn":"blocksLen","ok":15}
+{"args":[null],"fn":"blocksLen","ok":0}
+{"args":[{"System":["be brief"],"DynamicBoundary":0,"Messages":null,"Tools":[{"name":"run","description":"run a command","input_schema":{"cmd":"string"}},{"name":"grep","description":"search","input_schema":{"path":"string","pattern":"string"}},{"name":"noop","description":"does nothing","input_schema":null}],"MaxTokens":0,"Temperature":null,"Stop":null,"Thinking":""}],"fn":"estimateTokens","ok":117}
+{"args":[{"System":["sys one","sys two"],"DynamicBoundary":0,"Messages":[{"role":"user","content":[{"type":"text","text":"hello"}]},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"run","input":{"cmd":"ls"}}]}],"Tools":null,"MaxTokens":0,"Temperature":null,"Stop":null,"Thinking":""}],"fn":"estimateTokens","ok":9}
+{"args":[{"System":null,"DynamicBoundary":0,"Messages":null,"Tools":null,"MaxTokens":0,"Temperature":null,"Stop":null,"Thinking":""}],"fn":"estimateTokens","ok":0}
