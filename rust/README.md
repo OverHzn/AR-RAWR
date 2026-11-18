@@ -67,6 +67,18 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
+To verify **every** unit at once (gocompat build + all 14 crates, each via its own
+gate — `gate.sh` if present, else `ra gate .`):
+
+```sh
+cd rust
+./gate-all.sh          # incremental (reuses target/)
+./gate-all.sh --clean  # wipe every target/ first (full from-scratch rebuild)
+```
+
+It puts `tools/go-shim` first on `PATH` (so norma-importing units build) and prints
+a PASS/FAIL line per unit with a final tally; exit code is non-zero if any fail.
+
 `ra` (this directory) runs `rust-anything` with the go-shim first on `PATH` so
 units that transitively import `github.com/Autumn-27/norma` build against the fork
 `replace github.com/Autumn-27/norma => github.com/BaaRai/Norma v0.4.11`.
@@ -100,19 +112,28 @@ The remaining Go packages are pointer/IO/concurrent-heavy and expose no further
 pure, value-typed, deterministically-recordable functions. Every pure helper that
 *does* exist there (unexported, so unreachable by the bridge) is now ported via a
 Go oracle: `server-rs`, `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`
-(see above). What stays in Go is the stateful / pointer / IO-heavy bulk:
+(see above). What stays in Go is the stateful / pointer / IO-heavy bulk.
+"Src"/"Test" below are **code-LOC** (non-blank, non-comment lines; comments and
+blanks excluded, measured with a small script — so the numbers differ from a raw
+`wc -l`):
 
-- `server/` (27924 LOC) — 34 pure helpers ported in `server-rs`; the rest
-  (stateful HTTP handlers, `*Server` methods over DB/receiver, 1952 pointers) stays
-  in Go.
-- `traffic/` (4282) — 5 pure helpers ported in `traffic-rs`; the stateful ingest /
-  replay / stream machinery (and `runTestHook`, a global hook) stays in Go.
-- `enrich/` (281) — 3 pure helpers ported in `enrich-rs`; the `*Engine` DNS / asset
-  upsert workers stay in Go.
-- `guard/` (330) — 2 pure helpers ported in `guard-rs`; the audit-log / decision
-  layer stays in Go.
-- `sidequestion/` (707) — `Parent::key` ported in `sidequestion-rs`; `Exchange`
-  (large IO struct) and the request/replay flow stay in Go.
-- `llmrec/` (543), `llmpool/` (481), `evidence/` (399), `cmd/artex/` (154) — no
-  exported and no side-effect-free unexported helpers; fully pointer/IO/concurrent-
-  bound. (`llmpool.State::Open` reads `time.Now`; not pure.)
+| Package | Src | Test (LOC / files) | Ported | Stays in Go |
+|---------|----:|-------------------:|--------|-------------|
+| `server/` | 24480 | 17926 / 104 files | 34 helpers (`server-rs`) | stateful HTTP handlers, `*Server` over DB/receiver |
+| `traffic/` | 3572 | 3757 / 12 files | 5 helpers (`traffic-rs`) | stateful ingest / replay / stream; `runTestHook` global |
+| `sidequestion/` | 674 | 602 / 3 files | `Parent::key` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
+| `llmrec/` | 423 | 369 / 4 files | — | LLM recommendation (SQL + JSON aggregation) |
+| `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
+| `llmpool/` | 348 | 518 / 4 files | — | LLM connection pool; `State::Open` reads `time.Now` |
+| `enrich/` | 248 | 0 / 0 files | 3 helpers (`enrich-rs`) | `*Engine` DNS / asset-upsert workers (no tests) |
+| `guard/` | 243 | 1184 / 5 files | 2 helpers (`guard-rs`) | audit-log / decision layer (`*Guard`, DB audit, env) |
+| `cmd/artex/` | 126 | 16 / 1 file | — | process entrypoint |
+
+The packages **with Go tests** (`traffic`, `sidequestion`, `llmrec`, `evidence`,
+`llmpool`, `guard`) are the candidates for a *functional rewrite* — porting the
+stateful code with std Rust and verifying it by translating the Go unit tests
+(there is no bridge/diff parity for IO code, so the Go tests become the spec).
+`guard/` is the ideal first target: the smallest source (243 LOC) with the
+richest test suite (1184 LOC / 5 files — a ~5:1 test-to-source ratio).
+`enrich/` has no tests at all. These are **not** parity ports — a different
+methodology and effort tier from the table above.
