@@ -665,3 +665,13 @@ pub fn values_encode(pairs: &[(&str, &str)]) -> String {
     }
     buf
 }
+
+/// Go `net.JoinHostPort`: `host:port`, or `[host]:port` when `host` contains a
+/// colon (an IPv6 literal).
+pub fn join_host_port(host: &str, port: &str) -> String {
+    if host.contains(':') {
+        format!("[{host}]:{port}")
+    } else {
+        format!("{host}:{port}")
+    }
+}

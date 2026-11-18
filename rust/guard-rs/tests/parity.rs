@@ -17,10 +17,26 @@ fn arg_str(args: &[Value], i: usize) -> String {
     args[i].as_str().expect("str arg").to_string()
 }
 
+fn arg_i64(args: &[Value], i: usize) -> i64 {
+    args[i].as_i64().expect("int arg")
+}
+
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "capBlockReason" => json!(cap_block_reason(&arg_str(args, 0))),
         "systemBlockMessage" => json!(system_block_message(&arg_str(args, 0))),
+        "TargetBlockMessage" => {
+            let code = arg_str(args, 0);
+            let host = arg_str(args, 1);
+            let port = arg_i64(args, 2);
+            let reason = arg_str(args, 3);
+            json!(target_block_message(
+                code.as_str(),
+                host.as_str(),
+                port,
+                reason.as_str()
+            ))
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

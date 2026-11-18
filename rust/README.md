@@ -49,7 +49,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
 | `traffic-rs`      | 800  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` |
 | `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
-| `guard-rs`        | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
+| `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
@@ -129,15 +129,16 @@ parameter type:
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | needs a `rewrite.TraceLine` struct port |
-| `guard.TargetBlockMessage` | `intercept.TargetResult` | needs TargetResult struct + `net.JoinHostPort` + Target* consts |
+| `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need llm/harness struct ports |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
-The `[]string` and `[]byte` subsets were clean enough to port into the existing
-crates the same way as the primitive helpers (the `[]byte` ones via a base64
-helper in the harness); the rest need a struct port or are blocked (regex, map
-non-determinism).
+The `[]string`, `[]byte`, and `guard.TargetBlockMessage` subsets were clean enough
+to port into the existing crates the same way as the primitive helpers (the `[]byte`
+ones via a base64 helper in the harness; `TargetBlockMessage` by reading the struct
+fields through the harness and reusing `join_host_port`). The rest need a struct
+port or are blocked (regex, map non-determinism).
 
 What stays in Go regardless is the stateful / pointer / IO-heavy bulk.
 "Src"/"Test" below are **code-LOC** (non-blank, non-comment lines; comments and

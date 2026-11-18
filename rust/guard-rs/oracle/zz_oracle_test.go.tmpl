@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/Autumn-27/artex/intercept"
 )
 
 var oracleReasons = []string{
@@ -24,6 +26,29 @@ var oracleReasons = []string{
 	"prefix " + strings.Repeat("x", 4000) + " suffix",
 }
 
+type oracleTarget struct {
+	code, host string
+	port       int
+	reason     string
+}
+
+var oracleTargets = []oracleTarget{
+	{"TARGET_APPROVAL_PENDING", "app.example.com", 443, "target not covered"},
+	{"TARGET_DENIED", "10.0.0.5", 0, "operator denied"},
+	{"TARGET_RESOLVE_FAILED", "", 0, "dns failed"},
+	{"TARGET_RULE_BLOCKED", "host.with:colon", 8080, "rule blocked it"},
+	{"TARGET_TOO_MANY", "h", 0, "too many new targets"},
+	{"TARGET_GATE_UNAVAILABLE", "1.2.3.4", 22, "gate down"},
+	{"UNKNOWN_CODE", "x.com", 0, "unknown code path"},
+	{"TARGET_DENIED", "already-in-reason-host.com", 0, "mentions already-in-reason-host.com inside"},
+	{"TARGET_APPROVAL_PENDING", "[2001:db8::1]", 443, "ipv6 host in brackets"},
+	{"TARGET_APPROVAL_PENDING", "2001:db8::1", 443, "ipv6 raw host"},
+	{"", "host-only", 0, "empty code"},
+	{"TARGET_TOO_MANY", "", 0, "empty host"},
+	{"TARGET_RULE_BLOCKED", "a.b.c", 0, strings.Repeat("x", 5000) + " a.b.c"},
+	{"TARGET_DENIED", "h.example", 65535, "high port"},
+}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -35,5 +60,9 @@ func TestZZOracle(t *testing.T) {
 	for _, s := range oracleReasons {
 		rec(t, "capBlockReason", []any{s}, capBlockReason(s))
 		rec(t, "systemBlockMessage", []any{s}, systemBlockMessage(s))
+	}
+	for _, tc := range oracleTargets {
+		tr := intercept.TargetResult{Code: tc.code, Host: tc.host, Port: tc.port, Reason: tc.reason}
+		rec(t, "TargetBlockMessage", []any{tc.code, tc.host, tc.port, tc.reason}, TargetBlockMessage(tr))
 	}
 }
