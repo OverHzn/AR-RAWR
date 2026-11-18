@@ -47,7 +47,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | Unit | Cases | Go source | Functions |
 |------|------:|----------|-----------|
 | `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
-| `traffic-rs`      | 800  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` |
+| `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
@@ -128,16 +128,17 @@ parameter type:
 | `traffic.clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` | `[]byte` / `string, []byte` | **ported** (`traffic-rs`); base64 in the harness via `gocompat::encoding`, hex helper for the magic tag |
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
-| `traffic.appliedRules` | `[]rewrite.TraceLine` | needs a `rewrite.TraceLine` struct port |
+| `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need llm/harness struct ports |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
-The `[]string`, `[]byte`, and `guard.TargetBlockMessage` subsets were clean enough
-to port into the existing crates the same way as the primitive helpers (the `[]byte`
-ones via a base64 helper in the harness; `TargetBlockMessage` by reading the struct
-fields through the harness and reusing `join_host_port`). The rest need a struct
+The `[]string`, `[]byte`, and struct subsets (`guard.TargetBlockMessage`,
+`traffic.appliedRules`) were clean enough to port into the existing crates the
+same way as the primitive helpers (the `[]byte` ones via a base64 helper in the
+harness; the struct ones by reading the relevant struct fields through the
+harness and reusing `join_host_port` where needed). The rest need a fuller struct
 port or are blocked (regex, map non-determinism).
 
 What stays in Go regardless is the stateful / pointer / IO-heavy bulk.

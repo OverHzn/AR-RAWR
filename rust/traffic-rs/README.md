@@ -5,7 +5,7 @@ Go `traffic/` package (the request-recording subsystem — not `traffic/rewrite/
 which is `rewrite-rs`), verified against the Go original via a recorded oracle
 (the bridge can't reach unexported functions).
 
-## Functions (10)
+## Functions (11)
 
 | Go | Signature | Notes |
 |----|-----------|-------|
@@ -19,6 +19,7 @@ which is `rewrite-rs`), verified against the Go original via a recorded oracle
 | `truncateUTF8` (traffic.go) | `truncateUTF8([]byte, int) string` | cut to `n` bytes, back off an incomplete trailing rune |
 | `isBinaryBody` (traffic.go) | `isBinaryBody(string, []byte) bool` | `binaryTypes` prefix, or NUL in first 512 bytes |
 | `binaryTag` (traffic.go) | `binaryTag(string, []byte) string` | `[binary <ct>, <n> bytes, magic=<hex4>]` |
+| `appliedRules` (traffic.go) | `appliedRules([]rewrite.TraceLine) (bool, []int64)` | applied lines? + ordered unique non-zero `RuleID`s |
 
 `sanitize`/`clip` truncate on a **byte** boundary in Go (`out[:120]`, `s[:max]`).
 The recorded corpus keeps every truncation on an ASCII boundary so the byte slice
@@ -27,6 +28,11 @@ functions (`clipBytes`/`truncateUTF8`/`isBinaryBody`/`binaryTag`) travel through
 the harness as **base64** (Go's `encoding/json` encodes `[]byte` that way);
 `truncateUTF8`'s corpus uses valid UTF-8 bodies so the byte cut lands on a rune
 boundary the port reproduces via `str::from_utf8`'s `valid_up_to`.
+
+`appliedRules` is the first struct-param function: the harness passes
+`[]rewrite.TraceLine` and reads each element's `RuleID`/`Outcome` (the other
+fields don't affect the result). Go returns a nil `[]int64` when no rule id is
+collected, which marshals to `null` — the harness mirrors that instead of `[]`.
 
 Excluded: `runTestHook` (mutates the package-level `testRuleHook`; not pure).
 
@@ -37,4 +43,4 @@ Excluded: `runTestHook` (mutates the package-level `testRuleHook`; not pure).
 ./gate.sh     # fmt, clippy (-D warnings), parity tests
 ```
 
-800 recorded cases. `traffic/` is not modified; `record.sh` cleans up its oracle.
+810 recorded cases. `traffic/` is not modified; `record.sh` cleans up its oracle.

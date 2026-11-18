@@ -15,6 +15,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/Autumn-27/artex/traffic/rewrite"
 )
 
 var oracleStrings = []string{
@@ -78,6 +80,21 @@ var oracleContentTypes = []string{
 
 var oracleByteNs = []int{0, 1, 2, 3, 4, 5, 6, 7, 100, 512, 1000}
 
+// oracleRuleLines is the []rewrite.TraceLine corpus for appliedRules. Only Outcome
+// and RuleID affect the result; the other fields stay at their zero value.
+var oracleRuleLines = [][]rewrite.TraceLine{
+	{},
+	{{Outcome: "skipped"}, {Outcome: "pending"}},
+	{{Outcome: "applied"}},
+	{{Outcome: "applied", RuleID: 1}, {Outcome: "applied", RuleID: 2}},
+	{{Outcome: "applied", RuleID: 1}, {Outcome: "applied", RuleID: 1}},
+	{{Outcome: "applied", RuleID: 3}, {Outcome: "skipped", RuleID: 4}, {Outcome: "applied", RuleID: 3}},
+	{{Outcome: "applied", RuleID: 0}, {Outcome: "applied", RuleID: 5}, {Outcome: "applied"}},
+	{{Outcome: "skipped", RuleID: 9}},
+	{{Outcome: "applied", RuleID: -1}, {Outcome: "applied", RuleID: -1}, {Outcome: "applied", RuleID: 2}},
+	{{Outcome: "applied", RuleID: 7}, {Outcome: "applied", RuleID: 8}, {Outcome: "applied", RuleID: 9}},
+}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -109,5 +126,9 @@ func TestZZOracle(t *testing.T) {
 			rec(t, "isBinaryBody", []any{ct, body}, isBinaryBody(ct, body))
 			rec(t, "binaryTag", []any{ct, body}, binaryTag(ct, body))
 		}
+	}
+	for _, lines := range oracleRuleLines {
+		r, ids := appliedRules(lines)
+		rec(t, "appliedRules", []any{lines}, []any{r, ids})
 	}
 }

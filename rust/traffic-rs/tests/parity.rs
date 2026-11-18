@@ -35,6 +35,18 @@ fn arg_bytes(args: &[Value], i: usize) -> Vec<u8> {
     let s = args[i].as_str().expect("base64 string arg");
     gocompat::encoding::base64_std_decode(s).expect("valid base64")
 }
+/// Decode a `[]rewrite.TraceLine` argument: each element's `RuleID`/`Outcome`.
+fn arg_trace_lines(args: &[Value], i: usize) -> Vec<TraceLine> {
+    args[i]
+        .as_array()
+        .expect("array arg")
+        .iter()
+        .map(|v| TraceLine {
+            rule_id: v["RuleID"].as_i64().expect("RuleID"),
+            outcome: v["Outcome"].as_str().expect("Outcome").to_string(),
+        })
+        .collect()
+}
 
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
@@ -62,6 +74,18 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let ct = arg_str(args, 0);
             let b = arg_bytes(args, 1);
             json!(binary_tag(ct.as_str(), b.as_slice()))
+        }
+        "appliedRules" => {
+            let lines = arg_trace_lines(args, 0);
+            let (rewritten, ids) = applied_rules(&lines);
+            // Go returns a nil []int64 (marshals to null) when no rule id is
+            // collected; mirror that instead of an empty array.
+            let ids = if ids.is_empty() {
+                Value::Null
+            } else {
+                json!(ids)
+            };
+            json!([rewritten, ids])
         }
         other => panic!("no dispatcher arm for {other}"),
     }

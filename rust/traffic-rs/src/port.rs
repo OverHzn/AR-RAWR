@@ -1,7 +1,7 @@
 //! `traffic-rs` — behavioral-parity Rust port of the unexported, side-effect-free
 //! helpers in the Go `traffic/` package (`sanitize`, `ftsQuote`, `clip`,
 //! `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`,
-//! `truncateUTF8`, `isBinaryBody`, `binaryTag`).
+//! `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules`).
 //!
 //! These are unexported, so `rust-anything`'s bridge cannot reach them. Parity is
 //! proven against the real Go functions: `record.sh` runs a temporary oracle over
@@ -184,4 +184,29 @@ fn hex_encode(b: &[u8]) -> String {
         s.push(HEX[(byte & 0x0f) as usize] as char);
     }
     s
+}
+
+/// One `rewrite.TraceLine` reduced to the fields `appliedRules` reads (`RuleID`,
+/// `Outcome`); the rest of the struct does not affect it.
+pub struct TraceLine {
+    pub rule_id: i64,
+    pub outcome: String,
+}
+
+/// `appliedRules` (traffic/traffic.go): whether any line has `Outcome ==
+/// rewrite.OutcomeApplied` ("applied"), and the ordered, de-duplicated non-zero
+/// `RuleID`s of those lines. Returns `(false, [])` when none apply.
+pub fn applied_rules(lines: &[TraceLine]) -> (bool, Vec<i64>) {
+    let mut rewritten = false;
+    let mut ids: Vec<i64> = Vec::new();
+    for l in lines {
+        if l.outcome != "applied" {
+            continue;
+        }
+        rewritten = true;
+        if l.rule_id != 0 && !ids.contains(&l.rule_id) {
+            ids.push(l.rule_id);
+        }
+    }
+    (rewritten, ids)
 }
