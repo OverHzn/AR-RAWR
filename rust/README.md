@@ -55,7 +55,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
-| `agentx-rs`       | 112  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines` (pure int/string helpers) |
+| `agentx-rs`       | 151  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote` (pure int/string/JSON helpers) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so

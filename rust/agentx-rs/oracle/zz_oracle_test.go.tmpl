@@ -124,4 +124,53 @@ func TestZZOracle(t *testing.T) {
 	} {
 		rec(t, "splitLines", []any{s}, splitLines(s))
 	}
+
+	// isEmptyJSON(raw) — raw is a JSON message, recorded as its text
+	for _, s := range []string{"null", `""`, "0", "{}", " ", "true", `"`} {
+		rec(t, "isEmptyJSON", []any{s}, isEmptyJSON(json.RawMessage(s)))
+	}
+
+	// pid(raw) — JSON number or numeric string
+	for _, s := range []string{
+		"", "0", "123", "-5", "12.9", `"42"`, `" 7 "`, `"abc"`, "true", "null",
+		`"0x10"`, "1e3", `"123abc"`, "  99  ", "3.0",
+	} {
+		rec(t, "pid", []any{s}, pid(json.RawMessage(s)))
+	}
+
+	// pidList(raw) — a JSON array of raw elements; drop non-positive/invalid
+	lists := [][]string{
+		{}, // empty array
+		{"1", "2", "3"},
+		{"1", "0", "-2", "3"}, // drop 0 and -2
+		{`"5"`, "6", `"x"`}, // drop non-numeric string
+		{"10", "12.9", "13"}, // 12.9 is not a JSON int -> 0 -> dropped
+	}
+	for _, elems := range lists {
+		raws := make([]json.RawMessage, len(elems))
+		for i, e := range elems {
+			raws[i] = json.RawMessage(e)
+		}
+		rec(t, "pidList", []any{elems}, pidList(raws))
+	}
+
+	// bbotQuote(data, dataJSON) — two raw JSON messages
+	bq := [][2]string{
+		{"", ""},                       // both absent -> ""
+		{"null", "null"},               // both absent -> ""
+		{`"hello"`, ""},                // JSON string -> quoted
+		{"null", `"fallback"`},         // data absent, use dataJSON
+		{`"a\nb\t\"c\""`, ""},          // escapes decoded then Go-quoted
+		{"42", ""},                     // non-string JSON -> compacted -> quoted
+		{`{ "a" : 1, "b" : [2, 3] }`, ""}, // compacted (whitespace removed)
+		{`"héllo 世界"`, ""},            // unicode preserved
+		{"", `{"x": "y z"}`},           // whitespace-only data -> dataJSON object
+		{"   ", `"trimmed absent"`},    // whitespace data is absent -> dataJSON
+		{"[1, 2, 3]", "null"},          // array compacted
+		{`" padded "`, "null"},         // string keeps inner spaces
+	}
+	for _, p := range bq {
+		rec(t, "bbotQuote", []any{p[0], p[1]},
+			bbotQuote(json.RawMessage(p[0]), json.RawMessage(p[1])))
+	}
 }

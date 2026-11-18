@@ -26,6 +26,16 @@ fn arg_i64(args: &[Value], i: usize) -> i64 {
     args[i].as_i64().expect("int arg")
 }
 
+fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
+    match &args[i] {
+        Value::Array(a) => a
+            .iter()
+            .map(|v| v.as_str().expect("string element").to_string())
+            .collect(),
+        other => panic!("expected array arg, got {other}"),
+    }
+}
+
 fn arg_usize(args: &[Value], i: usize) -> usize {
     let n = arg_i64(args, i);
     assert!(n >= 0, "expected non-negative count arg, got {n}");
@@ -48,6 +58,10 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         "hintAuthor" => Ok(json!(hint_author(&arg_str(args, 0)))),
         "normalizeFactSource" => normalize_fact_source(&arg_str(args, 0)).map(|s| json!(s)),
         "splitLines" => Ok(json!(split_lines(&arg_str(args, 0)))),
+        "isEmptyJSON" => Ok(json!(is_empty_json(&arg_str(args, 0)))),
+        "pid" => Ok(json!(pid(&arg_str(args, 0)))),
+        "pidList" => Ok(json!(pid_list(&arg_str_slice(args, 0)))),
+        "bbotQuote" => Ok(json!(bbot_quote(&arg_str(args, 0), &arg_str(args, 1)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

@@ -5,7 +5,7 @@ helpers in the Go `agent/` package that the `agent-rs` bridge leaves behind, ver
 against the Go original via a recorded oracle (the bridge can't reach unexported
 functions).
 
-## Functions (12)
+## Functions (16)
 
 | Go | Signature | Notes |
 |----|-----------|-------|
@@ -21,14 +21,22 @@ functions).
 | `hintAuthor` (planner.go) | `(string) string` | origin → human phrase |
 | `normalizeFactSource` (tools.go) | `(string) (string, error)` | empty → `inference`; known source (case/space-insensitive) → itself; else `source %q is not valid: …` |
 | `splitLines` (tools_insert.go) | `(string) []string` | split `\n`, trim, drop blanks; none left → nil (`null`) |
+| `isEmptyJSON` (toolcatalog.go) | `json.RawMessage → bool` | raw text is exactly `null` or `""` |
+| `pid` (tools.go) | `json.RawMessage → int64` | JSON integral number, or numeric string (trimmed, base-10); else 0 |
+| `pidList` (tools.go) | `[]json.RawMessage → []int64` | `pid` over an array, drop `<=0`; none left → nil (`null`) |
+| `bbotQuote` (bbot_ingest.go) | `(data, dataJSON json.RawMessage) string` | pick non-absent (`≠""/"null"`); JSON string → decode + Go-quote, else compact + Go-quote |
 
-All are pure and value-typed (ints, bools, strings, a `[]string`); constants from the
-Go source (`Unlimited = math.MaxInt64`, the related-overview budget `48_000`/`8_000`,
-`db.MaxTaskSourceCount = 8`, the `factSources` set, `workerChatMarkerPrefix`) are
-inlined with their exact values. Rune-aware truncation matches Go's `[]rune` slicing /
+All are pure and value-typed (ints, bools, strings, `[]string`, raw-JSON text); constants
+from the Go source (`Unlimited = math.MaxInt64`, the related-overview budget `48_000`/`8_000`,
+`db.MaxTaskSourceCount = 8`, the `factSources` set, `workerChatMarkerPrefix`) are inlined
+with their exact values. Rune-aware truncation matches Go's `[]rune` slicing /
 `utf8.RuneCountInString`; error text uses `gocompat::gojson::go_quote_string` (Go `%q`);
-string trimming/field-splitting/lowering use `gocompat::strings`; a nil `[]string`
-mirrors Go's JSON `null`.
+trimming/field-splitting/lowering use `gocompat::strings`; a nil `[]string` mirrors Go's
+JSON `null`. The JSON helpers take the raw message as its text (the oracle wraps it with
+`json.RawMessage`): `pid` parses a JSON integral number or numeric string via `serde_json`
+(Go rejects `12.9`/`1e3` into `int64`); `bbotQuote` decodes a JSON string with `serde_json`
+or, for other valid JSON, compacts with a hand-written `json.Compact` (strip whitespace
+outside strings, preserve escape bytes) — then `strconv.Quote`.
 
 The rest of `agent/`'s unexported surface needs heavier ports (the LLM message model,
 `db` graph/node types, `actool.CoreTool`, net/url, regexp) or touches I/O and stays in

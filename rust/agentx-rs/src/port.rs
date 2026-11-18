@@ -173,3 +173,85 @@ pub fn split_lines(s: &str) -> Option<Vec<String>> {
         .collect();
     if out.is_empty() { None } else { Some(out) }
 }
+
+/// `isEmptyJSON` (`agent/toolcatalog.go`): whether a raw JSON message is exactly
+/// `null` or an empty JSON string `""` (a verbatim byte check, no parsing).
+pub fn is_empty_json(raw: &str) -> bool {
+    raw == "null" || raw == "\"\""
+}
+
+/// `pid` (`agent/tools.go`): parse a JSON id that is either a number or a numeric
+/// string to an `i64`, else 0. A JSON number must be integral (Go rejects `12.9`
+/// into `int64`); a JSON string is trimmed then parsed base-10 (`strconv.ParseInt`,
+/// 0 on error). An empty raw message is 0.
+pub fn pid(raw: &str) -> i64 {
+    if raw.is_empty() {
+        return 0;
+    }
+    if let Ok(n) = serde_json::from_str::<i64>(raw) {
+        return n;
+    }
+    if let Ok(s) = serde_json::from_str::<String>(raw) {
+        return go_trim_space(&s).parse::<i64>().unwrap_or(0);
+    }
+    0
+}
+
+/// `pidList` (`agent/tools.go`): parse a list of ids (each element a raw JSON
+/// message, number or numeric string), dropping zeros/invalids. Returns `None`
+/// (JSON `null`) when nothing positive remains, mirroring Go's nil slice.
+pub fn pid_list(raw: &[String]) -> Option<Vec<i64>> {
+    let out: Vec<i64> = raw.iter().map(|r| pid(r)).filter(|&v| v > 0).collect();
+    if out.is_empty() { None } else { Some(out) }
+}
+
+/// `json.Compact` (`encoding/json`): the JSON text with insignificant whitespace
+/// (space, tab, CR, LF) removed outside string literals; string contents — including
+/// original escape sequences — are preserved verbatim. Faithful for valid JSON, which
+/// is the only input `bbotQuote` feeds it.
+fn json_compact(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut in_string = false;
+    let mut escaped = false;
+    for c in s.chars() {
+        if in_string {
+            out.push(c);
+            if escaped {
+                escaped = false;
+            } else if c == '\\' {
+                escaped = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+        } else {
+            match c {
+                '"' => {
+                    in_string = true;
+                    out.push(c);
+                }
+                ' ' | '\t' | '\n' | '\r' => {}
+                _ => out.push(c),
+            }
+        }
+    }
+    out
+}
+
+/// `bbotQuote` (`agent/bbot_ingest.go`): render a bbot event's free text (`data`, or
+/// `data_json` when `data` is absent) as one Go-quoted inert string. Absent = empty or
+/// `null` (after trimming). A JSON string is decoded then `strconv.Quote`d; any other
+/// valid JSON is compacted then `strconv.Quote`d; both-absent → `""`.
+pub fn bbot_quote(data: &str, data_json: &str) -> String {
+    let absent = |m: &str| {
+        let t = go_trim_space(m);
+        t.is_empty() || t == "null"
+    };
+    let raw = if absent(data) { data_json } else { data };
+    if absent(raw) {
+        return String::new();
+    }
+    if let Ok(s) = serde_json::from_str::<String>(raw) {
+        return go_quote_string(&s);
+    }
+    go_quote_string(&json_compact(raw))
+}
