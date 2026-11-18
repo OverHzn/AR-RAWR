@@ -308,6 +308,11 @@ pub struct Url {
 }
 
 impl Url {
+    /// Go `(*URL).Hostname()`: `splitHostPort(u.Host)` then take the host.
+    pub fn hostname(&self) -> String {
+        split_host_port(&self.host).0
+    }
+
     pub fn set_path(&mut self, p: &str) -> Result<(), ()> {
         let path = unescape(p, ENC_PATH)?;
         self.path = path.clone();
@@ -425,6 +430,23 @@ pub fn valid_optional_port(port: &str) -> bool {
         return false;
     }
     b[1..].iter().all(|&c| c.is_ascii_digit())
+}
+
+/// Port of Go's `net/url.splitHostPort`: splits `host:port`, then strips the
+/// surrounding brackets of an IPv6 literal. Returns `(host, port)`.
+pub fn split_host_port(host_port: &str) -> (String, String) {
+    let mut host = host_port.to_string();
+    let mut port = String::new();
+    if let Some(colon) = host.rfind(':') {
+        if valid_optional_port(&host[colon..]) {
+            port = host[colon + 1..].to_string();
+            host = host[..colon].to_string();
+        }
+    }
+    if host.starts_with('[') && host.ends_with(']') && host.len() >= 2 {
+        host = host[1..host.len() - 1].to_string();
+    }
+    (host, port)
 }
 
 /// Port of Go's `parseHost`. Returns Err(()) on any parse error.

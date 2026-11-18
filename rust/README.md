@@ -34,20 +34,28 @@ the units rely on (`net/url`, `path/filepath`, `encoding/json` error shapes,
 `regexp` error text). It is a separate crate, so its size does not count against
 any unit's size gate.
 
-## Unit ported without the bridge (manual parity)
+## Units ported without the bridge (manual parity)
 
-| Unit | Cases | Go source | Notes |
-|------|------:|----------|-------|
-| `server-rs`   | 5910 | `server/` (33 pure helpers) | unexported helpers the bridge can't reach; parity via a Go oracle, not `bridge/diff` |
+These units port the **unexported, side-effect-free helpers** of their Go package —
+`rust-anything bridge` only extracts exported, pointer-free functions, so it can't
+reach them. Parity is proven against the *real* Go functions instead: `record.sh`
+copies a temporary oracle into the package, runs it under `go test`, writes
+`sorted cases.jsonl`, then deletes it (the package is left untouched);
+`tests/parity.rs` replays the corpus and asserts byte-identical output. Each crate
+gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 
-`server-rs` ports the **unexported, side-effect-free helpers** of `server/`
-(`humanBytes`, `firstLine`, `trunc`, `shellQuote`, `validatePassword`,
-`skillPathRune`, …). `rust-anything bridge` only extracts exported, pointer-free
-functions, and the three it finds in `server/` are all side-effectful
-(`ScrubSecretEnv`, `StartLogCapture`, `WithSecretScrub`), so the bridge can't be
-used here. Instead `record.sh` runs a temporary Go oracle over a corpus and
-writes `cases.jsonl`; `tests/parity.rs` replays it and asserts byte-identical
-output. Reproduce with `cd rust/server-rs && ./gate.sh`.
+| Unit | Cases | Go source | Functions |
+|------|------:|----------|-----------|
+| `server-rs`   | 5910 | `server/` | 33 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, …) |
+| `traffic-rs`  | 91   | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName` |
+| `enrich-rs`   | 47   | `enrich/`  | `id0`, `itoa`, `hostOf` |
+| `guard-rs`    | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
+
+In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
+`StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
+the bridge is unusable there. `enrich-rs`'s `hostOf` reuses `gocompat::neturl`
+(`Url::hostname` / `split_host_port` added for it). `traffic-rs` excludes
+`runTestHook` (mutates package-global `testRuleHook`).
 
 ## Reproducing a unit's gate
 
@@ -87,12 +95,20 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 
 The remaining Go packages are pointer/IO/concurrent-heavy and expose no pure,
 value-typed, deterministically-recordable functions the harness can prove parity
-for. The pure helpers that *do* exist in `server/` (unexported, so unreachable by
-the bridge) are ported separately in [`server-rs`](server-rs) via a Go oracle.
+for. The pure helpers that *do* exist there (unexported, so unreachable by the
+bridge) are ported separately via a Go oracle: `server-rs`, `traffic-rs`,
+`enrich-rs`, `guard-rs` (see above). What remains unported in these packages is the
+stateful / pointer / IO-heavy bulk:
 
 - `server/` (27924 LOC) — 33 pure helpers ported in `server-rs`; the rest
   (stateful HTTP handlers, `*Server` methods over DB/receiver, 1952 pointers) stays
   in Go.
-- `traffic/` (4282), `sidequestion/` (707), `llmrec/` (543), `llmpool/` (481),
-  `evidence/` (399), `guard/` (330), `enrich/` (281), `cmd/artex/` (154) — no
-  exported pure functions; their pure helpers (if any) are unexported.
+- `traffic/` (4282) — 5 pure helpers ported in `traffic-rs`; the stateful ingest /
+  replay / stream machinery stays in Go.
+- `enrich/` (281) — 3 pure helpers ported in `enrich-rs`; the `*Engine` DNS / asset
+  upsert workers stay in Go.
+- `guard/` (330) — 2 pure helpers ported in `guard-rs`; the audit-log / decision
+  layer stays in Go.
+- `sidequestion/` (707), `llmrec/` (543), `llmpool/` (481), `evidence/` (399),
+  `cmd/artex/` (154) — no exported and no side-effect-free unexported helpers;
+  fully pointer/IO/concurrent-bound.

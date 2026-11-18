@@ -1,0 +1,18 @@
+[package]
+name = "guard-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of `guard/` unexported pure helpers, parity-tested against Go-recorded cases"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

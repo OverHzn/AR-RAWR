@@ -1,0 +1,91 @@
+{"args":["  spaced  "],"fn":"ftsQuote","ok":"\"  spaced  \""}
+{"args":["  spaced  "],"fn":"sanitize","ok":"  spaced  "}
+{"args":["  spaced  "],"fn":"validHeaderName","ok":false}
+{"args":["",0],"fn":"clip","ok":""}
+{"args":["",5],"fn":"clip","ok":""}
+{"args":[""],"fn":"ftsQuote","ok":"\"\""}
+{"args":[""],"fn":"sanitize","ok":"root"}
+{"args":[""],"fn":"validHeaderName","ok":false}
+{"args":["///"],"fn":"ftsQuote","ok":"\"///\""}
+{"args":["///"],"fn":"sanitize","ok":"___"}
+{"args":["///"],"fn":"validHeaderName","ok":false}
+{"args":["/leading/slash/"],"fn":"ftsQuote","ok":"\"/leading/slash/\""}
+{"args":["/leading/slash/"],"fn":"sanitize","ok":"_leading_slash_"}
+{"args":["/leading/slash/"],"fn":"validHeaderName","ok":false}
+{"args":[":::"],"fn":"ftsQuote","ok":"\":::\""}
+{"args":[":::"],"fn":"sanitize","ok":"___"}
+{"args":[":::"],"fn":"validHeaderName","ok":false}
+{"args":["\"\""],"fn":"ftsQuote","ok":"\"\"\"\"\"\""}
+{"args":["\"\""],"fn":"sanitize","ok":"__"}
+{"args":["\"\""],"fn":"validHeaderName","ok":false}
+{"args":["\u003ctag\u003e|pipe?star*"],"fn":"ftsQuote","ok":"\"\u003ctag\u003e|pipe?star*\""}
+{"args":["\u003ctag\u003e|pipe?star*"],"fn":"sanitize","ok":"_tag__pipe_star_"}
+{"args":["\u003ctag\u003e|pipe?star*"],"fn":"validHeaderName","ok":false}
+{"args":["_"],"fn":"ftsQuote","ok":"\"_\""}
+{"args":["_"],"fn":"sanitize","ok":"root"}
+{"args":["_"],"fn":"validHeaderName","ok":true}
+{"args":["a/b/c"],"fn":"ftsQuote","ok":"\"a/b/c\""}
+{"args":["a/b/c"],"fn":"sanitize","ok":"a_b_c"}
+{"args":["a/b/c"],"fn":"validHeaderName","ok":false}
+{"args":["a\nb\tc"],"fn":"ftsQuote","ok":"\"a\nb\tc\""}
+{"args":["a\nb\tc"],"fn":"sanitize","ok":"a\nb\tc"}
+{"args":["a\nb\tc"],"fn":"validHeaderName","ok":false}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"ftsQuote","ok":"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"sanitize","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHeaderName","ok":true}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"ftsQuote","ok":"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"sanitize","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHeaderName","ok":true}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"ftsQuote","ok":"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"sanitize","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHeaderName","ok":true}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"ftsQuote","ok":"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"sanitize","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHeaderName","ok":true}
+{"args":["abababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab"],"fn":"ftsQuote","ok":"\"abababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab\""}
+{"args":["abababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab"],"fn":"sanitize","ok":"abababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab"}
+{"args":["abababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab"],"fn":"validHeaderName","ok":true}
+{"args":["back\\slash"],"fn":"ftsQuote","ok":"\"back\\slash\""}
+{"args":["back\\slash"],"fn":"sanitize","ok":"back_slash"}
+{"args":["back\\slash"],"fn":"validHeaderName","ok":false}
+{"args":["foo:bar"],"fn":"ftsQuote","ok":"\"foo:bar\""}
+{"args":["foo:bar"],"fn":"sanitize","ok":"foo_bar"}
+{"args":["foo:bar"],"fn":"validHeaderName","ok":false}
+{"args":["has \"quote\""],"fn":"ftsQuote","ok":"\"has \"\"quote\"\"\""}
+{"args":["has \"quote\""],"fn":"sanitize","ok":"has _quote_"}
+{"args":["has \"quote\""],"fn":"validHeaderName","ok":false}
+{"args":["hello world",0],"fn":"clip","ok":"\n... [truncated, 11 bytes total; full content in the traffic file tree] ..."}
+{"args":["hello world",100],"fn":"clip","ok":"hello world"}
+{"args":["hello world",11],"fn":"clip","ok":"hello world"}
+{"args":["hello world",5],"fn":"clip","ok":"hello\n... [truncated, 11 bytes total; full content in the traffic file tree] ..."}
+{"args":["héllo",100],"fn":"clip","ok":"héllo"}
+{"args":["héllo/wörld"],"fn":"ftsQuote","ok":"\"héllo/wörld\""}
+{"args":["héllo/wörld"],"fn":"sanitize","ok":"héllo_wörld"}
+{"args":["héllo/wörld"],"fn":"validHeaderName","ok":false}
+{"args":["name.tar.gz"],"fn":"ftsQuote","ok":"\"name.tar.gz\""}
+{"args":["name.tar.gz"],"fn":"sanitize","ok":"name.tar.gz"}
+{"args":["name.tar.gz"],"fn":"validHeaderName","ok":true}
+{"args":["nested \"\"x\"\""],"fn":"ftsQuote","ok":"\"nested \"\"\"\"x\"\"\"\"\""}
+{"args":["nested \"\"x\"\""],"fn":"sanitize","ok":"nested __x__"}
+{"args":["nested \"\"x\"\""],"fn":"validHeaderName","ok":false}
+{"args":["normal_name"],"fn":"ftsQuote","ok":"\"normal_name\""}
+{"args":["normal_name"],"fn":"sanitize","ok":"normal_name"}
+{"args":["normal_name"],"fn":"validHeaderName","ok":true}
+{"args":["plain"],"fn":"ftsQuote","ok":"\"plain\""}
+{"args":["plain"],"fn":"sanitize","ok":"plain"}
+{"args":["plain"],"fn":"validHeaderName","ok":true}
+{"args":["prefix yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy suffix",20],"fn":"clip","ok":"prefix yyyyyyyyyyyyy\n... [truncated, 214 bytes total; full content in the traffic file tree] ..."}
+{"args":["quote\"here"],"fn":"ftsQuote","ok":"\"quote\"\"here\""}
+{"args":["quote\"here"],"fn":"sanitize","ok":"quote_here"}
+{"args":["quote\"here"],"fn":"validHeaderName","ok":false}
+{"args":["short",4],"fn":"clip","ok":"shor\n... [truncated, 5 bytes total; full content in the traffic file tree] ..."}
+{"args":["short",5],"fn":"clip","ok":"short"}
+{"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",10],"fn":"clip","ok":"xxxxxxxxxx\n... [truncated, 50 bytes total; full content in the traffic file tree] ..."}
+{"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",49],"fn":"clip","ok":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n... [truncated, 50 bytes total; full content in the traffic file tree] ..."}
+{"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",50],"fn":"clip","ok":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+{"args":["日本語/パス"],"fn":"ftsQuote","ok":"\"日本語/パス\""}
+{"args":["日本語/パス"],"fn":"sanitize","ok":"日本語_パス"}
+{"args":["日本語/パス"],"fn":"validHeaderName","ok":false}
+{"args":["日本語テキスト",100],"fn":"clip","ok":"日本語テキスト"}
+{"args":[false],"fn":"boolInt","ok":0}
+{"args":[true],"fn":"boolInt","ok":1}

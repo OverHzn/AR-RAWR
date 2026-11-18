@@ -1,0 +1,39 @@
+package guard
+
+// TEMPORARY oracle used by ../record.sh to regenerate cases.jsonl. Runs the real
+// unexported Go helpers over a fixed corpus and prints one JSON object per call.
+// record.sh copies this into guard/, runs it, then deletes it — the package is
+// left untouched.
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"testing"
+)
+
+var oracleReasons = []string{
+	"", "short", "a blocked reason", "target defense evasion",
+	"pipe | and control\nchars", "unicode éè", "日本語の理由",
+	strings.Repeat("a", 3999),
+	strings.Repeat("a", 4000),
+	strings.Repeat("a", 4001),
+	strings.Repeat("a", 5000),
+	strings.Repeat("é", 4001),  // 4001 runes, 8002 bytes
+	strings.Repeat("日", 4001),  // 4001 runes, 12003 bytes
+	"prefix " + strings.Repeat("x", 4000) + " suffix",
+}
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	for _, s := range oracleReasons {
+		rec(t, "capBlockReason", []any{s}, capBlockReason(s))
+		rec(t, "systemBlockMessage", []any{s}, systemBlockMessage(s))
+	}
+}

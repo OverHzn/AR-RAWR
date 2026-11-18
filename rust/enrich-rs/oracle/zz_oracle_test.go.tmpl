@@ -1,0 +1,48 @@
+package enrich
+
+// TEMPORARY oracle used by ../record.sh to regenerate cases.jsonl. Runs the real
+// unexported Go helpers over a fixed corpus and prints one JSON object per call.
+// record.sh copies this into enrich/, runs it, then deletes it — the package is
+// left untouched.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+var oracleInt64 = []int64{
+	0, 1, -1, 42, 100, -100, 9223372036854775807, -9223372036854775808,
+	123456789, 1000000, -999999,
+}
+
+var oracleURLs = []string{
+	"", "http://example.com/path", "https://example.com:8080/x",
+	"http://example.com", "http://example.com:80",
+	"http://[::1]:8080/", "http://[2001:db8::1]/",
+	"not a url", "example.com", "ftp://host:21/file",
+	"http://user:pass@host:99/p?q=1#frag",
+	"HTTP://UPPER.COM/Path", "http://例え.jp/パス",
+	"://bad", "http://", "https://a.b.c.d:443",
+	"//nohost/path", "/just/a/path", "?just=query",
+	"http://host:badport/", "http://host:/x",
+	"mailto:user@example.com", "http://münchen.de/",
+	"  http://spaces.com  ", "http://tab\there.com/",
+}
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	for _, n := range oracleInt64 {
+		rec(t, "id0", []any{n}, id0(n))
+		rec(t, "itoa", []any{n}, itoa(n))
+	}
+	for _, u := range oracleURLs {
+		rec(t, "hostOf", []any{u}, hostOf(u))
+	}
+}
