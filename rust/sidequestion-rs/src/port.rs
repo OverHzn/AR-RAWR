@@ -1,14 +1,21 @@
 //! `sidequestion-rs` — behavioral-parity Rust port of the unexported,
 //! side-effect-free helpers in the Go `sidequestion/` package.
 //!
-//! Only [`Parent::key`] is portable through the parity harness: it is a pure
-//! method on the small value struct `Parent` (four `int64` fields). The other
-//! pure-looking method, `Exchange::Running`, is skipped because `Exchange` is a
-//! large IO-laden struct (`time.Time`, `llm.Usage`, …) that cannot be modelled as
-//! a value type. Parity is proven against the real Go function via `record.sh`
-//! (a temporary oracle over a corpus → `cases.jsonl`) and `tests/parity.rs`.
+//! Portable so far: [`Parent::key`] (a pure method on the small value struct
+//! `Parent`), `outputBudget` / `inputBudget` (struct-param functions that each read a
+//! single scalar field), and `messageGroups` (a pure `[]llm.Message` → `[][]llm.Message`
+//! grouping, over the `norma/llm` model ported in `llm-rs`). The remaining functions
+//! are not portable: `Exchange::Running` is a method on a large IO-laden struct,
+//! `assemble`/`exchangeMessages` need `time.Time` RFC3339 formatting, and `BuildRequest`
+//! needs `llm.MessagesForAPI`/`CloneRequest`/`EstimateInputTokens`. Parity is proven
+//! against the real Go functions via `record.sh` (oracle → `cases.jsonl`) and
+//! `tests/parity.rs`.
 
 #![forbid(unsafe_code)]
+
+use std::collections::HashSet;
+
+use llm_rs::port::{BLOCK_TOOL_RESULT, BLOCK_TOOL_USE, Message};
 
 /// Port of Go `sidequestion.Parent` (sidequestion/capture.go).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -60,4 +67,33 @@ pub fn input_budget(window_tokens: i64, output: i64) -> i64 {
     };
     let reserve = 8192.min(128.max(window / 20));
     window - output - reserve
+}
+
+/// `messageGroups` (sidequestion/context.go): split a conversation into groups that each
+/// leave no tool call unresolved. A `tool_use` block opens a pending id; the matching
+/// `tool_result` (`tool_use_id`) closes it. Whenever nothing is pending after a message,
+/// that message closes a group; any trailing run with an open tool call is kept as the
+/// final group. Returns `[][]Message` (empty when the input is empty).
+pub fn message_groups(messages: &[Message]) -> Vec<Vec<Message>> {
+    let mut groups: Vec<Vec<Message>> = Vec::new();
+    let mut pending: HashSet<String> = HashSet::new();
+    let mut start = 0usize;
+    for (i, m) in messages.iter().enumerate() {
+        for block in &m.content {
+            if block.block_type == BLOCK_TOOL_USE {
+                pending.insert(block.id.clone());
+            }
+            if block.block_type == BLOCK_TOOL_RESULT {
+                pending.remove(&block.tool_use_id);
+            }
+        }
+        if pending.is_empty() {
+            groups.push(messages[start..=i].to_vec());
+            start = i + 1;
+        }
+    }
+    if start < messages.len() {
+        groups.push(messages[start..].to_vec());
+    }
+    groups
 }

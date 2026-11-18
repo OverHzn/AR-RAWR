@@ -3,6 +3,7 @@
 
 use serde_json::{Value, json};
 
+use llm_rs::port::Message;
 use sidequestion_rs::port::*;
 
 fn cases() -> Vec<Value> {
@@ -30,6 +31,19 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         }
         "outputBudget" => json!(output_budget(arg_i64(args, 0), arg_i64(args, 1))),
         "inputBudget" => json!(input_budget(arg_i64(args, 0), arg_i64(args, 1))),
+        "messageGroups" => {
+            // Go passes a nil slice as JSON `null`; model that as an empty Vec.
+            let msgs: Vec<Message> =
+                serde_json::from_value::<Option<Vec<Message>>>(args[0].clone())
+                    .expect("messages decode")
+                    .unwrap_or_default();
+            let groups = message_groups(&msgs);
+            if groups.is_empty() {
+                Value::Null // Go nil slice -> null
+            } else {
+                serde_json::to_value(groups).expect("serialize groups")
+            }
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

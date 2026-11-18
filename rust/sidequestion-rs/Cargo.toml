@@ -9,6 +9,7 @@ description = "Rust port of `sidequestion/` unexported pure helpers, parity-test
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+llm-rs = { path = "../llm-rs" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [profile.release]

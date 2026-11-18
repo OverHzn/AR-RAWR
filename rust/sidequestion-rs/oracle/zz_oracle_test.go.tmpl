@@ -39,6 +39,11 @@ func rec(t *testing.T, fn string, args []any, out any) {
 	fmt.Println(string(b))
 }
 
+func oracleRaw(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
+}
+
 func TestZZOracle(t *testing.T) {
 	for _, p := range oracleParents {
 		rec(t, "Parent.Key", []any{p.ConversationID, p.TaskID, p.ExplorationID, p.IntentID}, p.Key())
@@ -53,5 +58,29 @@ func TestZZOracle(t *testing.T) {
 			snap := Snapshot{Model: Model{WindowTokens: w}}
 			rec(t, "inputBudget", []any{w, out}, inputBudget(snap, out))
 		}
+	}
+
+	// messageGroups([]llm.Message) [][]llm.Message — group at every point where no tool
+	// call is left pending; a trailing run with an open tool call is its own group.
+	tu := func(id string) llm.ContentBlock { return llm.ContentBlock{Type: llm.BlockToolUse, ID: id, Name: "t"} }
+	tr := func(id string) llm.ContentBlock { return llm.ContentBlock{Type: llm.BlockToolResult, ToolUseID: id} }
+	txt := func(s string) llm.ContentBlock { return llm.TextBlock(s) }
+	asst := func(bs ...llm.ContentBlock) llm.Message { return llm.Message{Role: llm.RoleAssistant, Content: bs} }
+	usr := func(bs ...llm.ContentBlock) llm.Message { return llm.Message{Role: llm.RoleUser, Content: bs} }
+
+	scenarios := [][]llm.Message{
+		nil,                               // nil -> null
+		{},                                // empty -> null
+		{usr(txt("hi"))},                  // -> [[user hi]]
+		{usr(txt("hi")), asst(txt("yo"))}, // -> [[u],[a]] (each message closes a group)
+		{asst(tu("t1")), usr(tr("t1"))},   // -> [[asst,usr]] (tool cycle)
+		{asst(tu("t1")), usr(tr("t1")), asst(tu("t2")), usr(tr("t2"))}, // -> two groups
+		{asst(tu("t1"))},                  // unclosed tool_use -> [[asst]]
+		{usr(txt("q")), asst(tu("t1")), usr(tr("t1"))}, // -> [[u],[a,u]]
+		{asst(tu("t1"), tu("t2")), usr(tr("t1")), usr(tr("t2"))}, // parallel -> [[a,u,u]]
+		{usr(tr("tX"))},                   // result with no matching use -> [[usr]]
+	}
+	for _, sc := range scenarios {
+		rec(t, "messageGroups", []any{oracleRaw(sc)}, oracleRaw(messageGroups(sc)))
 	}
 }

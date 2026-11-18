@@ -50,7 +50,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
-| `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
+| `sidequestion-rs` | 144  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups` (`messageGroups` over the `norma/llm` model in `llm-rs`; `assemble`/`BuildRequest` need `time`/`llm.MessagesForAPI` and stay in Go) |
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
@@ -145,7 +145,7 @@ parameter type:
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
-| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | the message model (`Message`, `ContentBlock`, `Usage`) is now ported (`llm-rs`); still needs `llm.CompletionRequest` + `Snapshot`/`Exchange` + JSON-shape matching |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | `messageGroups` **ported** (`sidequestion-rs`, over `llm-rs`); `assemble`/`exchangeMessages` still need `time.Time` RFC3339 formatting and `BuildRequest` needs `llm.MessagesForAPI`/`CloneRequest` |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen` (+ `estimateTokens`, over `llm-rs`'s `CompletionRequest`) **ported** (`llmpoolx-rs`); `rotateGroups` still needs `[]*Member` pointers |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
@@ -165,7 +165,7 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 |---------|----:|-------------------:|--------|-------------|
 | `server/` | 24480 | 17926 / 104 files | 34 helpers (`server-rs`) | stateful HTTP handlers, `*Server` over DB/receiver |
 | `traffic/` | 3572 | 3757 / 12 files | 5 helpers (`traffic-rs`) | stateful ingest / replay / stream; `runTestHook` global |
-| `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
+| `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups` (`sidequestion-rs`) | `Exchange` (large IO struct), `assemble`/`BuildRequest` (time / `llm.MessagesForAPI`), request/replay flow |
 | `report/` | 438 | 253 / 1 file | 7 string helpers (`reportex-rs`) | markdown/CSV builders (`*db.DBFinding`/`Input`, `text/template`, `time`, `regexp`), `qualityBullets`/`qualityNarrative` (`Quality` struct) |
 | `notify/` | 1768 | 2272 / 12 files | 7 config helpers (`notifyx-rs`) | senders (`dingTalkSignedURL`, `buildEmailMessage`, SMTP/HTTP), `render*` (`text/template`) |
 | `llmrec/` | 423 | 369 / 4 files | `parseSession`, `thinkingText` (`llmrecx-rs`) | LLM recommendation (SQL + JSON aggregation); `workerFrom`/`reportStop` need `context` |
