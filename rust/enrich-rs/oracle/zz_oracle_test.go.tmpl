@@ -37,6 +37,16 @@ var oracleStrSlices = [][]string{
 	{"dup", "dup", "dup", "dup"}, {"first", "second", "first", "third", "second"},
 }
 
+// oracleBlank exercises isBlank(any): typed values across the nil/string/float64/int
+// cases in its type switch (plus other JSON types that are not blank). JSON
+// serialization is the wire, so int(0) and float64(0) both record as 0.
+var oracleBlank = []any{
+	nil, "", "x", "  ", "false",
+	float64(0), float64(1.5), float64(-3), float64(100),
+	int(0), int(5), int(-1),
+	true, false, []string{}, map[string]any{},
+}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -54,5 +64,8 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, ss := range oracleStrSlices {
 		rec(t, "uniq", []any{ss}, uniq(ss))
+	}
+	for _, v := range oracleBlank {
+		rec(t, "isBlank", []any{v}, isBlank(v))
 	}
 }

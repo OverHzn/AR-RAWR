@@ -48,7 +48,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 |------|------:|----------|-----------|
 | `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
-| `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
+| `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
@@ -131,6 +131,7 @@ parameter type:
 | Function | Params → return | Status |
 |----------|-----------------|--------|
 | `enrich.uniq`, `traffic.uniqueArchiveHosts` | `[]string` → `[]string` | **ported** (`enrich-rs`, `traffic-rs`); JSON arrays, deterministic |
+| `enrich.isBlank` | `any` → `bool` | **ported** (`enrich-rs`); harness passes a JSON value; `null` / empty string / numeric 0 → true, bool/array/object → false (Go type switch on nil/string/float64/int) |
 | `traffic.clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` | `[]byte` / `string, []byte` | **ported** (`traffic-rs`); base64 in the harness via `gocompat::encoding`, hex helper for the magic tag |
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `notify.cfgString`/`cfgInt`/`cfgBool`/`cfgStrings`/`cfgMap` | `map[string]any` | **ported** (`notifyx-rs`); the harness passes the config as a JSON object (Go marshals keys sorted), reads `key`; nil slice/map → `null` |

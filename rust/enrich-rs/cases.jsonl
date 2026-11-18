@@ -1,11 +1,14 @@
+{"args":["  "],"fn":"isBlank","ok":false}
 {"args":["  http://spaces.com  "],"fn":"hostOf","ok":""}
 {"args":[""],"fn":"hostOf","ok":""}
+{"args":[""],"fn":"isBlank","ok":true}
 {"args":["//nohost/path"],"fn":"hostOf","ok":"nohost"}
 {"args":["/just/a/path"],"fn":"hostOf","ok":""}
 {"args":["://bad"],"fn":"hostOf","ok":""}
 {"args":["?just=query"],"fn":"hostOf","ok":""}
 {"args":["HTTP://UPPER.COM/Path"],"fn":"hostOf","ok":"UPPER.COM"}
 {"args":["example.com"],"fn":"hostOf","ok":""}
+{"args":["false"],"fn":"isBlank","ok":false}
 {"args":["ftp://host:21/file"],"fn":"hostOf","ok":"host"}
 {"args":["http://"],"fn":"hostOf","ok":""}
 {"args":["http://[2001:db8::1]/"],"fn":"hostOf","ok":"2001:db8::1"}
@@ -23,19 +26,26 @@
 {"args":["https://example.com:8080/x"],"fn":"hostOf","ok":"example.com"}
 {"args":["mailto:user@example.com"],"fn":"hostOf","ok":""}
 {"args":["not a url"],"fn":"hostOf","ok":""}
+{"args":["x"],"fn":"isBlank","ok":false}
 {"args":[-100],"fn":"id0","ok":true}
 {"args":[-100],"fn":"itoa","ok":"-100"}
 {"args":[-1],"fn":"id0","ok":true}
+{"args":[-1],"fn":"isBlank","ok":false}
 {"args":[-1],"fn":"itoa","ok":"-1"}
+{"args":[-3],"fn":"isBlank","ok":false}
 {"args":[-9223372036854775808],"fn":"id0","ok":true}
 {"args":[-9223372036854775808],"fn":"itoa","ok":"-9223372036854775808"}
 {"args":[-999999],"fn":"id0","ok":true}
 {"args":[-999999],"fn":"itoa","ok":"-999999"}
 {"args":[0],"fn":"id0","ok":true}
+{"args":[0],"fn":"isBlank","ok":true}
+{"args":[0],"fn":"isBlank","ok":true}
 {"args":[0],"fn":"itoa","ok":"0"}
+{"args":[1.5],"fn":"isBlank","ok":false}
 {"args":[1000000],"fn":"id0","ok":false}
 {"args":[1000000],"fn":"itoa","ok":"1000000"}
 {"args":[100],"fn":"id0","ok":false}
+{"args":[100],"fn":"isBlank","ok":false}
 {"args":[100],"fn":"itoa","ok":"100"}
 {"args":[123456789],"fn":"id0","ok":false}
 {"args":[123456789],"fn":"itoa","ok":"123456789"}
@@ -43,6 +53,7 @@
 {"args":[1],"fn":"itoa","ok":"1"}
 {"args":[42],"fn":"id0","ok":false}
 {"args":[42],"fn":"itoa","ok":"42"}
+{"args":[5],"fn":"isBlank","ok":false}
 {"args":[9223372036854775807],"fn":"id0","ok":false}
 {"args":[9223372036854775807],"fn":"itoa","ok":"9223372036854775807"}
 {"args":[["  ","x","x"]],"fn":"uniq","ok":["  ","x"]}
@@ -57,4 +68,9 @@
 {"args":[["x","y","z"]],"fn":"uniq","ok":["x","y","z"]}
 {"args":[["z","y","x"]],"fn":"uniq","ok":["z","y","x"]}
 {"args":[["日本語","x","x"]],"fn":"uniq","ok":["日本語","x"]}
+{"args":[[]],"fn":"isBlank","ok":false}
 {"args":[[]],"fn":"uniq","ok":[]}
+{"args":[false],"fn":"isBlank","ok":false}
+{"args":[null],"fn":"isBlank","ok":true}
+{"args":[true],"fn":"isBlank","ok":false}
+{"args":[{}],"fn":"isBlank","ok":false}

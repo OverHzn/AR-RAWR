@@ -34,6 +34,7 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "itoa" => json!(itoa(arg_i64(args, 0))),
         "hostOf" => json!(host_of(&arg_str(args, 0))),
         "uniq" => json!(uniq(&arg_str_slice(args, 0))),
+        "isBlank" => json!(is_blank(&args[0])),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
