@@ -1,0 +1,130 @@
+package report
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers
+// in this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok}. record.sh sorts the lines so the
+// output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// nz(s, d)
+	nzCases := [][2]string{
+		{"", "def"},
+		{"   ", "def"},
+		{"\t\n ", "def"},
+		{"hello", "def"},
+		{"  hello  ", "def"},
+		{"", ""},
+		{"x", ""},
+		{"héllo", "d"},
+		{"\u00a0", "nbsp-only"}, // non-ASCII space is NOT trimmed by TrimSpace? U+00A0 is IsSpace -> trimmed
+	}
+	for _, c := range nzCases {
+		rec(t, "nz", []any{c[0], c[1]}, nz(c[0], c[1]))
+	}
+
+	// oneLine(s)
+	oneLineCases := []string{
+		"",
+		"   ",
+		"hello world",
+		"  hello   world  ",
+		"line1\nline2",
+		"a\tb\tc",
+		"multiple\n\n\nblank",
+		"trailing\n",
+		"héllo wörld",
+		"\u00a0x\u00a0y\u00a0", // NBSP runs collapse (unicode.IsSpace)
+	}
+	for _, s := range oneLineCases {
+		rec(t, "oneLine", []any{s}, oneLine(s))
+	}
+
+	// unbalancedFence(s)
+	fenceCases := []string{
+		"",
+		"no fences here",
+		"```\ncode\n```",
+		"```\ncode",
+		"a\n```\nb\n```\nc\n```",
+		"  ```\nindented\n  ```",
+		"\t```\ntabbed",
+		"text ``` inline", // fence not at line start -> 0
+		"````\nfour",        // HasPrefix "```" is true -> 1
+		"```python\nx\n```\n```js", // 3 fences -> odd
+	}
+	for _, s := range fenceCases {
+		rec(t, "unbalancedFence", []any{s}, unbalancedFence(s))
+	}
+
+	// staleReportNotice(stale)
+	for _, b := range []bool{false, true} {
+		rec(t, "staleReportNotice", []any{b}, staleReportNotice(b))
+	}
+
+	// reportStale(report, evidenceVersion, reportEvidenceVersion)
+	staleCases := []struct {
+		report string
+		ev     int64
+		rev    int64
+	}{
+		{"", 1, 1},
+		{"", 1, 2},
+		{"some report", 1, 1},
+		{"some report", 2, 1},
+		{"some report", 1, 2},
+		{"r", 0, 0},
+		{"r", -1, 1},
+		{"r", 1, -1},
+	}
+	for _, c := range staleCases {
+		rec(t, "reportStale", []any{c.report, c.ev, c.rev}, reportStale(c.report, c.ev, c.rev))
+	}
+
+	// verificationLabel(s)
+	labelCases := []string{
+		"", "unverified", "verified", "blocked", "not_assessed",
+		"false_positive", "unknown", "VERIFIED", "verified ", "verified\n",
+	}
+	for _, s := range labelCases {
+		rec(t, "verificationLabel", []any{s}, verificationLabel(s))
+	}
+
+	// detailedReportLimit(body, heading, limit)
+	drlCases := []struct {
+		body    string
+		heading string
+		limit   int
+	}{
+		{"", "H", 10},
+		{"   ", "H", 10},
+		{"short body", "Heading", 0},
+		{"short body", "Heading", -5},
+		{"short body", "Heading", 100},
+		{"short body", "Heading", 5},
+		{"exactly-ten", "H", 11}, // len 11 == limit -> not > -> full
+		{"a longer body that exceeds the limit", "H", 10},
+		{"```\ncode that is long\nno close", "H", 10}, // cut inside open fence -> close it
+		{"```\ncode\n```\nmore text here", "H", 12},   // closed fence, balanced
+		{"héllo wörld ünïcode body", "H", 8},          // multibyte cut -> back up to rune boundary
+		{"line1\nline2\nline3\nline4", "H", 12},
+		{"2048-byte-ish body that goes on and on and on and on", "Head", 2048}, // limit > len -> full
+	}
+	for _, c := range drlCases {
+		rec(t, "detailedReportLimit", []any{c.body, c.heading, c.limit}, detailedReportLimit(c.body, c.heading, c.limit))
+	}
+}

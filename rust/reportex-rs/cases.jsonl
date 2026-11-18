@@ -1,0 +1,62 @@
+{"args":["   ","H",10],"fn":"detailedReportLimit","ok":""}
+{"args":["   ","def"],"fn":"nz","ok":"def"}
+{"args":["   "],"fn":"oneLine","ok":""}
+{"args":["  ```\nindented\n  ```"],"fn":"unbalancedFence","ok":false}
+{"args":["  hello   world  "],"fn":"oneLine","ok":"hello world"}
+{"args":["  hello  ","def"],"fn":"nz","ok":"  hello  "}
+{"args":["",""],"fn":"nz","ok":""}
+{"args":["","H",10],"fn":"detailedReportLimit","ok":""}
+{"args":["","def"],"fn":"nz","ok":"def"}
+{"args":["",1,1],"fn":"reportStale","ok":false}
+{"args":["",1,2],"fn":"reportStale","ok":false}
+{"args":[""],"fn":"oneLine","ok":""}
+{"args":[""],"fn":"unbalancedFence","ok":false}
+{"args":[""],"fn":"verificationLabel","ok":"Unverified"}
+{"args":["2048-byte-ish body that goes on and on and on and on","Head",2048],"fn":"detailedReportLimit","ok":"Head\n\n2048-byte-ish body that goes on and on and on and on\n\n"}
+{"args":["VERIFIED"],"fn":"verificationLabel","ok":"VERIFIED"}
+{"args":["\t\n ","def"],"fn":"nz","ok":"def"}
+{"args":["\t```\ntabbed"],"fn":"unbalancedFence","ok":true}
+{"args":["```\ncode that is long\nno close","H",10],"fn":"detailedReportLimit","ok":"H\n\n```\ncode t\n```\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["```\ncode"],"fn":"unbalancedFence","ok":true}
+{"args":["```\ncode\n```"],"fn":"unbalancedFence","ok":false}
+{"args":["```\ncode\n```\nmore text here","H",12],"fn":"detailedReportLimit","ok":"H\n\n```\ncode\n```\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["````\nfour"],"fn":"unbalancedFence","ok":true}
+{"args":["```python\nx\n```\n```js"],"fn":"unbalancedFence","ok":true}
+{"args":["a longer body that exceeds the limit","H",10],"fn":"detailedReportLimit","ok":"H\n\na longer b\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["a\n```\nb\n```\nc\n```"],"fn":"unbalancedFence","ok":true}
+{"args":["a\tb\tc"],"fn":"oneLine","ok":"a b c"}
+{"args":["blocked"],"fn":"verificationLabel","ok":"Blocked"}
+{"args":["exactly-ten","H",11],"fn":"detailedReportLimit","ok":"H\n\nexactly-ten\n\n"}
+{"args":["false_positive"],"fn":"verificationLabel","ok":"False positive"}
+{"args":["hello world"],"fn":"oneLine","ok":"hello world"}
+{"args":["hello","def"],"fn":"nz","ok":"hello"}
+{"args":["héllo wörld ünïcode body","H",8],"fn":"detailedReportLimit","ok":"H\n\nhéllo w\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["héllo wörld"],"fn":"oneLine","ok":"héllo wörld"}
+{"args":["héllo","d"],"fn":"nz","ok":"héllo"}
+{"args":["line1\nline2"],"fn":"oneLine","ok":"line1 line2"}
+{"args":["line1\nline2\nline3\nline4","H",12],"fn":"detailedReportLimit","ok":"H\n\nline1\nline2\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["multiple\n\n\nblank"],"fn":"oneLine","ok":"multiple blank"}
+{"args":["no fences here"],"fn":"unbalancedFence","ok":false}
+{"args":["not_assessed"],"fn":"verificationLabel","ok":"Not assessed"}
+{"args":["r",-1,1],"fn":"reportStale","ok":true}
+{"args":["r",0,0],"fn":"reportStale","ok":false}
+{"args":["r",1,-1],"fn":"reportStale","ok":true}
+{"args":["short body","Heading",-5],"fn":"detailedReportLimit","ok":"Heading\n\nshort body\n\n"}
+{"args":["short body","Heading",0],"fn":"detailedReportLimit","ok":"Heading\n\nshort body\n\n"}
+{"args":["short body","Heading",100],"fn":"detailedReportLimit","ok":"Heading\n\nshort body\n\n"}
+{"args":["short body","Heading",5],"fn":"detailedReportLimit","ok":"Heading\n\nshort\n\n_Detailed report truncated at 0 KiB; read the full text from the finding record._\n\n"}
+{"args":["some report",1,1],"fn":"reportStale","ok":false}
+{"args":["some report",1,2],"fn":"reportStale","ok":true}
+{"args":["some report",2,1],"fn":"reportStale","ok":true}
+{"args":["text ``` inline"],"fn":"unbalancedFence","ok":false}
+{"args":["trailing\n"],"fn":"oneLine","ok":"trailing"}
+{"args":["unknown"],"fn":"verificationLabel","ok":"unknown"}
+{"args":["unverified"],"fn":"verificationLabel","ok":"Unverified"}
+{"args":["verified "],"fn":"verificationLabel","ok":"verified "}
+{"args":["verified"],"fn":"verificationLabel","ok":"Verified"}
+{"args":["verified\n"],"fn":"verificationLabel","ok":"verified\n"}
+{"args":["x",""],"fn":"nz","ok":"x"}
+{"args":[" ","nbsp-only"],"fn":"nz","ok":"nbsp-only"}
+{"args":[" x y "],"fn":"oneLine","ok":"x y"}
+{"args":[false],"fn":"staleReportNotice","ok":""}
+{"args":[true],"fn":"staleReportNotice","ok":"The evidence has changed; the detailed report needs updating.\n\n"}

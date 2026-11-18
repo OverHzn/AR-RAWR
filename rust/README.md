@@ -51,6 +51,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
+| `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -68,7 +69,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 14 crates, each via its own
+To verify **every** unit at once (gocompat build + all 16 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -111,7 +112,7 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
-`traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`). A further tier of pure
+`traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
@@ -151,7 +152,8 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 |---------|----:|-------------------:|--------|-------------|
 | `server/` | 24480 | 17926 / 104 files | 34 helpers (`server-rs`) | stateful HTTP handlers, `*Server` over DB/receiver |
 | `traffic/` | 3572 | 3757 / 12 files | 5 helpers (`traffic-rs`) | stateful ingest / replay / stream; `runTestHook` global |
-| `sidequestion/` | 674 | 602 / 3 files | `Parent::key` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
+| `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
+| `report/` | 438 | 253 / 1 file | 7 string helpers (`reportex-rs`) | markdown/CSV builders (`*db.DBFinding`/`Input`, `text/template`, `time`, `regexp`), `qualityBullets`/`qualityNarrative` (`Quality` struct) |
 | `llmrec/` | 423 | 369 / 4 files | — | LLM recommendation (SQL + JSON aggregation) |
 | `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
 | `llmpool/` | 348 | 518 / 4 files | — | LLM connection pool; `State::Open` reads `time.Now` |
