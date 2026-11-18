@@ -1,0 +1,970 @@
+{"args":[""],"fn":"ValidKind","ok":false}
+{"args":["DingTalk"],"fn":"ValidKind","ok":false}
+{"args":["dingtalk"],"fn":"ValidKind","ok":true}
+{"args":["email"],"fn":"ValidKind","ok":true}
+{"args":["feishu"],"fn":"ValidKind","ok":true}
+{"args":["telegram"],"fn":"ValidKind","ok":true}
+{"args":["unknown"],"fn":"ValidKind","ok":false}
+{"args":["webhook"],"fn":"ValidKind","ok":true}
+{"args":["wecom"],"fn":"ValidKind","ok":true}
+{"args":[],"fn":"Kinds","ok":["dingtalk","email","feishu","telegram","webhook","wecom"]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arr"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arr"],"fn":"cfgStrings","ok":["a","b","c"]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrblank"],"fn":"cfgStrings","ok":[]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"arrnum"],"fn":"cfgStrings","ok":[]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_0"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_0"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_1"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_1"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_1"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_1"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_TRUE"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_TRUE"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_TRUE"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_false"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_false"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_no"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_no"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_sp"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_sp"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_sp"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_true"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_true"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_true"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_yes"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_yes"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"b_yes"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"badm"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"badm"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"empty"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptyarr"],"fn":"cfgStrings","ok":[]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptym"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"f"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"f"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"f"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"f"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"float"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"float"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"float"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"float"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"m"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"m"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"m"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"m"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"missing"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"mixed"],"fn":"cfgStrings","ok":["x","y"]}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"neg"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"neg"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"num"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"num"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"num"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"num"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sbad"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sbad"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sfloat"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sfloat"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"shex"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"shex"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"single"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"single"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"single"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"single"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"single"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sneg"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sneg"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sneg"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"snum"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"snum"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"snum"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"splus"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"splus"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"splus"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sspaces"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sspaces"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"sspaces"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"str"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"str"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"str"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"str"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"str"],"fn":"cfgStrings","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"t"],"fn":"cfgBool","ok":false}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"t"],"fn":"cfgInt","ok":0}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"t"],"fn":"cfgMap","ok":null}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"t"],"fn":"cfgString","ok":""}
+{"args":[{"arr":["a"," b ","","c"],"arrblank":["  ",""],"arrnum":[1,2],"emptyarr":[],"mixed":["x",1,"y"]},"t"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arr"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arr"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrblank"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"arrnum"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_0"],"fn":"cfgString","ok":"0"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_0"],"fn":"cfgStrings","ok":["0"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_1"],"fn":"cfgBool","ok":true}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_1"],"fn":"cfgInt","ok":1}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_1"],"fn":"cfgString","ok":"1"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_1"],"fn":"cfgStrings","ok":["1"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_TRUE"],"fn":"cfgBool","ok":true}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_TRUE"],"fn":"cfgString","ok":"TRUE"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_TRUE"],"fn":"cfgStrings","ok":["TRUE"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_false"],"fn":"cfgString","ok":"false"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_false"],"fn":"cfgStrings","ok":["false"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_no"],"fn":"cfgString","ok":"no"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_no"],"fn":"cfgStrings","ok":["no"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_sp"],"fn":"cfgBool","ok":true}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_sp"],"fn":"cfgString","ok":"yes"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_sp"],"fn":"cfgStrings","ok":["yes"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_true"],"fn":"cfgBool","ok":true}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_true"],"fn":"cfgString","ok":"true"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_true"],"fn":"cfgStrings","ok":["true"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_yes"],"fn":"cfgBool","ok":true}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_yes"],"fn":"cfgString","ok":"yes"}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"b_yes"],"fn":"cfgStrings","ok":["yes"]}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"badm"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"badm"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"empty"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptyarr"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptym"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"f"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"f"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"f"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"f"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"float"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"float"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"float"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"float"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"m"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"m"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"m"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"m"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"missing"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"mixed"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"neg"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"neg"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"num"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"num"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"num"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"num"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sbad"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sbad"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sfloat"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sfloat"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"shex"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"shex"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"single"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"single"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"single"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"single"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"single"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sneg"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sneg"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sneg"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"snum"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"snum"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"snum"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"splus"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"splus"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"splus"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sspaces"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sspaces"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"sspaces"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"str"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"str"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"str"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"str"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"str"],"fn":"cfgStrings","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"t"],"fn":"cfgBool","ok":false}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"t"],"fn":"cfgInt","ok":0}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"t"],"fn":"cfgMap","ok":null}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"t"],"fn":"cfgString","ok":""}
+{"args":[{"b_0":"0","b_1":"1","b_TRUE":"TRUE","b_false":"false","b_no":"no","b_sp":"  yes  ","b_true":"true","b_yes":"yes"},"t"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arr"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arr"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrblank"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"arrnum"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_0"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_0"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_1"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_1"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_1"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_1"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_TRUE"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_TRUE"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_TRUE"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_false"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_false"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_no"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_no"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_sp"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_sp"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_sp"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_true"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_true"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_true"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_yes"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_yes"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"b_yes"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"badm"],"fn":"cfgMap","ok":{}}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"badm"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"empty"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptyarr"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptym"],"fn":"cfgMap","ok":{}}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"f"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"f"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"f"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"f"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"float"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"float"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"float"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"float"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"m"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"m"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"m"],"fn":"cfgMap","ok":{"k1":"v1","k2":" v2 "}}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"m"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"missing"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"mixed"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"neg"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"neg"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"num"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"num"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"num"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"num"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sbad"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sbad"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sfloat"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sfloat"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"shex"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"shex"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"single"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"single"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"single"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"single"],"fn":"cfgString","ok":"one"}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"single"],"fn":"cfgStrings","ok":["one"]}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sneg"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sneg"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sneg"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"snum"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"snum"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"snum"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"splus"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"splus"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"splus"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sspaces"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sspaces"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"sspaces"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"str"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"str"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"str"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"str"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"str"],"fn":"cfgStrings","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"t"],"fn":"cfgBool","ok":false}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"t"],"fn":"cfgInt","ok":0}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"t"],"fn":"cfgMap","ok":null}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"t"],"fn":"cfgString","ok":""}
+{"args":[{"badm":{"n":1},"emptym":{},"m":{"":"empty-key"," k2 ":" v2 ","bad":1,"k1":"v1"},"single":"one"},"t"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arr"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arr"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrblank"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"arrnum"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_0"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_0"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_1"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_1"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_1"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_1"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_TRUE"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_TRUE"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_TRUE"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_false"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_false"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_no"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_no"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_sp"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_sp"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_sp"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_true"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_true"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_true"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_yes"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_yes"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"b_yes"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"badm"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"badm"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"empty"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptyarr"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptym"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"f"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"f"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"f"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"f"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"float"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"float"],"fn":"cfgInt","ok":42}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"float"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"float"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"m"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"m"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"m"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"m"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"missing"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"mixed"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"neg"],"fn":"cfgInt","ok":-5}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"neg"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"num"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"num"],"fn":"cfgInt","ok":8080}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"num"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"num"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sbad"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sbad"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sfloat"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sfloat"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"shex"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"shex"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"single"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"single"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"single"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"single"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"single"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sneg"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sneg"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sneg"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"snum"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"snum"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"snum"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"splus"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"splus"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"splus"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sspaces"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sspaces"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"sspaces"],"fn":"cfgStrings","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"str"],"fn":"cfgBool","ok":false}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"str"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"str"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"str"],"fn":"cfgString","ok":"hello"}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"str"],"fn":"cfgStrings","ok":["hello"]}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"t"],"fn":"cfgBool","ok":true}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"t"],"fn":"cfgInt","ok":0}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"t"],"fn":"cfgMap","ok":null}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"t"],"fn":"cfgString","ok":""}
+{"args":[{"empty":"   ","f":false,"float":42.9,"neg":-5,"num":8080,"str":"  hello  ","t":true},"t"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arr"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arr"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrblank"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"arrnum"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_0"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_0"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_1"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_1"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_1"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_1"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_TRUE"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_TRUE"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_TRUE"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_false"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_false"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_no"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_no"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_sp"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_sp"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_sp"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_true"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_true"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_true"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_yes"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_yes"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"b_yes"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"badm"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"badm"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"empty"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptyarr"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptym"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"f"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"f"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"f"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"f"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"float"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"float"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"float"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"float"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"m"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"m"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"m"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"m"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"missing"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"mixed"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"neg"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"neg"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"num"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"num"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"num"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"num"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sbad"],"fn":"cfgString","ok":"abc"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sbad"],"fn":"cfgStrings","ok":["abc"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sfloat"],"fn":"cfgString","ok":"12.5"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sfloat"],"fn":"cfgStrings","ok":["12.5"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"shex"],"fn":"cfgString","ok":"0x10"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"shex"],"fn":"cfgStrings","ok":["0x10"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"single"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"single"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"single"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"single"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"single"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sneg"],"fn":"cfgInt","ok":-9}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sneg"],"fn":"cfgString","ok":"-9"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sneg"],"fn":"cfgStrings","ok":["-9"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"snum"],"fn":"cfgInt","ok":123}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"snum"],"fn":"cfgString","ok":"123"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"snum"],"fn":"cfgStrings","ok":["123"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"splus"],"fn":"cfgInt","ok":7}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"splus"],"fn":"cfgString","ok":"+7"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"splus"],"fn":"cfgStrings","ok":["+7"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sspaces"],"fn":"cfgInt","ok":55}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sspaces"],"fn":"cfgString","ok":"55"}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"sspaces"],"fn":"cfgStrings","ok":["55"]}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"str"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"str"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"str"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"str"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"str"],"fn":"cfgStrings","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"t"],"fn":"cfgBool","ok":false}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"t"],"fn":"cfgInt","ok":0}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"t"],"fn":"cfgMap","ok":null}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"t"],"fn":"cfgString","ok":""}
+{"args":[{"sbad":"abc","sfloat":"12.5","shex":"0x10","sneg":"-9","snum":"123","splus":"+7","sspaces":"  55  "},"t"],"fn":"cfgStrings","ok":null}
+{"args":[{},"arr"],"fn":"cfgBool","ok":false}
+{"args":[{},"arr"],"fn":"cfgInt","ok":0}
+{"args":[{},"arr"],"fn":"cfgMap","ok":null}
+{"args":[{},"arr"],"fn":"cfgString","ok":""}
+{"args":[{},"arr"],"fn":"cfgStrings","ok":null}
+{"args":[{},"arrblank"],"fn":"cfgBool","ok":false}
+{"args":[{},"arrblank"],"fn":"cfgInt","ok":0}
+{"args":[{},"arrblank"],"fn":"cfgMap","ok":null}
+{"args":[{},"arrblank"],"fn":"cfgString","ok":""}
+{"args":[{},"arrblank"],"fn":"cfgStrings","ok":null}
+{"args":[{},"arrnum"],"fn":"cfgBool","ok":false}
+{"args":[{},"arrnum"],"fn":"cfgInt","ok":0}
+{"args":[{},"arrnum"],"fn":"cfgMap","ok":null}
+{"args":[{},"arrnum"],"fn":"cfgString","ok":""}
+{"args":[{},"arrnum"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_0"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_0"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_0"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_0"],"fn":"cfgString","ok":""}
+{"args":[{},"b_0"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_1"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_1"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_1"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_1"],"fn":"cfgString","ok":""}
+{"args":[{},"b_1"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_TRUE"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_TRUE"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_TRUE"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_TRUE"],"fn":"cfgString","ok":""}
+{"args":[{},"b_TRUE"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_false"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_false"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_false"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_false"],"fn":"cfgString","ok":""}
+{"args":[{},"b_false"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_no"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_no"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_no"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_no"],"fn":"cfgString","ok":""}
+{"args":[{},"b_no"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_sp"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_sp"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_sp"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_sp"],"fn":"cfgString","ok":""}
+{"args":[{},"b_sp"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_true"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_true"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_true"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_true"],"fn":"cfgString","ok":""}
+{"args":[{},"b_true"],"fn":"cfgStrings","ok":null}
+{"args":[{},"b_yes"],"fn":"cfgBool","ok":false}
+{"args":[{},"b_yes"],"fn":"cfgInt","ok":0}
+{"args":[{},"b_yes"],"fn":"cfgMap","ok":null}
+{"args":[{},"b_yes"],"fn":"cfgString","ok":""}
+{"args":[{},"b_yes"],"fn":"cfgStrings","ok":null}
+{"args":[{},"badm"],"fn":"cfgBool","ok":false}
+{"args":[{},"badm"],"fn":"cfgInt","ok":0}
+{"args":[{},"badm"],"fn":"cfgMap","ok":null}
+{"args":[{},"badm"],"fn":"cfgString","ok":""}
+{"args":[{},"badm"],"fn":"cfgStrings","ok":null}
+{"args":[{},"empty"],"fn":"cfgBool","ok":false}
+{"args":[{},"empty"],"fn":"cfgInt","ok":0}
+{"args":[{},"empty"],"fn":"cfgMap","ok":null}
+{"args":[{},"empty"],"fn":"cfgString","ok":""}
+{"args":[{},"empty"],"fn":"cfgStrings","ok":null}
+{"args":[{},"emptyarr"],"fn":"cfgBool","ok":false}
+{"args":[{},"emptyarr"],"fn":"cfgInt","ok":0}
+{"args":[{},"emptyarr"],"fn":"cfgMap","ok":null}
+{"args":[{},"emptyarr"],"fn":"cfgString","ok":""}
+{"args":[{},"emptyarr"],"fn":"cfgStrings","ok":null}
+{"args":[{},"emptym"],"fn":"cfgBool","ok":false}
+{"args":[{},"emptym"],"fn":"cfgInt","ok":0}
+{"args":[{},"emptym"],"fn":"cfgMap","ok":null}
+{"args":[{},"emptym"],"fn":"cfgString","ok":""}
+{"args":[{},"emptym"],"fn":"cfgStrings","ok":null}
+{"args":[{},"f"],"fn":"cfgBool","ok":false}
+{"args":[{},"f"],"fn":"cfgInt","ok":0}
+{"args":[{},"f"],"fn":"cfgMap","ok":null}
+{"args":[{},"f"],"fn":"cfgString","ok":""}
+{"args":[{},"f"],"fn":"cfgStrings","ok":null}
+{"args":[{},"float"],"fn":"cfgBool","ok":false}
+{"args":[{},"float"],"fn":"cfgInt","ok":0}
+{"args":[{},"float"],"fn":"cfgMap","ok":null}
+{"args":[{},"float"],"fn":"cfgString","ok":""}
+{"args":[{},"float"],"fn":"cfgStrings","ok":null}
+{"args":[{},"m"],"fn":"cfgBool","ok":false}
+{"args":[{},"m"],"fn":"cfgInt","ok":0}
+{"args":[{},"m"],"fn":"cfgMap","ok":null}
+{"args":[{},"m"],"fn":"cfgString","ok":""}
+{"args":[{},"m"],"fn":"cfgStrings","ok":null}
+{"args":[{},"missing"],"fn":"cfgBool","ok":false}
+{"args":[{},"missing"],"fn":"cfgInt","ok":0}
+{"args":[{},"missing"],"fn":"cfgMap","ok":null}
+{"args":[{},"missing"],"fn":"cfgString","ok":""}
+{"args":[{},"missing"],"fn":"cfgStrings","ok":null}
+{"args":[{},"mixed"],"fn":"cfgBool","ok":false}
+{"args":[{},"mixed"],"fn":"cfgInt","ok":0}
+{"args":[{},"mixed"],"fn":"cfgMap","ok":null}
+{"args":[{},"mixed"],"fn":"cfgString","ok":""}
+{"args":[{},"mixed"],"fn":"cfgStrings","ok":null}
+{"args":[{},"neg"],"fn":"cfgBool","ok":false}
+{"args":[{},"neg"],"fn":"cfgInt","ok":0}
+{"args":[{},"neg"],"fn":"cfgMap","ok":null}
+{"args":[{},"neg"],"fn":"cfgString","ok":""}
+{"args":[{},"neg"],"fn":"cfgStrings","ok":null}
+{"args":[{},"num"],"fn":"cfgBool","ok":false}
+{"args":[{},"num"],"fn":"cfgInt","ok":0}
+{"args":[{},"num"],"fn":"cfgMap","ok":null}
+{"args":[{},"num"],"fn":"cfgString","ok":""}
+{"args":[{},"num"],"fn":"cfgStrings","ok":null}
+{"args":[{},"sbad"],"fn":"cfgBool","ok":false}
+{"args":[{},"sbad"],"fn":"cfgInt","ok":0}
+{"args":[{},"sbad"],"fn":"cfgMap","ok":null}
+{"args":[{},"sbad"],"fn":"cfgString","ok":""}
+{"args":[{},"sbad"],"fn":"cfgStrings","ok":null}
+{"args":[{},"sfloat"],"fn":"cfgBool","ok":false}
+{"args":[{},"sfloat"],"fn":"cfgInt","ok":0}
+{"args":[{},"sfloat"],"fn":"cfgMap","ok":null}
+{"args":[{},"sfloat"],"fn":"cfgString","ok":""}
+{"args":[{},"sfloat"],"fn":"cfgStrings","ok":null}
+{"args":[{},"shex"],"fn":"cfgBool","ok":false}
+{"args":[{},"shex"],"fn":"cfgInt","ok":0}
+{"args":[{},"shex"],"fn":"cfgMap","ok":null}
+{"args":[{},"shex"],"fn":"cfgString","ok":""}
+{"args":[{},"shex"],"fn":"cfgStrings","ok":null}
+{"args":[{},"single"],"fn":"cfgBool","ok":false}
+{"args":[{},"single"],"fn":"cfgInt","ok":0}
+{"args":[{},"single"],"fn":"cfgMap","ok":null}
+{"args":[{},"single"],"fn":"cfgString","ok":""}
+{"args":[{},"single"],"fn":"cfgStrings","ok":null}
+{"args":[{},"sneg"],"fn":"cfgBool","ok":false}
+{"args":[{},"sneg"],"fn":"cfgInt","ok":0}
+{"args":[{},"sneg"],"fn":"cfgMap","ok":null}
+{"args":[{},"sneg"],"fn":"cfgString","ok":""}
+{"args":[{},"sneg"],"fn":"cfgStrings","ok":null}
+{"args":[{},"snum"],"fn":"cfgBool","ok":false}
+{"args":[{},"snum"],"fn":"cfgInt","ok":0}
+{"args":[{},"snum"],"fn":"cfgMap","ok":null}
+{"args":[{},"snum"],"fn":"cfgString","ok":""}
+{"args":[{},"snum"],"fn":"cfgStrings","ok":null}
+{"args":[{},"splus"],"fn":"cfgBool","ok":false}
+{"args":[{},"splus"],"fn":"cfgInt","ok":0}
+{"args":[{},"splus"],"fn":"cfgMap","ok":null}
+{"args":[{},"splus"],"fn":"cfgString","ok":""}
+{"args":[{},"splus"],"fn":"cfgStrings","ok":null}
+{"args":[{},"sspaces"],"fn":"cfgBool","ok":false}
+{"args":[{},"sspaces"],"fn":"cfgInt","ok":0}
+{"args":[{},"sspaces"],"fn":"cfgMap","ok":null}
+{"args":[{},"sspaces"],"fn":"cfgString","ok":""}
+{"args":[{},"sspaces"],"fn":"cfgStrings","ok":null}
+{"args":[{},"str"],"fn":"cfgBool","ok":false}
+{"args":[{},"str"],"fn":"cfgInt","ok":0}
+{"args":[{},"str"],"fn":"cfgMap","ok":null}
+{"args":[{},"str"],"fn":"cfgString","ok":""}
+{"args":[{},"str"],"fn":"cfgStrings","ok":null}
+{"args":[{},"t"],"fn":"cfgBool","ok":false}
+{"args":[{},"t"],"fn":"cfgInt","ok":0}
+{"args":[{},"t"],"fn":"cfgMap","ok":null}
+{"args":[{},"t"],"fn":"cfgString","ok":""}
+{"args":[{},"t"],"fn":"cfgStrings","ok":null}

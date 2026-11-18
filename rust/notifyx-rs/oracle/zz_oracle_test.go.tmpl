@@ -1,0 +1,54 @@
+package notify
+
+// Temporary oracle: records ground-truth outputs of the unexported pure config
+// helpers in this package for the Rust parity harness. Copied in by record.sh, run
+// under `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok}. record.sh sorts the lines so the
+// output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	cfgs := []map[string]any{
+		{}, // empty
+		{"str": "  hello  ", "empty": "   ", "num": 8080, "neg": -5, "float": 42.9, "t": true, "f": false},
+		{"snum": "123", "sfloat": "12.5", "sbad": "abc", "splus": "+7", "sneg": "-9", "shex": "0x10", "sspaces": "  55  "},
+		{"b_true": "true", "b_1": "1", "b_yes": "yes", "b_TRUE": "TRUE", "b_sp": "  yes  ", "b_no": "no", "b_false": "false", "b_0": "0"},
+		{"arr": []any{"a", " b ", "", "c"}, "arrnum": []any{1, 2}, "mixed": []any{"x", 1, "y"}, "emptyarr": []any{}, "arrblank": []any{"  ", ""}},
+		{"single": "one", "m": map[string]any{"k1": "v1", " k2 ": " v2 ", "bad": 1, "": "empty-key"}, "emptym": map[string]any{}, "badm": map[string]any{"n": 1}},
+	}
+	keys := []string{
+		"str", "empty", "num", "neg", "float", "t", "f",
+		"snum", "sfloat", "sbad", "splus", "sneg", "shex", "sspaces",
+		"b_true", "b_1", "b_yes", "b_TRUE", "b_sp", "b_no", "b_false", "b_0",
+		"arr", "arrnum", "mixed", "emptyarr", "arrblank",
+		"single", "m", "emptym", "badm", "missing",
+	}
+
+	for _, cfg := range cfgs {
+		for _, k := range keys {
+			rec(t, "cfgString", []any{cfg, k}, cfgString(cfg, k))
+			rec(t, "cfgInt", []any{cfg, k}, cfgInt(cfg, k))
+			rec(t, "cfgBool", []any{cfg, k}, cfgBool(cfg, k))
+			rec(t, "cfgStrings", []any{cfg, k}, cfgStrings(cfg, k))
+			rec(t, "cfgMap", []any{cfg, k}, cfgMap(cfg, k))
+		}
+	}
+
+	for _, k := range []string{"dingtalk", "feishu", "wecom", "webhook", "telegram", "email", "unknown", "", "DingTalk"} {
+		rec(t, "ValidKind", []any{k}, ValidKind(k))
+	}
+	rec(t, "Kinds", []any{}, Kinds())
+}

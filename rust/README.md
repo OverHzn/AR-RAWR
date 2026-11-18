@@ -52,6 +52,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
+| `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -69,7 +70,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 16 crates, each via its own
+To verify **every** unit at once (gocompat build + all 17 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -112,7 +113,8 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
-`traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`). A further tier of pure
+`traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
+`notifyx-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
@@ -128,6 +130,7 @@ parameter type:
 | `enrich.uniq`, `traffic.uniqueArchiveHosts` | `[]string` → `[]string` | **ported** (`enrich-rs`, `traffic-rs`); JSON arrays, deterministic |
 | `traffic.clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` | `[]byte` / `string, []byte` | **ported** (`traffic-rs`); base64 in the harness via `gocompat::encoding`, hex helper for the magic tag |
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
+| `notify.cfgString`/`cfgInt`/`cfgBool`/`cfgStrings`/`cfgMap` | `map[string]any` | **ported** (`notifyx-rs`); the harness passes the config as a JSON object (Go marshals keys sorted), reads `key`; nil slice/map → `null` |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
@@ -154,6 +157,7 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 | `traffic/` | 3572 | 3757 / 12 files | 5 helpers (`traffic-rs`) | stateful ingest / replay / stream; `runTestHook` global |
 | `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
 | `report/` | 438 | 253 / 1 file | 7 string helpers (`reportex-rs`) | markdown/CSV builders (`*db.DBFinding`/`Input`, `text/template`, `time`, `regexp`), `qualityBullets`/`qualityNarrative` (`Quality` struct) |
+| `notify/` | 1768 | 2272 / 12 files | 7 config helpers (`notifyx-rs`) | senders (`dingTalkSignedURL`, `buildEmailMessage`, SMTP/HTTP), `render*` (`text/template`) |
 | `llmrec/` | 423 | 369 / 4 files | — | LLM recommendation (SQL + JSON aggregation) |
 | `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
 | `llmpool/` | 348 | 518 / 4 files | — | LLM connection pool; `State::Open` reads `time.Now` |
