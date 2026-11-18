@@ -50,7 +50,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
-| `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
+| `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -130,7 +130,8 @@ parameter type:
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
-| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need llm/harness struct ports |
+| `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need a slice of the external `norma/llm` ported (Message, ContentBlock, CompletionRequest) + JSON-shape matching |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 

@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use sidequestion_rs::port::Parent;
+use sidequestion_rs::port::*;
 
 fn cases() -> Vec<Value> {
     include_str!("../cases.jsonl")
@@ -17,6 +17,23 @@ fn arg_i64(args: &[Value], i: usize) -> i64 {
     args[i].as_i64().expect("int arg")
 }
 
+fn dispatch(name: &str, args: &[Value]) -> Value {
+    match name {
+        "Parent.Key" => {
+            let p = Parent {
+                conversation_id: arg_i64(args, 0),
+                task_id: arg_i64(args, 1),
+                exploration_id: arg_i64(args, 2),
+                intent_id: arg_i64(args, 3),
+            };
+            json!(p.key())
+        }
+        "outputBudget" => json!(output_budget(arg_i64(args, 0), arg_i64(args, 1))),
+        "inputBudget" => json!(input_budget(arg_i64(args, 0), arg_i64(args, 1))),
+        other => panic!("no dispatcher arm for {other}"),
+    }
+}
+
 #[test]
 fn parity_all_cases() {
     let all = cases();
@@ -24,16 +41,12 @@ fn parity_all_cases() {
     let mut mismatches: Vec<String> = Vec::new();
     for c in &all {
         let name = c["fn"].as_str().expect("fn");
-        assert_eq!(name, "Parent.Key", "unexpected fn {name}");
         let args: Vec<Value> = c["args"].as_array().expect("args array").clone();
-        // args = [conversation_id, task_id, exploration_id, intent_id]
-        let p = Parent {
-            conversation_id: arg_i64(&args, 0),
-            task_id: arg_i64(&args, 1),
-            exploration_id: arg_i64(&args, 2),
-            intent_id: arg_i64(&args, 3),
-        };
-        let actual = json!(p.key());
+        if c.get("error").is_some() {
+            mismatches.push(format!("UNEXPECTED error case {name} args={args:?}"));
+            continue;
+        }
+        let actual = dispatch(name, &args);
         let expected = &c["ok"];
         if &actual != expected {
             mismatches.push(format!(

@@ -34,3 +34,30 @@ impl Parent {
         }
     }
 }
+
+/// `outputBudget` (sidequestion/request.go): the configured output-token budget,
+/// defaulting to `DefaultOutputTokens` (8192) when `<= 0`, capped at 32768 and at
+/// the request's `MaxTokens` when set. The `llm.CompletionRequest` contributes only
+/// its `MaxTokens`, so the port takes that scalar.
+pub fn output_budget(max_tokens: i64, configured: i64) -> i64 {
+    let mut configured = if configured <= 0 { 8192 } else { configured };
+    configured = configured.min(32768);
+    if max_tokens > 0 {
+        configured = configured.min(max_tokens);
+    }
+    configured
+}
+
+/// `inputBudget` (sidequestion/request.go): the model's context window (default
+/// 200000 when `<= 0`) minus the output budget and a dynamic reserve
+/// (`min(8192, max(128, window/20))`). `Snapshot` contributes only
+/// `Model.WindowTokens`, so the port takes that scalar.
+pub fn input_budget(window_tokens: i64, output: i64) -> i64 {
+    let window = if window_tokens <= 0 {
+        200_000
+    } else {
+        window_tokens
+    };
+    let reserve = 8192.min(128.max(window / 20));
+    window - output - reserve
+}

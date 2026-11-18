@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/Autumn-27/norma/llm"
 )
 
 var oracleParents = []Parent{
@@ -25,15 +27,31 @@ var oracleParents = []Parent{
 	{TaskID: -5, ExplorationID: -2, IntentID: -1}, // all <=0 -> task--5-exp--2-main
 }
 
-func rec(t *testing.T, args []any, out any) {
+var oracleMaxTokens = []int{0, -1, 1, 4096, 8192, 100000, 32768, 32769, 65536}
+var oracleConfigs = []int{0, -5, 1, 1024, 8192, 16384, 32768, 40000, 100000}
+var oracleWindows = []int{0, -1, 1000, 8000, 128000, 200000, 1000000}
+var oracleOutputs = []int{0, 1, 128, 1024, 8192, 100000}
+
+func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
-	c := map[string]any{"fn": "Parent.Key", "args": args, "ok": out}
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
 	b, _ := json.Marshal(c)
 	fmt.Println(string(b))
 }
 
 func TestZZOracle(t *testing.T) {
 	for _, p := range oracleParents {
-		rec(t, []any{p.ConversationID, p.TaskID, p.ExplorationID, p.IntentID}, p.Key())
+		rec(t, "Parent.Key", []any{p.ConversationID, p.TaskID, p.ExplorationID, p.IntentID}, p.Key())
+	}
+	for _, mt := range oracleMaxTokens {
+		for _, cfg := range oracleConfigs {
+			rec(t, "outputBudget", []any{mt, cfg}, outputBudget(llm.CompletionRequest{MaxTokens: mt}, cfg))
+		}
+	}
+	for _, w := range oracleWindows {
+		for _, out := range oracleOutputs {
+			snap := Snapshot{Model: Model{WindowTokens: w}}
+			rec(t, "inputBudget", []any{w, out}, inputBudget(snap, out))
+		}
 	}
 }
