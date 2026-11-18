@@ -1,0 +1,62 @@
+#!/bin/sh
+# go-shim — a transparent `go` wrapper for rust-anything on the ARTEX tree.
+#
+# Why this exists
+# ---------------
+# ARTEX depends on the `norma` SDK via a fork replace in its go.mod:
+#
+#     replace github.com/Autumn-27/norma => github.com/BaaRai/Norma v0.4.11
+#
+# The source imports `github.com/Autumn-27/norma/...`, but only the BaaRai/Norma
+# fork actually publishes tag v0.4.11 (the canonical Autumn-27/norma has no such
+# tag). Go ignores `replace` directives from *dependencies*, so the replace in
+# ARTEX's go.mod only applies when ARTEX itself is the main module.
+#
+# `rust-anything record` builds its driver as a SEPARATE module
+# (`.../rust-anything-driver`) that `replace`s artex => the local tree and then
+# runs `go build`. That driver module does NOT inherit ARTEX's norma replace, so
+# building any unit that (transitively) imports norma fails with:
+#
+#     reading github.com/Autumn-27/norma/go.mod at revision v0.4.11: unknown revision
+#
+# rust-anything forces GOWORK=off and its own GOFLAGS, so neither a go.work nor a
+# GOFLAGS=-modfile override can inject the replace. It DOES invoke `go` via PATH,
+# from inside the (regenerated) driver directory — so this shim re-injects the
+# replace into that throwaway go.mod right before the real build.
+#
+# Scope: it only touches a go.mod whose module path is the rust-anything driver,
+# and only adds the replace if it is missing. Every other `go` call is passed
+# through untouched. It is idempotent and safe to leave on PATH.
+
+set -eu
+
+# Locate the real `go`, skipping this shim's own directory to avoid recursion.
+self_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+real_go=""
+IFS=:
+for d in $PATH; do
+  [ -n "$d" ] || continue
+  case "$d" in
+    "$self_dir") continue ;;
+  esac
+  if [ -x "$d/go" ]; then
+    real_go="$d/go"
+    break
+  fi
+done
+unset IFS
+
+if [ -z "$real_go" ]; then
+  echo "go-shim: could not find a real 'go' on PATH (shim dir: $self_dir)" >&2
+  exit 127
+fi
+
+# Re-inject the fork replace into a rust-anything driver go.mod.
+if [ -f ./go.mod ] && grep -q '^module github.com/Autumn-27/artex/rust-anything-driver$' ./go.mod 2>/dev/null; then
+  if ! grep -q 'replace github.com/Autumn-27/norma =>' ./go.mod 2>/dev/null; then
+    printf '\nreplace github.com/Autumn-27/norma => github.com/BaaRai/Norma v0.4.11\n' >> ./go.mod
+    echo "go-shim: injected norma fork replace into $PWD/go.mod" >&2
+  fi
+fi
+
+exec "$real_go" "$@"

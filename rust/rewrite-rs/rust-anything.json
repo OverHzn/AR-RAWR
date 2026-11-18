@@ -1,0 +1,40 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "traffic/rewrite/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "rewrite-rs",
+  "exports": [
+    {
+      "name": "Validate",
+      "file": "traffic/rewrite/rule.go",
+      "line": 100,
+      "params": [
+        {
+          "name": "r",
+          "ts_type": "{ id: int; name: string; enabled: boolean; phase: unknown; priority: int; matchers: unknown; actions: unknown[]; note: string }",
+          "optional": false,
+          "rest": false,
+          "native_type": "Rule"
+        }
+      ],
+      "returns": "void",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(error)",
+      "prototype": "func Validate(r Rule) error"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "Compile",
+      "file": "traffic/rewrite/compile.go",
+      "line": 31,
+      "reason": "takes or returns a pointer (`*Set`)"
+    }
+  ]
+}

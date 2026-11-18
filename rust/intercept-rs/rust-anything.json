@@ -1,0 +1,305 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "intercept/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "intercept-rs",
+  "exports": [
+    {
+      "name": "ArgvAllowDenied",
+      "file": "intercept/alwaysallow_denylist.go",
+      "line": 66,
+      "params": [
+        {
+          "name": "program",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ArgvAllowDenied(program string) bool"
+    },
+    {
+      "name": "CheckArgvAllow",
+      "file": "intercept/alwaysallow_denylist.go",
+      "line": 72,
+      "params": [
+        {
+          "name": "tokens",
+          "ts_type": "string[]",
+          "optional": false,
+          "rest": false,
+          "native_type": "[]string"
+        }
+      ],
+      "returns": "void",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(error)",
+      "prototype": "func CheckArgvAllow(tokens []string) error"
+    },
+    {
+      "name": "ArgvPrefixOf",
+      "file": "intercept/argv.go",
+      "line": 38,
+      "params": [
+        {
+          "name": "tokens",
+          "ts_type": "string[]",
+          "optional": false,
+          "rest": false,
+          "native_type": "[]string"
+        }
+      ],
+      "returns": "string[]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "([]string)",
+      "prototype": "func ArgvPrefixOf(tokens []string) []string"
+    },
+    {
+      "name": "ParseArgvPattern",
+      "file": "intercept/argv.go",
+      "line": 206,
+      "params": [
+        {
+          "name": "pattern",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string[]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "([]string, error)",
+      "prototype": "func ParseArgvPattern(pattern string) ([]string, error)"
+    },
+    {
+      "name": "JudgeReason",
+      "file": "intercept/intercept.go",
+      "line": 633,
+      "params": [
+        {
+          "name": "action",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "message",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func JudgeReason(action, message string) string"
+    },
+    {
+      "name": "EffectiveJudgePrompt",
+      "file": "intercept/prompt.go",
+      "line": 20,
+      "params": [
+        {
+          "name": "prompt",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func EffectiveJudgePrompt(prompt string) string"
+    },
+    {
+      "name": "ParseVerdict",
+      "file": "intercept/prompt.go",
+      "line": 162,
+      "params": [
+        {
+          "name": "text",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "{ Action: string; Reason: string }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Verdict)",
+      "prototype": "func ParseVerdict(text string) Verdict"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "AlwaysAllowPrefix",
+      "file": "intercept/alwaysallow_denylist.go",
+      "line": 82,
+      "reason": "needs mvdan.cc/sh Bash parser"
+    },
+    {
+      "name": "ParseSimpleCommand",
+      "file": "intercept/argv.go",
+      "line": 68,
+      "reason": "uses the unexported type `argvWord`"
+    },
+    {
+      "name": "ArgvPrefix",
+      "file": "intercept/argv.go",
+      "line": 162,
+      "reason": "needs mvdan.cc/sh Bash parser"
+    },
+    {
+      "name": "WithConvID",
+      "file": "intercept/intercept.go",
+      "line": 37,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "ConvIDFromContext",
+      "file": "intercept/intercept.go",
+      "line": 42,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithTaskContext",
+      "file": "intercept/intercept.go",
+      "line": 60,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithTargetScope",
+      "file": "intercept/intercept.go",
+      "line": 103,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "TargetScopeFromContext",
+      "file": "intercept/intercept.go",
+      "line": 108,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "New",
+      "file": "intercept/intercept.go",
+      "line": 261,
+      "reason": "takes or returns a pointer (`*db.DB`)"
+    },
+    {
+      "name": "WithReviewContext",
+      "file": "intercept/review_context.go",
+      "line": 44,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithReviewWorkingDirectory",
+      "file": "intercept/review_context.go",
+      "line": 51,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "BuildReviewInput",
+      "file": "intercept/review_context.go",
+      "line": 57,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "ScoreRisk",
+      "file": "intercept/risk.go",
+      "line": 108,
+      "reason": "uses `json.RawMessage` from another package"
+    },
+    {
+      "name": "NormalizeTarget",
+      "file": "intercept/target.go",
+      "line": 42,
+      "reason": "needs golang.org/x/net/idna punycode"
+    },
+    {
+      "name": "PinnedDialer",
+      "file": "intercept/target_dial.go",
+      "line": 38,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "GateOn",
+      "file": "intercept/target_dial.go",
+      "line": 59,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "ValidateExemptionHost",
+      "file": "intercept/target_exempt.go",
+      "line": 32,
+      "reason": "needs net/netip"
+    },
+    {
+      "name": "ExtractTargets",
+      "file": "intercept/target_extract.go",
+      "line": 64,
+      "reason": "needs mvdan.cc/sh Bash parser"
+    },
+    {
+      "name": "RedirectCheck",
+      "file": "intercept/target_redirect.go",
+      "line": 39,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "GateRenderedURL",
+      "file": "intercept/target_rendered.go",
+      "line": 33,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "GateRenderedCommand",
+      "file": "intercept/target_rendered.go",
+      "line": 55,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithTrace",
+      "file": "intercept/trace.go",
+      "line": 49,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithCall",
+      "file": "intercept/trace.go",
+      "line": 89,
+      "reason": "uses `context.Context` from another package"
+    }
+  ]
+}

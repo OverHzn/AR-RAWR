@@ -1,0 +1,53 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "mcphttp/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "mcphttp-rs",
+  "exports": [
+    {
+      "name": "ToolName",
+      "file": "mcphttp/client.go",
+      "line": 35,
+      "params": [
+        {
+          "name": "server",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "name",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func ToolName(server, name string) string"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "New",
+      "file": "mcphttp/client.go",
+      "line": 107,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "NewSSE",
+      "file": "mcphttp/client.go",
+      "line": 136,
+      "reason": "uses `context.Context` from another package"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "report/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "report-rs",
+  "exports": [
+    {
+      "name": "Markdown",
+      "file": "report/report.go",
+      "line": 67,
+      "params": [
+        {
+          "name": "in",
+          "ts_type": "unknown",
+          "optional": false,
+          "rest": false,
+          "native_type": "Input"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func Markdown(in Input) string"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "FindingsMarkdown",
+      "file": "report/findings.go",
+      "line": 38,
+      "reason": "takes or returns a pointer (`*db.DBFinding`)"
+    },
+    {
+      "name": "SingleFindingMarkdown",
+      "file": "report/findings.go",
+      "line": 95,
+      "reason": "takes or returns a pointer (`*db.DBFinding`)"
+    },
+    {
+      "name": "FindingFilename",
+      "file": "report/findings.go",
+      "line": 127,
+      "reason": "takes or returns a pointer (`*db.DBFinding`)"
+    },
+    {
+      "name": "FindingsCSV",
+      "file": "report/findings.go",
+      "line": 146,
+      "reason": "takes or returns a pointer (`*db.DBFinding`)"
+    }
+  ]
+}

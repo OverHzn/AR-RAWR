@@ -1,0 +1,585 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "agent/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "agent-rs",
+  "exports": [
+    {
+      "name": "NewBudget",
+      "file": "agent/budget.go",
+      "line": 42,
+      "params": [
+        {
+          "name": "tokens",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "turns",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        }
+      ],
+      "returns": "{ Tokens: int; Turns: int }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Budget)",
+      "prototype": "func NewBudget(tokens, turns int64) Budget"
+    },
+    {
+      "name": "EffectiveBudget",
+      "file": "agent/budget.go",
+      "line": 53,
+      "params": [
+        {
+          "name": "own",
+          "ts_type": "{ Tokens: int; Turns: int }",
+          "optional": false,
+          "rest": false,
+          "native_type": "Budget"
+        },
+        {
+          "name": "parentRemaining",
+          "ts_type": "{ Tokens: int; Turns: int }",
+          "optional": false,
+          "rest": false,
+          "native_type": "Budget"
+        }
+      ],
+      "returns": "{ Tokens: int; Turns: int }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Budget)",
+      "prototype": "func EffectiveBudget(own, parentRemaining Budget) Budget"
+    },
+    {
+      "name": "WrapupMargin",
+      "file": "agent/budget.go",
+      "line": 70,
+      "params": [
+        {
+          "name": "task",
+          "ts_type": "{ Tokens: int; Turns: int }",
+          "optional": false,
+          "rest": false,
+          "native_type": "Budget"
+        }
+      ],
+      "returns": "{ Tokens: int; Turns: int }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Budget)",
+      "prototype": "func WrapupMargin(task Budget) Budget"
+    },
+    {
+      "name": "BudgetWrapupBlocks",
+      "file": "agent/budget.go",
+      "line": 230,
+      "params": [
+        {
+          "name": "tool",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func BudgetWrapupBlocks(tool string) bool"
+    },
+    {
+      "name": "BuiltinPromptSeeds",
+      "file": "agent/promptcatalog.go",
+      "line": 140,
+      "params": [],
+      "returns": "Record<string, string>",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(map[string]string)",
+      "prototype": "func BuiltinPromptSeeds() map[string]string"
+    },
+    {
+      "name": "ConfigFrom",
+      "file": "agent/provider.go",
+      "line": 293,
+      "params": [
+        {
+          "name": "provider",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "model",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "baseURL",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "apiKey",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "proxy",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "unknown",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Config)",
+      "prototype": "func ConfigFrom(provider, model, baseURL, apiKey, proxy string) Config"
+    },
+    {
+      "name": "IsQuotaExhaustedMessage",
+      "file": "agent/provider.go",
+      "line": 420,
+      "params": [
+        {
+          "name": "message",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsQuotaExhaustedMessage(message string) bool"
+    },
+    {
+      "name": "ValidateUserAgent",
+      "file": "agent/provider.go",
+      "line": 566,
+      "params": [
+        {
+          "name": "raw",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string, error)",
+      "prototype": "func ValidateUserAgent(raw string) (string, error)"
+    },
+    {
+      "name": "IsRefusalStop",
+      "file": "agent/providerstop.go",
+      "line": 15,
+      "params": [
+        {
+          "name": "stopReason",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsRefusalStop(stopReason string) bool"
+    },
+    {
+      "name": "WorkerSessionID",
+      "file": "agent/worker.go",
+      "line": 106,
+      "params": [
+        {
+          "name": "explorationID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "intentID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func WorkerSessionID(explorationID, intentID int64) string"
+    },
+    {
+      "name": "WrapupDefault",
+      "file": "agent/wrapup.go",
+      "line": 92,
+      "params": [
+        {
+          "name": "agentKey",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func WrapupDefault(agentKey string) string"
+    },
+    {
+      "name": "WrapupTurnsDefault",
+      "file": "agent/wrapup.go",
+      "line": 101,
+      "params": [
+        {
+          "name": "agentKey",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "int",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(int)",
+      "prototype": "func WrapupTurnsDefault(agentKey string) int"
+    },
+    {
+      "name": "TaskTimeoutWrapupDefault",
+      "file": "agent/wrapup.go",
+      "line": 198,
+      "params": [
+        {
+          "name": "agentKey",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TaskTimeoutWrapupDefault(agentKey string) string"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "SetToolAugment",
+      "file": "agent/assembly.go",
+      "line": 45,
+      "reason": "installs a global ToolAugmentFunc hook (mutable global fn pointer)"
+    },
+    {
+      "name": "ToolAugment",
+      "file": "agent/assembly.go",
+      "line": 52,
+      "reason": "returns the global ToolAugmentFunc hook"
+    },
+    {
+      "name": "AugmentTools",
+      "file": "agent/assembly.go",
+      "line": 61,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "BudgetsFromEnv",
+      "file": "agent/budget.go",
+      "line": 86,
+      "reason": "reads ARTEX_*_BUDGET_* env vars"
+    },
+    {
+      "name": "NewBudgetLedger",
+      "file": "agent/budget.go",
+      "line": 107,
+      "reason": "takes or returns a pointer (`*BudgetLedger`)"
+    },
+    {
+      "name": "WithBudgetRound",
+      "file": "agent/budget.go",
+      "line": 249,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithIntentMeter",
+      "file": "agent/budget.go",
+      "line": 254,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "Causef",
+      "file": "agent/cancelcause.go",
+      "line": 24,
+      "reason": "is variadic"
+    },
+    {
+      "name": "AbortReason",
+      "file": "agent/cancelcause.go",
+      "line": 73,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "NewChatAgent",
+      "file": "agent/chat.go",
+      "line": 40,
+      "reason": "uses `llm.Provider` from another package"
+    },
+    {
+      "name": "NewCompactor",
+      "file": "agent/compaction.go",
+      "line": 50,
+      "reason": "uses `llm.Provider` from another package"
+    },
+    {
+      "name": "RepairRecordFactSchema",
+      "file": "agent/fact_input.go",
+      "line": 51,
+      "reason": "`any`: values of any type"
+    },
+    {
+      "name": "SetFindingTrafficBindingEnabled",
+      "file": "agent/finding_workflow.go",
+      "line": 24,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "FindingTrafficBindingEnabled",
+      "file": "agent/finding_workflow.go",
+      "line": 31,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "HintTrafficSchema",
+      "file": "agent/finding_workflow.go",
+      "line": 129,
+      "reason": "`any`: values of any type"
+    },
+    {
+      "name": "DecomposeGoals",
+      "file": "agent/goals.go",
+      "line": 99,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "DecomposeGoalsWithProvider",
+      "file": "agent/goals.go",
+      "line": 110,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "NewMainAgent",
+      "file": "agent/mainagent.go",
+      "line": 61,
+      "reason": "uses `llm.Provider` from another package"
+    },
+    {
+      "name": "NewPlanner",
+      "file": "agent/planner.go",
+      "line": 56,
+      "reason": "uses `llm.Provider` from another package"
+    },
+    {
+      "name": "SetPromptOverride",
+      "file": "agent/prompt.go",
+      "line": 21,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "PromptOverride",
+      "file": "agent/prompt.go",
+      "line": 28,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "FromEnv",
+      "file": "agent/provider.go",
+      "line": 226,
+      "reason": "reads ARTEX_LLM_* / ANTHROPIC_API_KEY / OPENAI_API_KEY env vars"
+    },
+    {
+      "name": "TestConnection",
+      "file": "agent/provider.go",
+      "line": 617,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithStopTracker",
+      "file": "agent/providerstop.go",
+      "line": 44,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "LastStopReason",
+      "file": "agent/providerstop.go",
+      "line": 52,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithRunInfo",
+      "file": "agent/runinfo.go",
+      "line": 37,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "RunInfoFrom",
+      "file": "agent/runinfo.go",
+      "line": 42,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "WithTaskClock",
+      "file": "agent/taskclock.go",
+      "line": 20,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "BuiltinToolSeeds",
+      "file": "agent/toolcatalog.go",
+      "line": 86,
+      "reason": "constructs actool.CoreTool values (heavy SDK types)"
+    },
+    {
+      "name": "SetToolResolve",
+      "file": "agent/toolcatalog.go",
+      "line": 141,
+      "reason": "installs a global ToolResolveFunc hook (mutable global fn pointer)"
+    },
+    {
+      "name": "ToolResolve",
+      "file": "agent/toolcatalog.go",
+      "line": 148,
+      "reason": "returns the global ToolResolveFunc hook"
+    },
+    {
+      "name": "DecorateTool",
+      "file": "agent/toolcatalog.go",
+      "line": 158,
+      "reason": "uses `actool.CoreTool` from another package"
+    },
+    {
+      "name": "WithToolQuery",
+      "file": "agent/toolrag.go",
+      "line": 40,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "NewToolSet",
+      "file": "agent/tools.go",
+      "line": 251,
+      "reason": "takes or returns a pointer (`*db.ExplorationStore`)"
+    },
+    {
+      "name": "NewWorker",
+      "file": "agent/worker.go",
+      "line": 173,
+      "reason": "uses `llm.Provider` from another package"
+    },
+    {
+      "name": "SetWrapupOverride",
+      "file": "agent/wrapup.go",
+      "line": 31,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "WrapupOverride",
+      "file": "agent/wrapup.go",
+      "line": 38,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "SetWrapupMaxTurnsOverride",
+      "file": "agent/wrapup.go",
+      "line": 50,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "WrapupMaxTurnsOverride",
+      "file": "agent/wrapup.go",
+      "line": 57,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "SetWrapupTaskTimeoutOverride",
+      "file": "agent/wrapup.go",
+      "line": 160,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "WrapupTaskTimeoutOverride",
+      "file": "agent/wrapup.go",
+      "line": 167,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "SetWrapupTaskTimeoutTurnsOverride",
+      "file": "agent/wrapup.go",
+      "line": 174,
+      "reason": "takes or returns a function"
+    },
+    {
+      "name": "WrapupTaskTimeoutTurnsOverride",
+      "file": "agent/wrapup.go",
+      "line": 181,
+      "reason": "takes or returns a function"
+    }
+  ]
+}

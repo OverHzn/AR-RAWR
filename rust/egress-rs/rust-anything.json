@@ -1,0 +1,144 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "egress/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "egress-rs",
+  "exports": [
+    {
+      "name": "ProfileByName",
+      "file": "egress/egress.go",
+      "line": 62,
+      "params": [
+        {
+          "name": "name",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "[unknown, boolean]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Profile, bool)",
+      "prototype": "func ProfileByName(name string) (p Profile, ok bool)"
+    },
+    {
+      "name": "ProfileFromEnv",
+      "file": "egress/egress.go",
+      "line": 80,
+      "params": [],
+      "returns": "unknown",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Profile)",
+      "prototype": "func ProfileFromEnv() Profile"
+    },
+    {
+      "name": "CurrentProfile",
+      "file": "egress/egress.go",
+      "line": 116,
+      "params": [],
+      "returns": "unknown",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Profile)",
+      "prototype": "func CurrentProfile() Profile"
+    },
+    {
+      "name": "MarkProxyURL",
+      "file": "egress/pace.go",
+      "line": 24,
+      "params": [
+        {
+          "name": "raw",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func MarkProxyURL(raw string) string"
+    },
+    {
+      "name": "IsPaceMarker",
+      "file": "egress/pace.go",
+      "line": 35,
+      "params": [
+        {
+          "name": "proxyAuthorization",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsPaceMarker(proxyAuthorization string) bool"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "Current",
+      "file": "egress/egress.go",
+      "line": 101,
+      "reason": "takes or returns a pointer (`*Governor`)"
+    },
+    {
+      "name": "SetProfile",
+      "file": "egress/egress.go",
+      "line": 120,
+      "reason": "takes or returns a pointer (`*Governor`)"
+    },
+    {
+      "name": "New",
+      "file": "egress/egress.go",
+      "line": 171,
+      "reason": "takes or returns a pointer (`*Governor`)"
+    },
+    {
+      "name": "HostKey",
+      "file": "egress/egress.go",
+      "line": 181,
+      "reason": "takes or returns a pointer (`*url.URL`)"
+    },
+    {
+      "name": "Do",
+      "file": "egress/egress.go",
+      "line": 397,
+      "reason": "generic: Go instantiates it per type"
+    },
+    {
+      "name": "Dynamic",
+      "file": "egress/egress.go",
+      "line": 433,
+      "reason": "uses `http.RoundTripper` from another package"
+    },
+    {
+      "name": "Wait",
+      "file": "egress/pace.go",
+      "line": 50,
+      "reason": "uses `context.Context` from another package"
+    }
+  ]
+}

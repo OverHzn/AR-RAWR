@@ -1,0 +1,111 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "config/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "config-rs",
+  "exports": [
+    {
+      "name": "BaseDir",
+      "file": "config/config.go",
+      "line": 45,
+      "params": [],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func BaseDir() string"
+    },
+    {
+      "name": "KeyDir",
+      "file": "config/config.go",
+      "line": 59,
+      "params": [],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func KeyDir() string"
+    },
+    {
+      "name": "Path",
+      "file": "config/config.go",
+      "line": 97,
+      "params": [],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func Path() string"
+    },
+    {
+      "name": "Load",
+      "file": "config/config.go",
+      "line": 117,
+      "params": [],
+      "returns": "{ database: unknown; skill_dir: string }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Config, error)",
+      "prototype": "func Load() (Config, error)"
+    },
+    {
+      "name": "SkillDir",
+      "file": "config/config.go",
+      "line": 138,
+      "params": [],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string, error)",
+      "prototype": "func SkillDir() (string, error)"
+    },
+    {
+      "name": "PostgresDSN",
+      "file": "config/config.go",
+      "line": 165,
+      "params": [],
+      "returns": "[string, string]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string, string, error)",
+      "prototype": "func PostgresDSN() (dsn, source string, err error)"
+    },
+    {
+      "name": "Redact",
+      "file": "config/config.go",
+      "line": 213,
+      "params": [
+        {
+          "name": "dsn",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func Redact(dsn string) string"
+    }
+  ],
+  "classes": [],
+  "js_only": []
+}

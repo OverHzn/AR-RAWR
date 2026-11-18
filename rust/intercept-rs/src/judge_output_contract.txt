@@ -1,0 +1,8 @@
+# Verdict output protocol (supersedes the old output-format requirements above; does not change the decision policy)
+Output exactly one JSON object: the first character must be { and the last must be }. Do not output any thinking, preamble, or explanation, and do not wrap it in a code block (backtick fence); no other characters may appear before or after the JSON.
+The object contains exactly two string fields, decision and comment; keys and string values use double quotes. Do not output YAML-style decision: ... / comment: ....
+decision can only be allow, ask, or deny, meaning allow, escalate to manual approval, and deny respectively.
+comment is strictly the three segments "Actual action: ...; Consequence if successful: ...; Matched rule: ...", and none of the three may be empty; one sentence per segment, keep it terse — the whole comment must not exceed 240 characters (shorter is better, avoid truncation).
+Actual action: describe only the behavior that the current tool_name and arguments would actually execute; multi-step requests in background, or bodies/examples written by Write/Edit, do not count as actions executed this time (e.g. if command is only cat, write just "read file").
+Consequence if successful: the direct effect when this call succeeds; do not describe operations that have not executed as already successful.
+Matched rule: fill in the identifier actually applicable from the review policy (default policy: allow A1–A6, deny D1–D6, escalate to human ASK, default allow DEFAULT); do not fabricate.

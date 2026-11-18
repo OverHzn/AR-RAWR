@@ -1,0 +1,413 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "notify/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "notify-rs",
+  "exports": [
+    {
+      "name": "Get",
+      "file": "notify/channel.go",
+      "line": 71,
+      "params": [
+        {
+          "name": "kind",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "[unknown, boolean]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Channel, bool)",
+      "prototype": "func Get(kind string) (Channel, bool)"
+    },
+    {
+      "name": "ValidKind",
+      "file": "notify/channel.go",
+      "line": 77,
+      "params": [
+        {
+          "name": "kind",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidKind(kind string) bool"
+    },
+    {
+      "name": "Kinds",
+      "file": "notify/channel.go",
+      "line": 83,
+      "params": [],
+      "returns": "string[]",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "([]string)",
+      "prototype": "func Kinds() []string"
+    },
+    {
+      "name": "ParseFilter",
+      "file": "notify/filter.go",
+      "line": 43,
+      "params": [
+        {
+          "name": "raw",
+          "ts_type": "int[]",
+          "optional": false,
+          "rest": false,
+          "native_type": "[]byte"
+        }
+      ],
+      "returns": "{ min_severity: string; task_ids: int[]; asset_ids: int[]; vulnclass_include: string[]; vulnclass_exclude: string[]; on_status_change: boolean }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(Filter)",
+      "prototype": "func ParseFilter(raw []byte) Filter"
+    },
+    {
+      "name": "ValidMinSeverity",
+      "file": "notify/filter.go",
+      "line": 55,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidMinSeverity(s string) bool"
+    },
+    {
+      "name": "Match",
+      "file": "notify/filter.go",
+      "line": 91,
+      "params": [
+        {
+          "name": "f",
+          "ts_type": "{ min_severity: string; task_ids: int[]; asset_ids: int[]; vulnclass_include: string[]; vulnclass_exclude: string[]; on_status_change: boolean }",
+          "optional": false,
+          "rest": false,
+          "native_type": "Filter"
+        },
+        {
+          "name": "s",
+          "ts_type": "unknown",
+          "optional": false,
+          "rest": false,
+          "native_type": "Snapshot"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func Match(f Filter, s Snapshot) bool"
+    },
+    {
+      "name": "MaskedValue",
+      "file": "notify/mask.go",
+      "line": 29,
+      "params": [
+        {
+          "name": "secret",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func MaskedValue(secret string) string"
+    },
+    {
+      "name": "IsMasked",
+      "file": "notify/mask.go",
+      "line": 38,
+      "params": [
+        {
+          "name": "v",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsMasked(v string) bool"
+    },
+    {
+      "name": "SeverityRank",
+      "file": "notify/notify.go",
+      "line": 51,
+      "params": [
+        {
+          "name": "severity",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "int",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(int)",
+      "prototype": "func SeverityRank(severity string) int"
+    },
+    {
+      "name": "SeverityLabel",
+      "file": "notify/notify.go",
+      "line": 55,
+      "params": [
+        {
+          "name": "severity",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func SeverityLabel(severity string) string"
+    },
+    {
+      "name": "StatusLabel",
+      "file": "notify/notify.go",
+      "line": 72,
+      "params": [
+        {
+          "name": "status",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func StatusLabel(status string) string"
+    },
+    {
+      "name": "AtLeast",
+      "file": "notify/notify.go",
+      "line": 100,
+      "params": [
+        {
+          "name": "severity",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "min",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func AtLeast(severity, min string) bool"
+    },
+    {
+      "name": "TruncateBytes",
+      "file": "notify/render.go",
+      "line": 22,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "max",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TruncateBytes(s string, max int) string"
+    },
+    {
+      "name": "OneLine",
+      "file": "notify/render.go",
+      "line": 45,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "max",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func OneLine(s string, max int) string"
+    },
+    {
+      "name": "TruncateRunes",
+      "file": "notify/render.go",
+      "line": 58,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "max",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TruncateRunes(s string, max int) string"
+    },
+    {
+      "name": "TruncateHTML",
+      "file": "notify/render.go",
+      "line": 85,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "max",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TruncateHTML(s string, max int) string"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "Permanent",
+      "file": "notify/channel.go",
+      "line": 104,
+      "reason": "takes an `error` value"
+    },
+    {
+      "name": "IsPermanent",
+      "file": "notify/channel.go",
+      "line": 112,
+      "reason": "takes an `error` value"
+    },
+    {
+      "name": "MaskConfig",
+      "file": "notify/mask.go",
+      "line": 48,
+      "reason": "`any`: values of any type"
+    },
+    {
+      "name": "PrepareConfigUpdate",
+      "file": "notify/mask.go",
+      "line": 124,
+      "reason": "`any`: values of any type"
+    },
+    {
+      "name": "MergeConfig",
+      "file": "notify/mask.go",
+      "line": 276,
+      "reason": "`any`: values of any type"
+    }
+  ]
+}

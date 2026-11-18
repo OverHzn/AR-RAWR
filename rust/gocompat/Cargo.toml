@@ -1,0 +1,18 @@
+[package]
+name = "gocompat"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Faithful Rust ports of the Go stdlib pieces (net/url, path/filepath, os/encoding-json errors, strings, time) shared by the ARTEX unit crates"
+
+[dependencies]
+regex = { version = "1", optional = true }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[features]
+default = []
+# Enables the `regexerr` module (regex compile-error → Go `regexp` text).
+regex = ["dep:regex"]
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

@@ -1,0 +1,76 @@
+{"args":["HELLO","éa😀b😀c"],"fn":"ToolName","ok":"mcp__HELLO__éa😀b😀c"}
+{"args":["ΣΊΣΥΦΟΣ","line1\nline2"],"fn":"ToolName","ok":"mcp__ΣΊΣΥΦΟΣ__line1\nline2"}
+{"args":["a:b:cstraße","hellostraße"],"fn":"ToolName","ok":"mcp__a:b:cstraße__hellostraße"}
+{"args":["LINE1\nLINE","line1\nline2"],"fn":"ToolName","ok":"mcp__LINE1\nLINE__line1\nline2"}
+{"args":["hello","ünïcödé"],"fn":"ToolName","ok":"mcp__hello__ünïcödé"}
+{"args":["İstanbul","ns:key.path"],"fn":"ToolName","ok":"mcp__İstanbul__ns:key.path"}
+{"args":["İstanbul","﻿bom"],"fn":"ToolName","ok":"mcp__İstanbul__﻿bom"}
+{"args":["a😀b😀c","c"],"fn":"ToolName","ok":"mcp__a😀b😀c__c"}
+{"args":["hello worldé","akey_name-1"],"fn":"ToolName","ok":"mcp__hello worldé__akey_name-1"}
+{"args":["c","a.b.c"],"fn":"ToolName","ok":"mcp__c__a.b.c"}
+{"args":["ns:key.path","a..b"],"fn":"ToolName","ok":"mcp__ns:key.path__a..b"}
+{"args":["line1\nline2tab\tseparated","emoji 👍🏽 mix"],"fn":"ToolName","ok":"mcp__line1\nline2tab\tseparated__emoji 👍🏽 mix"}
+{"args":["a..b","﻿boma"],"fn":"ToolName","ok":"mcp__a..b__﻿boma"}
+{"args":["","HELLO"],"fn":"ToolName","ok":"mcp____HELLO"}
+{"args":["src/a/b.ts","line1\nline2"],"fn":"ToolName","ok":"mcp__src/a/b.ts__line1\nline2"}
+{"args":["ΣΊΣΥΦΟΣ","ΊΣΥΦΟ"],"fn":"ToolName","ok":"mcp__ΣΊΣΥΦΟΣ__ΊΣΥΦΟ"}
+{"args":["{name} has {count} items",""],"fn":"ToolName","ok":"mcp__{name} has {count} items__"}
+{"args":["abca:b:c",":c"],"fn":"ToolName","ok":"mcp__abca:b:c__:c"}
+{"args":["ΣΊΣΥΦΟΣ","ünïcödéemoji 👍🏽 mix"],"fn":"ToolName","ok":"mcp__ΣΊΣΥΦΟΣ__ünïcödéemoji 👍🏽 mix"}
+{"args":["straße","ΣΊΣΥΦΟΣsrc/a/b.ts"],"fn":"ToolName","ok":"mcp__straße__ΣΊΣΥΦΟΣsrc/a/b.ts"}
+{"args":["em","emoji 👍🏽 mix"],"fn":"ToolName","ok":"mcp__em__emoji 👍🏽 mix"}
+{"args":[".","a.b.c"],"fn":"ToolName","ok":"mcp__.__a.b.c"}
+{"args":["😀","abc"],"fn":"ToolName","ok":"mcp__😀__abc"}
+{"args":["ab","B"],"fn":"ToolName","ok":"mcp__ab__B"}
+{"args":["ab","line1\nline2"],"fn":"ToolName","ok":"mcp__ab__line1\nline2"}
+{"args":["ns:key.patha:b:c","src/a/b.ts"],"fn":"ToolName","ok":"mcp__ns:key.patha:b:c__src/a/b.ts"}
+{"args":["HELLO","ab"],"fn":"ToolName","ok":"mcp__HELLO__ab"}
+{"args":["İstanbul","a"],"fn":"ToolName","ok":"mcp__İstanbul__a"}
+{"args":["́","é"],"fn":"ToolName","ok":"mcp__́__é"}
+{"args":["a.b.c","ΣΊΣΥΦΟΣ"],"fn":"ToolName","ok":"mcp__a.b.c__ΣΊΣΥΦΟΣ"}
+{"args":["Hello World","o Worl"],"fn":"ToolName","ok":"mcp__Hello World__o Worl"}
+{"args":["a.b.c","key_name-1"],"fn":"ToolName","ok":"mcp__a.b.c__key_name-1"}
+{"args":["😀","src/a/b.ts"],"fn":"ToolName","ok":"mcp__😀__src/a/b.ts"}
+{"args":["abc","c"],"fn":"ToolName","ok":"mcp__abc__c"}
+{"args":["a..b","src/a/b.ts./x/**/*.json"],"fn":"ToolName","ok":"mcp__a..b__src/a/b.ts./x/**/*.json"}
+{"args":["HELLO","line1\nline2"],"fn":"ToolName","ok":"mcp__HELLO__line1\nline2"}
+{"args":["hello worlda.b.c","straße"],"fn":"ToolName","ok":"mcp__hello worlda.b.c__straße"}
+{"args":["  padded  ","a😀b😀chello"],"fn":"ToolName","ok":"mcp__  padded  __a😀b😀chello"}
+{"args":["hello","he"],"fn":"ToolName","ok":"mcp__hello__he"}
+{"args":[".leading","tab\tseparated"],"fn":"ToolName","ok":"mcp__.leading__tab\tseparated"}
+{"args":["hello worlda..b","日本語のテキスト"],"fn":"ToolName","ok":"mcp__hello worlda..b__日本語のテキスト"}
+{"args":["Hello World","EL"],"fn":"ToolName","ok":"mcp__Hello World__EL"}
+{"args":["hello","l"],"fn":"ToolName","ok":"mcp__hello__l"}
+{"args":["tab\tseparated","src/a/b.tsa"],"fn":"ToolName","ok":"mcp__tab\tseparated__src/a/b.tsa"}
+{"args":["./x/**/*.json","abc"],"fn":"ToolName","ok":"mcp__./x/**/*.json__abc"}
+{"args":["hello","aba:b:c"],"fn":"ToolName","ok":"mcp__hello__aba:b:c"}
+{"args":["hello world","ab"],"fn":"ToolName","ok":"mcp__hello world__ab"}
+{"args":["src/a/b.ts","a"],"fn":"ToolName","ok":"mcp__src/a/b.ts__a"}
+{"args":["./x/**/*.json","tab\tseparateda😀b😀c"],"fn":"ToolName","ok":"mcp__./x/**/*.json__tab\tseparateda😀b😀c"}
+{"args":["😀","hello world:"],"fn":"ToolName","ok":"mcp__😀__hello world:"}
+{"args":["héllo wörld","éa😀b😀c"],"fn":"ToolName","ok":"mcp__héllo wörld__éa😀b😀c"}
+{"args":["👍🏽 thumbs","éa😀b😀c"],"fn":"ToolName","ok":"mcp__👍🏽 thumbs__éa😀b😀c"}
+{"args":["日本語","éa😀b😀c"],"fn":"ToolName","ok":"mcp__日本語__éa😀b😀c"}
+{"args":["","éa😀b😀c"],"fn":"ToolName","ok":"mcp____éa😀b😀c"}
+{"args":["é","éa😀b😀c"],"fn":"ToolName","ok":"mcp__é__éa😀b😀c"}
+{"args":["İstanbul","éa😀b😀c"],"fn":"ToolName","ok":"mcp__İstanbul__éa😀b😀c"}
+{"args":["straße","éa😀b😀c"],"fn":"ToolName","ok":"mcp__straße__éa😀b😀c"}
+{"args":["ılık ırmak","éa😀b😀c"],"fn":"ToolName","ok":"mcp__ılık ırmak__éa😀b😀c"}
+{"args":["👨‍👩‍👧 family","éa😀b😀c"],"fn":"ToolName","ok":"mcp__👨‍👩‍👧 family__éa😀b😀c"}
+{"args":["a b","éa😀b😀c"],"fn":"ToolName","ok":"mcp__a b__éa😀b😀c"}
+{"args":["ΣΊΣΥΦΟΣ","éa😀b😀c"],"fn":"ToolName","ok":"mcp__ΣΊΣΥΦΟΣ__éa😀b😀c"}
+{"args":["a😀b","éa😀b😀c"],"fn":"ToolName","ok":"mcp__a😀b__éa😀b😀c"}
+{"args":["﻿bom","éa😀b😀c"],"fn":"ToolName","ok":"mcp__﻿bom__éa😀b😀c"}
+{"args":["HELLO","héllo wörld"],"fn":"ToolName","ok":"mcp__HELLO__héllo wörld"}
+{"args":["HELLO","👍🏽 thumbs"],"fn":"ToolName","ok":"mcp__HELLO__👍🏽 thumbs"}
+{"args":["HELLO","日本語"],"fn":"ToolName","ok":"mcp__HELLO__日本語"}
+{"args":["HELLO",""],"fn":"ToolName","ok":"mcp__HELLO__"}
+{"args":["HELLO","é"],"fn":"ToolName","ok":"mcp__HELLO__é"}
+{"args":["HELLO","İstanbul"],"fn":"ToolName","ok":"mcp__HELLO__İstanbul"}
+{"args":["HELLO","straße"],"fn":"ToolName","ok":"mcp__HELLO__straße"}
+{"args":["HELLO","ılık ırmak"],"fn":"ToolName","ok":"mcp__HELLO__ılık ırmak"}
+{"args":["HELLO","👨‍👩‍👧 family"],"fn":"ToolName","ok":"mcp__HELLO__👨‍👩‍👧 family"}
+{"args":["HELLO","a b"],"fn":"ToolName","ok":"mcp__HELLO__a b"}
+{"args":["HELLO","ΣΊΣΥΦΟΣ"],"fn":"ToolName","ok":"mcp__HELLO__ΣΊΣΥΦΟΣ"}
+{"args":["HELLO","a😀b"],"fn":"ToolName","ok":"mcp__HELLO__a😀b"}
+{"args":["HELLO","﻿bom"],"fn":"ToolName","ok":"mcp__HELLO__﻿bom"}

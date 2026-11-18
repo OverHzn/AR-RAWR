@@ -1,0 +1,213 @@
+{"args": [], "fn": "BaseDir", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/.rust-anything/go-rust"}
+{"args": [], "fn": "KeyDir", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/.rust-anything/go-rust"}
+{"args": [], "fn": "Path", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "Load"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "SkillDir"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "PostgresDSN"}
+{"args": [""], "fn": "Redact", "ok": ""}
+{"args": ["\u0130stanbul"], "fn": "Redact", "ok": "%C4%B0stanbul"}
+{"args": ["\ud83d\ude00"], "fn": "Redact", "ok": "%F0%9F%98%80"}
+{"args": ["a..b"], "fn": "Redact", "ok": "a..b"}
+{"args": ["Hello World"], "fn": "Redact", "ok": "Hello%20World"}
+{"args": ["tab\tseparated"], "fn": "Redact", "ok": "tab\tseparated"}
+{"args": [":"], "fn": "Redact", "ok": ":"}
+{"args": ["HELLO"], "fn": "Redact", "ok": "HELLO"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": ["{name} has {count} items"], "fn": "Redact", "ok": "%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["src/a/b.ts"], "fn": "Redact", "ok": "src/a/b.ts"}
+{"args": [".leading"], "fn": "Redact", "ok": ".leading"}
+{"args": ["  padded  "], "fn": "Redact", "ok": "%20%20padded%20%20"}
+{"args": ["a\ud83d\ude00b\ud83d\ude00c"], "fn": "Redact", "ok": "a%F0%9F%98%80b%F0%9F%98%80c"}
+{"args": ["hello"], "fn": "Redact", "ok": "hello"}
+{"args": ["abc"], "fn": "Redact", "ok": "abc"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3"}
+{"args": ["a:b:c./x/**/*.json"], "fn": "Redact", "ok": "a:b:c./x/**/*.json"}
+{"args": ["line1\nline2"], "fn": "Redact", "ok": "line1\nline2"}
+{"args": ["./x/**/*.json"], "fn": "Redact", "ok": "./x/**/*.json"}
+{"args": ["hello worldHello World"], "fn": "Redact", "ok": "hello%20worldHello%20World"}
+{"args": ["stra\u00dfe"], "fn": "Redact", "ok": "stra%C3%9Fe"}
+{"args": ["stra\u00dfeemoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "stra%C3%9Feemoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["\u00fcn\u00efc\u00f6d\u00e9\ufeffbom"], "fn": "Redact", "ok": "%C3%BCn%C3%AFc%C3%B6d%C3%A9%EF%BB%BFbom"}
+{"args": [".leadingabc"], "fn": "Redact", "ok": ".leadingabc"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8{name} has {count} items"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["a"], "fn": "Redact", "ok": "a"}
+{"args": ["tab\tseparatedline1\nline2"], "fn": "Redact", "ok": "tab\tseparatedline1\nline2"}
+{"args": ["trailing."], "fn": "Redact", "ok": "trailing."}
+{"args": ["ab\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "ab%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": ["hello world"], "fn": "Redact", "ok": "hello%20world"}
+{"args": ["\u00fcn\u00efc\u00f6d\u00e9"], "fn": "Redact", "ok": "%C3%BCn%C3%AFc%C3%B6d%C3%A9"}
+{"args": ["e\u0301"], "fn": "Redact", "ok": "e%CC%81"}
+{"args": ["key_name-1"], "fn": "Redact", "ok": "key_name-1"}
+{"args": ["\ufeffbom"], "fn": "Redact", "ok": "%EF%BB%BFbom"}
+{"args": ["ns:key.path"], "fn": "Redact", "ok": "ns:key.path"}
+{"args": ["a..b{name} has {count} items"], "fn": "Redact", "ok": "a..b%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["key_name-1\ufeffbom"], "fn": "Redact", "ok": "key_name-1%EF%BB%BFbom"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8ab"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88ab"}
+{"args": ["  padded  \u00fcn\u00efc\u00f6d\u00e9"], "fn": "Redact", "ok": "%20%20padded%20%20%C3%BCn%C3%AFc%C3%B6d%C3%A9"}
+{"args": ["a.b.c"], "fn": "Redact", "ok": "a.b.c"}
+{"args": ["line1\nline2./x/**/*.json"], "fn": "Redact", "ok": "line1\nline2./x/**/*.json"}
+{"args": [":a.b.c"], "fn": "Redact", "ok": ":a.b.c"}
+{"args": [":hello world"], "fn": "Redact", "ok": ":hello world"}
+{"args": ["\u00fcn\u00efc\u00f6d\u00e9\u0130stanbul"], "fn": "Redact", "ok": "%C3%BCn%C3%AFc%C3%B6d%C3%A9%C4%B0stanbul"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3src/a/b.ts"], "fn": "Redact", "ok": "%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3src/a/b.ts"}
+{"args": [":src/a/b.ts"], "fn": "Redact", "ok": ":src/a/b.ts"}
+{"args": ["ab"], "fn": "Redact", "ok": "ab"}
+{"args": ["helloab"], "fn": "Redact", "ok": "helloab"}
+{"args": ["stra\u00dfehello"], "fn": "Redact", "ok": "stra%C3%9Fehello"}
+{"args": ["stra\u00dfea"], "fn": "Redact", "ok": "stra%C3%9Fea"}
+{"args": [":trailing."], "fn": "Redact", "ok": ":trailing."}
+{"args": ["hellotab\tseparated"], "fn": "Redact", "ok": "hellotab\tseparated"}
+{"args": ["\u0130stanbulns:key.path"], "fn": "Redact", "ok": "\u0130stanbulns:key.path"}
+{"args": ["\u0130stanbulstra\u00dfe"], "fn": "Redact", "ok": "%C4%B0stanbulstra%C3%9Fe"}
+{"args": ["HELLOa\ud83d\ude00b\ud83d\ude00c"], "fn": "Redact", "ok": "HELLOa%F0%9F%98%80b%F0%9F%98%80c"}
+{"args": ["a:b:c"], "fn": "Redact", "ok": "a:b:c"}
+{"args": ["abc.leading"], "fn": "Redact", "ok": "abc.leading"}
+{"args": ["a./x/**/*.json"], "fn": "Redact", "ok": "a./x/**/*.json"}
+{"args": ["a.b.cline1\nline2"], "fn": "Redact", "ok": "a.b.cline1\nline2"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3\ud83d\ude00"], "fn": "Redact", "ok": "%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3%F0%9F%98%80"}
+{"args": ["  padded  line1\nline2"], "fn": "Redact", "ok": "  padded  line1\nline2"}
+{"args": ["abkey_name-1"], "fn": "Redact", "ok": "abkey_name-1"}
+{"args": [".leadingHELLO"], "fn": "Redact", "ok": ".leadingHELLO"}
+{"args": ["ns:key.path\ufeffbom"], "fn": "Redact", "ok": "ns:key.path\ufeffbom"}
+{"args": ["a{name} has {count} items"], "fn": "Redact", "ok": "a%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["line1\nline2Hello World"], "fn": "Redact", "ok": "line1\nline2Hello World"}
+{"args": ["\u0130stanbul\ud83d\ude00"], "fn": "Redact", "ok": "%C4%B0stanbul%F0%9F%98%80"}
+{"args": ["key_name-1\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "key_name-1%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": ["Hello Worlda\ud83d\ude00b\ud83d\ude00c"], "fn": "Redact", "ok": "Hello%20Worlda%F0%9F%98%80b%F0%9F%98%80c"}
+{"args": ["hello worldsrc/a/b.ts"], "fn": "Redact", "ok": "hello%20worldsrc/a/b.ts"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8src/a/b.ts"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88src/a/b.ts"}
+{"args": ["key_name-1a:b:c"], "fn": "Redact", "ok": "key_name-1a:b:c"}
+{"args": ["\u0130stanbul.leading"], "fn": "Redact", "ok": "%C4%B0stanbul.leading"}
+{"args": ["./x/**/*.jsonHELLO"], "fn": "Redact", "ok": "./x/**/*.jsonHELLO"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3ns:key.path"], "fn": "Redact", "ok": "\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3ns:key.path"}
+{"args": ["hello world\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "hello%20world%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": [".leadingstra\u00dfe"], "fn": "Redact", "ok": ".leadingstra%C3%9Fe"}
+{"args": ["a.b.c./x/**/*.json"], "fn": "Redact", "ok": "a.b.c./x/**/*.json"}
+{"args": ["tab\tseparatedkey_name-1"], "fn": "Redact", "ok": "tab\tseparatedkey_name-1"}
+{"args": ["hello\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "hello%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": [":./x/**/*.json"], "fn": "Redact", "ok": ":./x/**/*.json"}
+{"args": ["line1\nline2tab\tseparated"], "fn": "Redact", "ok": "line1\nline2tab\tseparated"}
+{"args": ["a:b:cab"], "fn": "Redact", "ok": "a:b:cab"}
+{"args": ["\u0130stanbultab\tseparated"], "fn": "Redact", "ok": "\u0130stanbultab\tseparated"}
+{"args": ["src/a/b.ts:"], "fn": "Redact", "ok": "src/a/b.ts:"}
+{"args": ["Hello World\u00fcn\u00efc\u00f6d\u00e9"], "fn": "Redact", "ok": "Hello%20World%C3%BCn%C3%AFc%C3%B6d%C3%A9"}
+{"args": [":a\ud83d\ude00b\ud83d\ude00c"], "fn": "Redact", "ok": ":a\ud83d\ude00b\ud83d\ude00c"}
+{"args": ["stra\u00dfea.b.c"], "fn": "Redact", "ok": "stra%C3%9Fea.b.c"}
+{"args": ["ab.leading"], "fn": "Redact", "ok": "ab.leading"}
+{"args": ["\u0130stanbultrailing."], "fn": "Redact", "ok": "%C4%B0stanbultrailing."}
+{"args": [":\u0130stanbul"], "fn": "Redact", "ok": ":\u0130stanbul"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8ns:key.path"], "fn": "Redact", "ok": "\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8ns:key.path"}
+{"args": ["\ud83d\ude00:"], "fn": "Redact", "ok": "\ud83d\ude00:"}
+{"args": ["a.b.ctrailing."], "fn": "Redact", "ok": "a.b.ctrailing."}
+{"args": ["trailing.\u0130stanbul"], "fn": "Redact", "ok": "trailing.%C4%B0stanbul"}
+{"args": ["abc\ud83d\ude00"], "fn": "Redact", "ok": "abc%F0%9F%98%80"}
+{"args": ["  padded  a.b.c"], "fn": "Redact", "ok": "%20%20padded%20%20a.b.c"}
+{"args": ["a\u0130stanbul"], "fn": "Redact", "ok": "a%C4%B0stanbul"}
+{"args": ["a:b:c\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "a:b:c\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"}
+{"args": ["  padded  \ufeffbom"], "fn": "Redact", "ok": "%20%20padded%20%20%EF%BB%BFbom"}
+{"args": ["stra\u00dfe.leading"], "fn": "Redact", "ok": "stra%C3%9Fe.leading"}
+{"args": [":a"], "fn": "Redact", "ok": ":a"}
+{"args": ["a:b:c  padded  "], "fn": "Redact", "ok": "a:b:c  padded  "}
+{"args": ["trailing.key_name-1"], "fn": "Redact", "ok": "trailing.key_name-1"}
+{"args": ["a\ud83d\ude00b\ud83d\ude00c{name} has {count} items"], "fn": "Redact", "ok": "a%F0%9F%98%80b%F0%9F%98%80c%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["a..bhello"], "fn": "Redact", "ok": "a..bhello"}
+{"args": ["hello worldtrailing."], "fn": "Redact", "ok": "hello%20worldtrailing."}
+{"args": ["stra\u00dfetab\tseparated"], "fn": "Redact", "ok": "stra\u00dfetab\tseparated"}
+{"args": ["tab\tseparatede\u0301"], "fn": "Redact", "ok": "tab\tseparatede\u0301"}
+{"args": ["\ufeffbomhello"], "fn": "Redact", "ok": "%EF%BB%BFbomhello"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mixHello World"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mixHello%20World"}
+{"args": ["a\ud83d\ude00b\ud83d\ude00c\ud83d\ude00"], "fn": "Redact", "ok": "a%F0%9F%98%80b%F0%9F%98%80c%F0%9F%98%80"}
+{"args": ["hello worldhello world"], "fn": "Redact", "ok": "hello%20worldhello%20world"}
+{"args": ["abstra\u00dfe"], "fn": "Redact", "ok": "abstra%C3%9Fe"}
+{"args": [".leadingline1\nline2"], "fn": "Redact", "ok": ".leadingline1\nline2"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8\ud83d\ude00"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%F0%9F%98%80"}
+{"args": ["stra\u00dfe\ud83d\ude00"], "fn": "Redact", "ok": "stra%C3%9Fe%F0%9F%98%80"}
+{"args": ["trailing.emoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "trailing.emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["a:b:ckey_name-1"], "fn": "Redact", "ok": "a:b:ckey_name-1"}
+{"args": ["ns:key.patha..b"], "fn": "Redact", "ok": "ns:key.patha..b"}
+{"args": ["key_name-1ns:key.path"], "fn": "Redact", "ok": "key_name-1ns:key.path"}
+{"args": ["Hello Worldab"], "fn": "Redact", "ok": "Hello%20Worldab"}
+{"args": ["  padded  a:b:c"], "fn": "Redact", "ok": "  padded  a:b:c"}
+{"args": ["trailing.tab\tseparated"], "fn": "Redact", "ok": "trailing.tab\tseparated"}
+{"args": ["a\ud83d\ude00b\ud83d\ude00cline1\nline2"], "fn": "Redact", "ok": "a\ud83d\ude00b\ud83d\ude00cline1\nline2"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mixa.b.c"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mixa.b.c"}
+{"args": ["a:b:ce\u0301"], "fn": "Redact", "ok": "a:b:ce\u0301"}
+{"args": ["  padded  \u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "%20%20padded%20%20%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3"}
+{"args": ["\ud83d\ude00stra\u00dfe"], "fn": "Redact", "ok": "%F0%9F%98%80stra%C3%9Fe"}
+{"args": ["./x/**/*.json\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "./x/%2A%2A/%2A.json%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": ["src/a/b.tsa..b"], "fn": "Redact", "ok": "src/a/b.tsa..b"}
+{"args": ["HELLOa..b"], "fn": "Redact", "ok": "HELLOa..b"}
+{"args": [".leading.leading"], "fn": "Redact", "ok": ".leading.leading"}
+{"args": ["trailing.line1\nline2"], "fn": "Redact", "ok": "trailing.line1\nline2"}
+{"args": ["stra\u00dfe\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "stra%C3%9Fe%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": [":\u00fcn\u00efc\u00f6d\u00e9"], "fn": "Redact", "ok": ":\u00fcn\u00efc\u00f6d\u00e9"}
+{"args": ["e\u0301\ud83d\ude00"], "fn": "Redact", "ok": "e%CC%81%F0%9F%98%80"}
+{"args": ["  padded  {name} has {count} items"], "fn": "Redact", "ok": "%20%20padded%20%20%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["abc{name} has {count} items"], "fn": "Redact", "ok": "abc%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3\ufeffbom"], "fn": "Redact", "ok": "%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3%EF%BB%BFbom"}
+{"args": ["hello world  padded  "], "fn": "Redact", "ok": "hello%20world%20%20padded%20%20"}
+{"args": ["src/a/b.ts  padded  "], "fn": "Redact", "ok": "src/a/b.ts%20%20padded%20%20"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mixstra\u00dfe"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mixstra%C3%9Fe"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8a:b:c"], "fn": "Redact", "ok": "\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8a:b:c"}
+{"args": ["\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8hello world"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88hello%20world"}
+{"args": ["hellosrc/a/b.ts"], "fn": "Redact", "ok": "hellosrc/a/b.ts"}
+{"args": ["HELLOkey_name-1"], "fn": "Redact", "ok": "HELLOkey_name-1"}
+{"args": ["a  padded  "], "fn": "Redact", "ok": "a%20%20padded%20%20"}
+{"args": ["a..bemoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "a..bemoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3:"], "fn": "Redact", "ok": "\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3:"}
+{"args": ["e\u0301line1\nline2"], "fn": "Redact", "ok": "e\u0301line1\nline2"}
+{"args": ["abca:b:c"], "fn": "Redact", "ok": "abca:b:c"}
+{"args": ["hello world./x/**/*.json"], "fn": "Redact", "ok": "hello%20world./x/%2A%2A/%2A.json"}
+{"args": ["abca.b.c"], "fn": "Redact", "ok": "abca.b.c"}
+{"args": [":\ufeffbom"], "fn": "Redact", "ok": ":\ufeffbom"}
+{"args": ["a..b:"], "fn": "Redact", "ok": "a..b:"}
+{"args": ["src/a/b.tshello"], "fn": "Redact", "ok": "src/a/b.tshello"}
+{"args": ["\u00fcn\u00efc\u00f6d\u00e9e\u0301"], "fn": "Redact", "ok": "%C3%BCn%C3%AFc%C3%B6d%C3%A9e%CC%81"}
+{"args": ["a:b:c\ufeffbom"], "fn": "Redact", "ok": "a:b:c\ufeffbom"}
+{"args": ["a.b.cemoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "a.b.cemoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["\ud83d\ude00src/a/b.ts"], "fn": "Redact", "ok": "%F0%9F%98%80src/a/b.ts"}
+{"args": [":stra\u00dfe"], "fn": "Redact", "ok": ":stra\u00dfe"}
+{"args": ["a..ba..b"], "fn": "Redact", "ok": "a..ba..b"}
+{"args": ["Hello Worldline1\nline2"], "fn": "Redact", "ok": "Hello Worldline1\nline2"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mix\ufeffbom"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix%EF%BB%BFbom"}
+{"args": ["emoji \ud83d\udc4d\ud83c\udffd mix\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "emoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3"}
+{"args": ["ababc"], "fn": "Redact", "ok": "ababc"}
+{"args": ["abcemoji \ud83d\udc4d\ud83c\udffd mix"], "fn": "Redact", "ok": "abcemoji%20%F0%9F%91%8D%F0%9F%8F%BD%20mix"}
+{"args": ["abca"], "fn": "Redact", "ok": "abca"}
+{"args": ["a.b.c\u65e5\u672c\u8a9e\u306e\u30c6\u30ad\u30b9\u30c8"], "fn": "Redact", "ok": "a.b.c%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88"}
+{"args": ["tab\tseparateda:b:c"], "fn": "Redact", "ok": "tab\tseparateda:b:c"}
+{"args": ["\u0130stanbulHello World"], "fn": "Redact", "ok": "%C4%B0stanbulHello%20World"}
+{"args": ["./x/**/*.json.leading"], "fn": "Redact", "ok": "./x/**/*.json.leading"}
+{"args": ["astra\u00dfe"], "fn": "Redact", "ok": "astra%C3%9Fe"}
+{"args": ["key_name-1Hello World"], "fn": "Redact", "ok": "key_name-1Hello%20World"}
+{"args": ["\u00fcn\u00efc\u00f6d\u00e9hello world"], "fn": "Redact", "ok": "%C3%BCn%C3%AFc%C3%B6d%C3%A9hello%20world"}
+{"args": ["\u0130stanbulabc"], "fn": "Redact", "ok": "%C4%B0stanbulabc"}
+{"args": ["key_name-1a"], "fn": "Redact", "ok": "key_name-1a"}
+{"args": ["HELLOa.b.c"], "fn": "Redact", "ok": "HELLOa.b.c"}
+{"args": ["\ufeffbomns:key.path"], "fn": "Redact", "ok": "\ufeffbomns:key.path"}
+{"args": ["a\ud83d\ude00b\ud83d\ude00chello"], "fn": "Redact", "ok": "a%F0%9F%98%80b%F0%9F%98%80chello"}
+{"args": ["hello worldns:key.path"], "fn": "Redact", "ok": "hello worldns:key.path"}
+{"args": ["Hello Worldsrc/a/b.ts"], "fn": "Redact", "ok": "Hello%20Worldsrc/a/b.ts"}
+{"args": ["ns:key.path\ud83d\ude00"], "fn": "Redact", "ok": "ns:key.path\ud83d\ude00"}
+{"args": ["tab\tseparatedhello"], "fn": "Redact", "ok": "tab\tseparatedhello"}
+{"args": ["key_name-1e\u0301"], "fn": "Redact", "ok": "key_name-1e%CC%81"}
+{"args": ["ns:key.pathsrc/a/b.ts"], "fn": "Redact", "ok": "ns:key.pathsrc/a/b.ts"}
+{"args": ["a..bHELLO"], "fn": "Redact", "ok": "a..bHELLO"}
+{"args": ["ns:key.pathabc"], "fn": "Redact", "ok": "ns:key.pathabc"}
+{"args": ["\ufeffbomsrc/a/b.ts"], "fn": "Redact", "ok": "%EF%BB%BFbomsrc/a/b.ts"}
+{"args": ["ns:key.path\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "ns:key.path\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"}
+{"args": ["HELLOa"], "fn": "Redact", "ok": "HELLOa"}
+{"args": ["\ud83d\ude00tab\tseparated"], "fn": "Redact", "ok": "\ud83d\ude00tab\tseparated"}
+{"args": ["ns:key.path.leading"], "fn": "Redact", "ok": "ns:key.path.leading"}
+{"args": ["key_name-1\u0130stanbul"], "fn": "Redact", "ok": "key_name-1%C4%B0stanbul"}
+{"args": ["abc\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "abc%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3"}
+{"args": [".leading{name} has {count} items"], "fn": "Redact", "ok": ".leading%7Bname%7D%20has%20%7Bcount%7D%20items"}
+{"args": ["trailing.\u03a3\u038a\u03a3\u03a5\u03a6\u039f\u03a3"], "fn": "Redact", "ok": "trailing.%CE%A3%CE%8A%CE%A3%CE%A5%CE%A6%CE%9F%CE%A3"}
+{"args": ["h\u00e9llo w\u00f6rld"], "fn": "Redact", "ok": "h%C3%A9llo%20w%C3%B6rld"}
+{"args": ["\ud83d\udc4d\ud83c\udffd thumbs"], "fn": "Redact", "ok": "%F0%9F%91%8D%F0%9F%8F%BD%20thumbs"}
+{"args": ["\u65e5\u672c\u8a9e"], "fn": "Redact", "ok": "%E6%97%A5%E6%9C%AC%E8%AA%9E"}
+{"args": ["\u0131l\u0131k \u0131rmak"], "fn": "Redact", "ok": "%C4%B1l%C4%B1k%20%C4%B1rmak"}
+{"args": ["\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67 family"], "fn": "Redact", "ok": "%F0%9F%91%A8%E2%80%8D%F0%9F%91%A9%E2%80%8D%F0%9F%91%A7%20family"}
+{"args": ["a\u00a0b"], "fn": "Redact", "ok": "a%C2%A0b"}
+{"args": ["a\ud83d\ude00b"], "fn": "Redact", "ok": "a%F0%9F%98%80b"}

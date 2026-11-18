@@ -1,0 +1,14 @@
+#!/bin/sh
+# ra — run `rust-anything` with the ARTEX go-shim first on PATH.
+#
+# The shim (tools/go-shim/go) re-injects the norma fork `replace` into the
+# throwaway driver module that `rust-anything record` generates, so units that
+# (transitively) import `github.com/Autumn-27/norma` build. For units that do not
+# import norma the shim is a no-op. See tools/go-shim/go for the full rationale.
+#
+# Usage: rust/ra <rust-anything subcommand> [args...]   (e.g. `rust/ra gate .`)
+set -eu
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PATH="$here/tools/go-shim:$PATH"
+export PATH
+exec rust-anything "$@"

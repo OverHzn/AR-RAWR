@@ -1,0 +1,831 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/workspaces/AR-RAWR/ARTEX",
+  "unit": "db/",
+  "language": "go",
+  "kind": "ffi",
+  "crate_name": "db-rs",
+  "exports": [
+    {
+      "name": "AssetInterceptKindLabel",
+      "file": "db/asset_intercept_match.go",
+      "line": 17,
+      "params": [
+        {
+          "name": "kind",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func AssetInterceptKindLabel(kind string) string"
+    },
+    {
+      "name": "ValidChatMentionKind",
+      "file": "db/chat_mentions.go",
+      "line": 35,
+      "params": [
+        {
+          "name": "kind",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidChatMentionKind(kind string) bool"
+    },
+    {
+      "name": "NormalizeICP",
+      "file": "db/company_scope.go",
+      "line": 33,
+      "params": [
+        {
+          "name": "value",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func NormalizeICP(value string) string"
+    },
+    {
+      "name": "ValidCoverageOutcome",
+      "file": "db/coverage_ledger.go",
+      "line": 55,
+      "params": [
+        {
+          "name": "o",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidCoverageOutcome(o string) bool"
+    },
+    {
+      "name": "NormalizeCoverageField",
+      "file": "db/coverage_ledger.go",
+      "line": 113,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func NormalizeCoverageField(s string) string"
+    },
+    {
+      "name": "CoverageCompletenessFor",
+      "file": "db/coverage_ledger.go",
+      "line": 317,
+      "params": [
+        {
+          "name": "status",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "paused",
+          "ts_type": "boolean",
+          "optional": false,
+          "rest": false,
+          "native_type": "bool"
+        },
+        {
+          "name": "budget",
+          "ts_type": "boolean",
+          "optional": false,
+          "rest": false,
+          "native_type": "bool"
+        },
+        {
+          "name": "pastDeadline",
+          "ts_type": "boolean",
+          "optional": false,
+          "rest": false,
+          "native_type": "bool"
+        }
+      ],
+      "returns": "{ complete: boolean; state: string; caveat: string }",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(CoverageCompleteness)",
+      "prototype": "func CoverageCompletenessFor(status string, paused, budget, pastDeadline bool) CoverageCompleteness"
+    },
+    {
+      "name": "ValidTrafficRole",
+      "file": "db/finding_traffic.go",
+      "line": 70,
+      "params": [
+        {
+          "name": "role",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidTrafficRole(role string) bool"
+    },
+    {
+      "name": "ValidVerificationStatus",
+      "file": "db/finding_verification.go",
+      "line": 19,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidVerificationStatus(s string) bool"
+    },
+    {
+      "name": "ValidFindingStatus",
+      "file": "db/findings.go",
+      "line": 60,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidFindingStatus(s string) bool"
+    },
+    {
+      "name": "ValidFindingReportState",
+      "file": "db/findings.go",
+      "line": 81,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidFindingReportState(s string) bool"
+    },
+    {
+      "name": "ValidSeverity",
+      "file": "db/findings.go",
+      "line": 99,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidSeverity(s string) bool"
+    },
+    {
+      "name": "ParseExpID",
+      "file": "db/llm_usage.go",
+      "line": 321,
+      "params": [
+        {
+          "name": "s",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "int",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(int64)",
+      "prototype": "func ParseExpID(s string) int64"
+    },
+    {
+      "name": "DomainKey",
+      "file": "db/nkey.go",
+      "line": 17,
+      "params": [
+        {
+          "name": "fqdn",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func DomainKey(fqdn string) string"
+    },
+    {
+      "name": "IPKey",
+      "file": "db/nkey.go",
+      "line": 21,
+      "params": [
+        {
+          "name": "ip",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func IPKey(ip string) string"
+    },
+    {
+      "name": "PortKey",
+      "file": "db/nkey.go",
+      "line": 40,
+      "params": [
+        {
+          "name": "ipID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "proto",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "port",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func PortKey(ipID int64, proto string, port int) string"
+    },
+    {
+      "name": "ServiceKey",
+      "file": "db/nkey.go",
+      "line": 44,
+      "params": [
+        {
+          "name": "portID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "svcName",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func ServiceKey(portID int64, svcName string) string"
+    },
+    {
+      "name": "SiteKey",
+      "file": "db/nkey.go",
+      "line": 48,
+      "params": [
+        {
+          "name": "scheme",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "host",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "port",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func SiteKey(scheme, host string, port int) string"
+    },
+    {
+      "name": "EndpointKey",
+      "file": "db/nkey.go",
+      "line": 52,
+      "params": [
+        {
+          "name": "siteID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "method",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "urlTemplate",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func EndpointKey(siteID int64, method, urlTemplate string) string"
+    },
+    {
+      "name": "ParameterKey",
+      "file": "db/nkey.go",
+      "line": 56,
+      "params": [
+        {
+          "name": "endpointID",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int64"
+        },
+        {
+          "name": "location",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "name",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func ParameterKey(endpointID int64, location, name string) string"
+    },
+    {
+      "name": "NormalizeParamName",
+      "file": "db/nkey.go",
+      "line": 64,
+      "params": [
+        {
+          "name": "name",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func NormalizeParamName(name string) string"
+    },
+    {
+      "name": "TechKey",
+      "file": "db/nkey.go",
+      "line": 68,
+      "params": [
+        {
+          "name": "name",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "version",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TechKey(name, version string) string"
+    },
+    {
+      "name": "TemplatePath",
+      "file": "db/nkey.go",
+      "line": 83,
+      "params": [
+        {
+          "name": "path",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TemplatePath(path string) string"
+    },
+    {
+      "name": "ValidNotifyMode",
+      "file": "db/notification.go",
+      "line": 49,
+      "params": [
+        {
+          "name": "m",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func ValidNotifyMode(m string) bool"
+    },
+    {
+      "name": "TargetKey",
+      "file": "db/target_pins.go",
+      "line": 40,
+      "params": [
+        {
+          "name": "host",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        },
+        {
+          "name": "port",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "string",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(string)",
+      "prototype": "func TargetKey(host string, port int) string"
+    },
+    {
+      "name": "IsTaskArchiveFormatSupported",
+      "file": "db/task_archives.go",
+      "line": 24,
+      "params": [
+        {
+          "name": "version",
+          "ts_type": "int",
+          "optional": false,
+          "rest": false,
+          "native_type": "int"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsTaskArchiveFormatSupported(version int) bool"
+    },
+    {
+      "name": "IsTerminal",
+      "file": "db/tasks.go",
+      "line": 86,
+      "params": [
+        {
+          "name": "status",
+          "ts_type": "string",
+          "optional": false,
+          "rest": false,
+          "native_type": "string"
+        }
+      ],
+      "returns": "boolean",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false,
+      "native_return": "(bool)",
+      "prototype": "func IsTerminal(status string) bool"
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "ParseDSL",
+      "file": "db/asset_dsl.go",
+      "line": 233,
+      "reason": "takes or returns a pointer (`*astNode`)"
+    },
+    {
+      "name": "ValidateDSL",
+      "file": "db/asset_dsl.go",
+      "line": 471,
+      "reason": "needs the asset-DSL parser (db/asset_dsl.go)"
+    },
+    {
+      "name": "MatchAssetInterceptRules",
+      "file": "db/asset_intercept_match.go",
+      "line": 115,
+      "reason": "takes []AssetInterceptRule structs"
+    },
+    {
+      "name": "EvaluateAssetGate",
+      "file": "db/asset_intercept_match.go",
+      "line": 199,
+      "reason": "takes []AssetInterceptRule structs"
+    },
+    {
+      "name": "ValidateAssetIP",
+      "file": "db/assets.go",
+      "line": 317,
+      "reason": "needs net/netip"
+    },
+    {
+      "name": "ValidateCompanyScopeInputBounds",
+      "file": "db/companies.go",
+      "line": 75,
+      "reason": "takes []ScopeInput structs"
+    },
+    {
+      "name": "ParseScopeInput",
+      "file": "db/company_scope.go",
+      "line": 91,
+      "reason": "takes/returns ScopeInput structs"
+    },
+    {
+      "name": "ParseAutoScopeLine",
+      "file": "db/company_scope.go",
+      "line": 127,
+      "reason": "scope parser returning ParsedScope struct"
+    },
+    {
+      "name": "ParseScopeLine",
+      "file": "db/company_scope.go",
+      "line": 220,
+      "reason": "scope parser returning ParsedScope struct"
+    },
+    {
+      "name": "BuildCoverageLedger",
+      "file": "db/coverage_ledger.go",
+      "line": 281,
+      "reason": "takes or returns a pointer (`*CoverageLedger`)"
+    },
+    {
+      "name": "DSN",
+      "file": "db/db.go",
+      "line": 106,
+      "reason": "reads env + config.PostgresDSN"
+    },
+    {
+      "name": "SuffixTestDatabase",
+      "file": "db/db.go",
+      "line": 117,
+      "reason": "side-effectful (mutates ARTEX_PG_DSN env)"
+    },
+    {
+      "name": "Open",
+      "file": "db/db.go",
+      "line": 168,
+      "reason": "takes or returns a pointer (`*DB`)"
+    },
+    {
+      "name": "NormalizeTrafficRefs",
+      "file": "db/finding_traffic.go",
+      "line": 48,
+      "reason": "takes/returns []TrafficRef structs"
+    },
+    {
+      "name": "TrafficSnapshotID",
+      "file": "db/finding_traffic.go",
+      "line": 130,
+      "reason": "sha256 over TrafficEvidenceSnapshot struct"
+    },
+    {
+      "name": "LockTaskEvidenceTx",
+      "file": "db/finding_traffic.go",
+      "line": 141,
+      "reason": "takes or returns a pointer (`*sql.Tx`)"
+    },
+    {
+      "name": "LockFindingEvidenceTx",
+      "file": "db/finding_traffic.go",
+      "line": 163,
+      "reason": "takes or returns a pointer (`*sql.Tx`)"
+    },
+    {
+      "name": "InsertEvidenceSnapshotTx",
+      "file": "db/finding_traffic.go",
+      "line": 187,
+      "reason": "takes or returns a pointer (`*sql.Tx`)"
+    },
+    {
+      "name": "AddFindingTrafficTx",
+      "file": "db/finding_traffic.go",
+      "line": 224,
+      "reason": "takes or returns a pointer (`*sql.Tx`)"
+    },
+    {
+      "name": "FindingTrafficTx",
+      "file": "db/finding_traffic.go",
+      "line": 262,
+      "reason": "takes or returns a pointer (`*sql.Tx`)"
+    },
+    {
+      "name": "RecordFindingTx",
+      "file": "db/finding_traffic.go",
+      "line": 367,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "ArchiveEvidenceSnapshots",
+      "file": "db/finding_traffic_archive.go",
+      "line": 10,
+      "reason": "takes or returns a pointer (`*TaskArchiveSnapshot`)"
+    },
+    {
+      "name": "RenderLessons",
+      "file": "db/lessons.go",
+      "line": 375,
+      "reason": "takes []Lesson structs"
+    },
+    {
+      "name": "RootDomain",
+      "file": "db/nkey.go",
+      "line": 28,
+      "reason": "needs golang.org/x/net/publicsuffix list"
+    },
+    {
+      "name": "SplitURL",
+      "file": "db/nkey.go",
+      "line": 107,
+      "reason": "net/url Query() iteration order is nondeterministic"
+    },
+    {
+      "name": "RecordNotificationEventTx",
+      "file": "db/notification.go",
+      "line": 247,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "SetFindingStatusTx",
+      "file": "db/notification.go",
+      "line": 557,
+      "reason": "uses `context.Context` from another package"
+    },
+    {
+      "name": "TrafficTraceKey",
+      "file": "db/secrets.go",
+      "line": 133,
+      "reason": "returns the stateful cached process key"
+    },
+    {
+      "name": "NormalizeTaskCompanyIDs",
+      "file": "db/tasks.go",
+      "line": 118,
+      "reason": "returns a nil slice (JSON null) for empty input"
+    }
+  ]
+}
