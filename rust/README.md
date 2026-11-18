@@ -57,7 +57,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
 | `agentx-rs`       | 169  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote`, `clipBody`, `nmapWebScheme` (pure int/string/JSON helpers) |
 | `llmpoolx-rs`     | 23   | `llmpool/` | `trimErr`, `blocksLen`, `estimateTokens` (`blocksLen`/`estimateTokens` over the `norma/llm` model ported in `llm-rs`; other helpers need regexp/`[]*Member` pointers/context and stay in Go) |
-| `llmrecx-rs`      | 15   | `llmrec/`  | `parseSession` (`exp<N>-<role>[-suffix]` → taskID, worker; other helpers need `context`/`norma/llm` and stay in Go) |
+| `llmrecx-rs`      | 23   | `llmrec/`  | `parseSession`, `thinkingText` (`thinkingText` over the `norma/llm` model ported in `llm-rs`; other helpers need `context` and stay in Go) |
 | `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho` + the value model (`ContentBlock`/`Message`/`Usage`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
@@ -168,7 +168,7 @@ blanks excluded, measured with a small script — so the numbers differ from a r
 | `sidequestion/` | 674 | 602 / 3 files | `Parent::key`, `outputBudget`, `inputBudget` (`sidequestion-rs`) | `Exchange` (large IO struct), request/replay flow |
 | `report/` | 438 | 253 / 1 file | 7 string helpers (`reportex-rs`) | markdown/CSV builders (`*db.DBFinding`/`Input`, `text/template`, `time`, `regexp`), `qualityBullets`/`qualityNarrative` (`Quality` struct) |
 | `notify/` | 1768 | 2272 / 12 files | 7 config helpers (`notifyx-rs`) | senders (`dingTalkSignedURL`, `buildEmailMessage`, SMTP/HTTP), `render*` (`text/template`) |
-| `llmrec/` | 423 | 369 / 4 files | `parseSession` (`llmrecx-rs`) | LLM recommendation (SQL + JSON aggregation); `thinkingText` now reachable via `llm-rs` but not yet ported |
+| `llmrec/` | 423 | 369 / 4 files | `parseSession`, `thinkingText` (`llmrecx-rs`) | LLM recommendation (SQL + JSON aggregation); `workerFrom`/`reportStop` need `context` |
 | `evidence/` | 379 | 357 / 2 files | — | fingerprint / trust-scoring over DB |
 | `llmpool/` | 348 | 518 / 4 files | `trimErr`, `blocksLen`, `estimateTokens` (`llmpoolx-rs`) | LLM connection pool; `State::Open` reads `time.Now`; `rotateGroups` (`[]*Member`) + regex/context helpers stay in Go |
 | `enrich/` | 248 | 0 / 0 files | 3 helpers (`enrich-rs`) | `*Engine` DNS / asset-upsert workers (no tests) |

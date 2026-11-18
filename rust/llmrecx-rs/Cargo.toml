@@ -3,12 +3,13 @@ name = "llmrecx-rs"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Rust port of `llmrec/` unexported pure helpers (parseSession), parity-tested against Go-recorded cases"
+description = "Rust port of `llmrec/` unexported pure helpers (parseSession, thinkingText), parity-tested against Go-recorded cases"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+llm-rs = { path = "../llm-rs" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [profile.release]

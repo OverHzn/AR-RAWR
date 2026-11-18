@@ -1,5 +1,7 @@
 //! Rust port of the unexported, pure helpers in the Go `llmrec/` package.
 
+use llm_rs::port::{BLOCK_THINKING, Message};
+
 /// `parseSession` (`llmrec/session.go`): split an `exp<N>-<role>[-suffix]` session
 /// key into `(taskID, worker)`.
 ///
@@ -24,4 +26,16 @@ pub fn parse_session(s: &str) -> (String, String) {
         }
         None => (rest.to_string(), String::new()),
     }
+}
+
+/// `thinkingText` (`llmrec/llmrec.go`): concatenation of the `Thinking` text of every
+/// thinking block that carries a non-empty `Thinking` (empty ones are skipped).
+pub fn thinking_text(msg: &Message) -> String {
+    let mut s = String::new();
+    for block in &msg.content {
+        if block.block_type == BLOCK_THINKING && !block.thinking.is_empty() {
+            s.push_str(&block.thinking);
+        }
+    }
+    s
 }

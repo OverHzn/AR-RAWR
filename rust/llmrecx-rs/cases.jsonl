@@ -13,3 +13,11 @@
 {"args":["exp7-"],"fn":"parseSession","ok":["7",""]}
 {"args":["nope5-worker"],"fn":"parseSession","ok":["",""]}
 {"args":["xexp5-worker"],"fn":"parseSession","ok":["",""]}
+{"args":[{"role":"assistant","content":[{"type":"text","text":"hi"}]}],"fn":"thinkingText","ok":""}
+{"args":[{"role":"assistant","content":[{"type":"text","text":"no think"},{"type":"tool_use","name":"t"}]}],"fn":"thinkingText","ok":""}
+{"args":[{"role":"assistant","content":[{"type":"thinking","thinking":""}]}],"fn":"thinkingText","ok":""}
+{"args":[{"role":"assistant","content":[{"type":"thinking","thinking":"a"},{"type":"thinking","thinking":"b"}]}],"fn":"thinkingText","ok":"ab"}
+{"args":[{"role":"assistant","content":[{"type":"thinking","thinking":"first"}]}],"fn":"thinkingText","ok":"first"}
+{"args":[{"role":"assistant","content":[{"type":"thinking","thinking":"r1","signature":"s"},{"type":"text","text":"x"},{"type":"thinking","thinking":"r2"}]}],"fn":"thinkingText","ok":"r1r2"}
+{"args":[{"role":"assistant","content":[{"type":"thinking","thinking":"世界 reasoning"}]}],"fn":"thinkingText","ok":"世界 reasoning"}
+{"args":[{"role":"assistant","content":null}],"fn":"thinkingText","ok":""}

@@ -6,6 +6,7 @@
 
 use serde_json::{Value, json};
 
+use llm_rs::port::Message;
 use llmrecx_rs::port::*;
 
 fn cases() -> Vec<Value> {
@@ -25,6 +26,10 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "parseSession" => {
             let (task_id, worker) = parse_session(&arg_str(args, 0));
             json!([task_id, worker])
+        }
+        "thinkingText" => {
+            let msg: Message = serde_json::from_value(args[0].clone()).expect("message decode");
+            json!(thinking_text(&msg))
         }
         other => panic!("no dispatcher arm for {other}"),
     }
