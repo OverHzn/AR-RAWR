@@ -34,6 +34,21 @@ the units rely on (`net/url`, `path/filepath`, `encoding/json` error shapes,
 `regexp` error text). It is a separate crate, so its size does not count against
 any unit's size gate.
 
+## Unit ported without the bridge (manual parity)
+
+| Unit | Cases | Go source | Notes |
+|------|------:|----------|-------|
+| `server-rs`   | 5910 | `server/` (33 pure helpers) | unexported helpers the bridge can't reach; parity via a Go oracle, not `bridge/diff` |
+
+`server-rs` ports the **unexported, side-effect-free helpers** of `server/`
+(`humanBytes`, `firstLine`, `trunc`, `shellQuote`, `validatePassword`,
+`skillPathRune`, …). `rust-anything bridge` only extracts exported, pointer-free
+functions, and the three it finds in `server/` are all side-effectful
+(`ScrubSecretEnv`, `StartLogCapture`, `WithSecretScrub`), so the bridge can't be
+used here. Instead `record.sh` runs a temporary Go oracle over a corpus and
+writes `cases.jsonl`; `tests/parity.rs` replays it and asserts byte-identical
+output. Reproduce with `cd rust/server-rs && ./gate.sh`.
+
 ## Reproducing a unit's gate
 
 ```sh
@@ -72,9 +87,12 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 
 The remaining Go packages are pointer/IO/concurrent-heavy and expose no pure,
 value-typed, deterministically-recordable functions the harness can prove parity
-for. Pure helpers that do exist there (e.g. `server/`'s `humanBytes`, `firstLine`,
-`trunc`) are *unexported* — porting them would require editing the Go original,
-breaking the "1:1, don't touch the original" premise.
+for. The pure helpers that *do* exist in `server/` (unexported, so unreachable by
+the bridge) are ported separately in [`server-rs`](server-rs) via a Go oracle.
 
-- `server/` (27924 LOC), `traffic/` (4282), `sidequestion/` (707), `llmrec/` (543),
-  `llmpool/` (481), `evidence/` (399), `guard/` (330), `enrich/` (281), `cmd/artex/` (154).
+- `server/` (27924 LOC) — 33 pure helpers ported in `server-rs`; the rest
+  (stateful HTTP handlers, `*Server` methods over DB/receiver, 1952 pointers) stays
+  in Go.
+- `traffic/` (4282), `sidequestion/` (707), `llmrec/` (543), `llmpool/` (481),
+  `evidence/` (399), `guard/` (330), `enrich/` (281), `cmd/artex/` (154) — no
+  exported pure functions; their pure helpers (if any) are unexported.

@@ -1,0 +1,152 @@
+package server
+
+// TEMPORARY oracle used by ../record.sh to regenerate cases.jsonl. It runs the
+// real, unexported Go helpers over a fixed corpus and prints one JSON object per
+// call: {"fn":..., "args":[...], "ok":... | "error":"..."}.
+//
+// record.sh copies this into server/, runs `go test -run TestZZOracle`, captures
+// the JSON lines, then deletes this file — the package is left untouched.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+// corpus of string inputs shared across the string->X helpers.
+var oracleStrings = []string{
+	"", "abc", "Hello World", "hello", "HELLO", "ABC",
+	"  spaced  ", "\t\ttabs\t\t", "\n\nnewlines\n\n", "trim me ",
+	"line1\nline2", "line1\r\nline2", "first\nsecond\nthird",
+	"0", "1", "42", "100", "999", "1000", "1023", "1024", "1025",
+	"1048575", "1048576", "1048577", "1073741824",
+	"-1", "-1024", "-1048576",
+	"short", "this is a longer string than sixteen chars", "exactly16chars!",
+	"17charslongstring", "héllo wörld", "日本語", "👍🏽 emoji",
+	"under_score", "with-dash", "a.b.c", "MixedCase", "camelCase",
+	"https://example.com/path", "http://x", "/abs/path", "./rel/path",
+	"../../etc/passwd", "file.txt", "no_ext", "name.tar.gz",
+	"a b c d e f g h i j k l m n o p", " \t\n mixed \r\n whitespace \t ",
+	"null\x00byte", "tab\there", "quote\"inside", "back\\slash",
+	"ünïcödé-strïng", "日本語のテキストです", "emoji🎉test",
+	"ALLCAPS", "lowercase", "Title Case", "  ", "\n", "\t",
+	"1234567890123456789012345678901234567890",
+	"password", "P@ssw0rd!", "correct horse battery staple",
+	"short12c", "exactlytwelve", "elevenchars1",
+	// mask / secret shapes
+	"__masked__", "__masked__rest", "plain",
+	// skill names
+	"skill", "Skill-1", "a", "A", "-", "1abc", "abc-", "a--b", "a_b",
+	"skill.name", "KÉNNEL", "日本語skill", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	// status / constraint / filter
+	"done", "blocked", "exhausted", "stopped", "running", "pending",
+	"allow", "deny", "ALLOW", "  deny  ", "other",
+	"all", "open", "closed",
+	// task ids
+	"1", "123", "0", "-5", "999999999", "abc", "12.5", " 42 ",
+	// schemes / ports
+	"http", "https", "ftp", "HTTP",
+	// log levels
+	"fatal error", "panic now", "an error occurred", "err: bad", "operation failed",
+	"request dropped", "connection refused", "✕ failed", "host unreachable",
+	"warn: low disk", "feature disabled", "please disable", "skipping", "service stopped",
+	"⚠ careful", "retry later", "all good here", "normal info message",
+	// request ids
+	"req-123", "req_123", "req.123", "req:123", "REQ123", "bad id!", "id with space",
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	// control chars / quotes
+	"a'b", "'quoted'", "mix'ed\"both", "backtick",
+	// zip-ish
+	"store",
+	// yaml-ish
+	"key: value", "a#b", "plain text", " lead space", "trail space ", "with'quote", "{}",
+	// constraint kinds
+	"constraints",
+}
+
+// corpus of int64 inputs
+var oracleInt64 = []int64{
+	0, 1, -1, 42, 100, 999, 1000, 1023, 1024, 1025,
+	1048575, 1048576, 1048577, 1073741824, 1099511627776,
+	-1024, -1048576, 500, 512, 256, 1536,
+	9223372036854775807, -9223372036854775808,
+	123456789, 2048, 4096, 65536,
+}
+
+func rec(t *testing.T, fn string, args []any, out any, err error) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args}
+	if err != nil {
+		c["error"] = err.Error()
+	} else {
+		c["ok"] = out
+	}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// (string) -> string
+	strToStr := map[string]func(string) string{
+		"validatePassword":        validatePassword,
+		"proxyURLString":          proxyURLString,
+		"identity":                identity,
+		"shellQuote":              shellQuote,
+		"normalizeEvidenceText":   normalizeEvidenceText,
+		"shortQuote":              shortQuote,
+		"trimTrailingSlash":       trimTrailingSlash,
+		"truncateReply":           truncateReply,
+		"normFilter":              normFilter,
+		"yamlScalar":              yamlScalar,
+		"sanitizeFilename":        sanitizeFilename,
+		"truncateBody":            truncateBody,
+		"maskedSecret":            maskedSecret,
+		"normalizeConstraintKind": normalizeConstraintKind,
+		"levelOf":                 levelOf,
+	}
+	for _, s := range oracleStrings {
+		for name, f := range strToStr {
+			rec(t, name, []any{s}, f(s), nil)
+		}
+		// (string) -> bool
+		rec(t, "isMaskedSecret", []any{s}, isMaskedSecret(s), nil)
+		rec(t, "validWorkerMessageRequestID", []any{s}, validWorkerMessageRequestID(s), nil)
+		rec(t, "inheritedIntentResult", []any{s}, inheritedIntentResult(s), nil)
+		rec(t, "validSkillName", []any{s}, validSkillName(s), nil)
+		a, b := canonicalTaskID(s)
+		rec(t, "canonicalTaskID", []any{s}, []any{a, b}, nil)
+		// (string, default) -> int
+		rec(t, "atoiDefault", []any{s, 7}, atoiDefault(s, 7), nil)
+		rec(t, "portOr", []any{s, 9}, portOr(s, 9), nil)
+		rec(t, "defaultPort", []any{s}, defaultPort(s), nil)
+	}
+	// (int) -> string
+	for _, p := range []int{80, 443, 8443, 8080, 0, 1, 65535, -1, 12345} {
+		rec(t, "schemeForPort", []any{p}, schemeForPort(p), nil)
+	}
+	for _, m := range []uint16{0, 8, 9, 12, 14, 20, 93, 95, 96, 97, 98, 99, 1, 7, 100, 65535} {
+		rec(t, "zipMethodName", []any{m}, zipMethodName(m), nil)
+	}
+	// (rune)
+	for _, r := range []rune{'a', 'Z', '0', '-', '/', '\\', '%', '#', '?', '*', ':', '"', '<', '>', '|', ' ', 0x1f, 0x7f, 0xfffd, 0x200d, 0x202e, 0x00a0, 0x3000, 'é', '日', 0xe000} {
+		rec(t, "skillPathRune", []any{string(r)}, skillPathRune(r), nil)
+	}
+	// (int64) -> string
+	for _, n := range oracleInt64 {
+		rec(t, "humanBytes", []any{n}, humanBytes(n), nil)
+		rec(t, "i64s", []any{n}, i64s(n), nil)
+		rec(t, "llmFailKey", []any{"task", n}, llmFailKey("task", n), nil)
+	}
+	// (bool) -> string
+	for _, b := range []bool{true, false} {
+		rec(t, "enabledWord", []any{b}, enabledWord(b), nil)
+	}
+	// (string, int) -> string
+	for _, s := range oracleStrings {
+		for _, n := range []int{0, 1, 5, 16, 1000} {
+			rec(t, "preview", []any{s, n}, preview(s, n), nil)
+			rec(t, "firstLine", []any{s, n}, firstLine(s, n), nil)
+			rec(t, "trunc", []any{s, n}, trunc(s, n), nil)
+		}
+	}
+}
