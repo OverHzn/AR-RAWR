@@ -73,6 +73,14 @@ var oracleInt64 = []int64{
 	123456789, 2048, 4096, 65536,
 }
 
+// corpus for parseTaskID (string) -> (int64, error)
+var oracleTaskIDs = []string{
+	"1", "2", "123", "999999999", "0", "-1", "-5", "abc", "12.5", " 42 ", "",
+	"9223372036854775807", "9223372036854775808", "99999999999999999999999",
+	`quote"id`, `back\slash`, "tab\there", "new\nline", "null\x00byte",
+	"+7", "007", "1_000", "0x1f", "  ", "12 ", " 12",
+}
+
 func rec(t *testing.T, fn string, args []any, out any, err error) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args}
@@ -130,6 +138,11 @@ func TestZZOracle(t *testing.T) {
 	// (rune)
 	for _, r := range []rune{'a', 'Z', '0', '-', '/', '\\', '%', '#', '?', '*', ':', '"', '<', '>', '|', ' ', 0x1f, 0x7f, 0xfffd, 0x200d, 0x202e, 0x00a0, 0x3000, 'é', '日', 0xe000} {
 		rec(t, "skillPathRune", []any{string(r)}, skillPathRune(r), nil)
+	}
+	// (string) -> (int64, error)
+	for _, id := range oracleTaskIDs {
+		n, err := parseTaskID(id)
+		rec(t, "parseTaskID", []any{id}, n, err)
 	}
 	// (int64) -> string
 	for _, n := range oracleInt64 {

@@ -27,63 +27,74 @@ fn arg_bool(args: &[Value], i: usize) -> bool {
     args[i].as_bool().expect("bool arg")
 }
 
-/// Dispatch one case to the matching port and return the actual result as JSON.
-fn dispatch(name: &str, args: &[Value]) -> Value {
+/// Dispatch one case to the matching port. `Ok(value)` is a normal return,
+/// `Err(message)` mirrors a Go `error` return (compared against the recorded
+/// `error` string).
+fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
+    let ok = |v: Value| Ok(v);
     match name {
         // (string) -> string
-        "identity" => json!(identity(&arg_str(args, 0))),
-        "maskedSecret" => json!(masked_secret(&arg_str(args, 0))),
-        "proxyURLString" => json!(proxy_url_string(&arg_str(args, 0))),
-        "shellQuote" => json!(shell_quote(&arg_str(args, 0))),
-        "normalizeEvidenceText" => json!(normalize_evidence_text(&arg_str(args, 0))),
-        "shortQuote" => json!(short_quote(&arg_str(args, 0))),
-        "trimTrailingSlash" => json!(trim_trailing_slash(&arg_str(args, 0))),
-        "truncateReply" => json!(truncate_reply(&arg_str(args, 0))),
-        "truncateBody" => json!(truncate_body(&arg_str(args, 0))),
-        "normFilter" => json!(norm_filter(&arg_str(args, 0))),
-        "yamlScalar" => json!(yaml_scalar(&arg_str(args, 0))),
-        "sanitizeFilename" => json!(sanitize_filename(&arg_str(args, 0))),
-        "normalizeConstraintKind" => json!(normalize_constraint_kind(&arg_str(args, 0))),
-        "levelOf" => json!(level_of(&arg_str(args, 0))),
-        "validatePassword" => json!(validate_password(&arg_str(args, 0))),
-        "defaultPort" => json!(default_port(&arg_str(args, 0))),
-        "schemeForPort" => json!(scheme_for_port(arg_i64(args, 0))),
-        "zipMethodName" => json!(zip_method_name(arg_i64(args, 0) as u16)),
+        "identity" => ok(json!(identity(&arg_str(args, 0)))),
+        "maskedSecret" => ok(json!(masked_secret(&arg_str(args, 0)))),
+        "proxyURLString" => ok(json!(proxy_url_string(&arg_str(args, 0)))),
+        "shellQuote" => ok(json!(shell_quote(&arg_str(args, 0)))),
+        "normalizeEvidenceText" => ok(json!(normalize_evidence_text(&arg_str(args, 0)))),
+        "shortQuote" => ok(json!(short_quote(&arg_str(args, 0)))),
+        "trimTrailingSlash" => ok(json!(trim_trailing_slash(&arg_str(args, 0)))),
+        "truncateReply" => ok(json!(truncate_reply(&arg_str(args, 0)))),
+        "truncateBody" => ok(json!(truncate_body(&arg_str(args, 0)))),
+        "normFilter" => ok(json!(norm_filter(&arg_str(args, 0)))),
+        "yamlScalar" => ok(json!(yaml_scalar(&arg_str(args, 0)))),
+        "sanitizeFilename" => ok(json!(sanitize_filename(&arg_str(args, 0)))),
+        "normalizeConstraintKind" => ok(json!(normalize_constraint_kind(&arg_str(args, 0)))),
+        "levelOf" => ok(json!(level_of(&arg_str(args, 0)))),
+        "validatePassword" => ok(json!(validate_password(&arg_str(args, 0)))),
+        "defaultPort" => ok(json!(default_port(&arg_str(args, 0)))),
+        "schemeForPort" => ok(json!(scheme_for_port(arg_i64(args, 0)))),
+        "zipMethodName" => ok(json!(zip_method_name(arg_i64(args, 0) as u16))),
 
         // (string) -> bool
-        "isMaskedSecret" => json!(is_masked_secret(&arg_str(args, 0))),
-        "validWorkerMessageRequestID" => json!(valid_worker_message_request_id(&arg_str(args, 0))),
-        "inheritedIntentResult" => json!(inherited_intent_result(&arg_str(args, 0))),
-        "validSkillName" => json!(valid_skill_name(&arg_str(args, 0))),
+        "isMaskedSecret" => ok(json!(is_masked_secret(&arg_str(args, 0)))),
+        "validWorkerMessageRequestID" => {
+            ok(json!(valid_worker_message_request_id(&arg_str(args, 0,))))
+        }
+        "inheritedIntentResult" => ok(json!(inherited_intent_result(&arg_str(args, 0)))),
+        "validSkillName" => ok(json!(valid_skill_name(&arg_str(args, 0)))),
         "skillPathRune" => {
             let r = arg_str(args, 0).chars().next().expect("single-char arg");
-            json!(skill_path_rune(r))
+            ok(json!(skill_path_rune(r)))
         }
 
         // (string) -> (string, bool)
         "canonicalTaskID" => {
-            let (c, ok) = canonical_task_id(&arg_str(args, 0));
-            json!([c, ok])
+            let (c, okk) = canonical_task_id(&arg_str(args, 0));
+            ok(json!([c, okk]))
         }
 
+        // (string) -> (int64, error)
+        "parseTaskID" => match parse_task_id(&arg_str(args, 0)) {
+            Ok(n) => Ok(json!(n)),
+            Err(e) => Err(e),
+        },
+
         // (string, default) -> int
-        "atoiDefault" => json!(atoi_default(&arg_str(args, 0), arg_i64(args, 1))),
-        "portOr" => json!(port_or(&arg_str(args, 0), arg_i64(args, 1))),
+        "atoiDefault" => ok(json!(atoi_default(&arg_str(args, 0), arg_i64(args, 1)))),
+        "portOr" => ok(json!(port_or(&arg_str(args, 0), arg_i64(args, 1)))),
 
         // (int64) -> string
-        "humanBytes" => json!(human_bytes(arg_i64(args, 0))),
-        "i64s" => json!(i64s(arg_i64(args, 0))),
+        "humanBytes" => ok(json!(human_bytes(arg_i64(args, 0)))),
+        "i64s" => ok(json!(i64s(arg_i64(args, 0)))),
 
         // (bool) -> string
-        "enabledWord" => json!(enabled_word(arg_bool(args, 0))),
+        "enabledWord" => ok(json!(enabled_word(arg_bool(args, 0)))),
 
         // (string, int64) -> string
-        "llmFailKey" => json!(llm_fail_key(&arg_str(args, 0), arg_i64(args, 1))),
+        "llmFailKey" => ok(json!(llm_fail_key(&arg_str(args, 0), arg_i64(args, 1)))),
 
         // (string, int) -> string
-        "preview" => json!(preview(&arg_str(args, 0), arg_i64(args, 1))),
-        "firstLine" => json!(first_line(&arg_str(args, 0), arg_i64(args, 1))),
-        "trunc" => json!(trunc(&arg_str(args, 0), arg_i64(args, 1))),
+        "preview" => ok(json!(preview(&arg_str(args, 0), arg_i64(args, 1)))),
+        "firstLine" => ok(json!(first_line(&arg_str(args, 0), arg_i64(args, 1)))),
+        "trunc" => ok(json!(trunc(&arg_str(args, 0), arg_i64(args, 1)))),
 
         other => panic!("no dispatcher arm for {other}"),
     }
@@ -98,23 +109,28 @@ fn parity_all_cases() {
     for c in &all {
         let name = c["fn"].as_str().expect("fn");
         let args: Vec<Value> = c["args"].as_array().expect("args array").clone();
-        let expected = c.get("ok").or_else(|| c.get("error"));
 
-        if c.get("error").is_some() {
-            // No ported helper in this crate is expected to error; record if one does.
-            mismatches.push(format!(
-                "UNEXPECTED error case {name} args={args:?}: {:?}",
-                c["error"]
-            ));
-            continue;
-        }
-
-        let actual = dispatch(name, &args);
-        let expected = expected.expect("ok or error");
-        if &actual != expected {
-            mismatches.push(format!(
-                "{name} args={args:?}\n   expected={expected}\n   actual  ={actual}"
-            ));
+        match dispatch(name, &args) {
+            Ok(actual) => match c.get("ok") {
+                Some(expected) if &actual == expected => {}
+                Some(expected) => mismatches.push(format!(
+                    "{name} args={args:?}\n   expected ok={expected}\n   actual   ok={actual}"
+                )),
+                None => mismatches.push(format!(
+                    "{name} args={args:?}\n   expected error={:?}\n   actual   ok={actual}",
+                    c.get("error")
+                )),
+            },
+            Err(actual_err) => match c.get("error").and_then(Value::as_str) {
+                Some(expected) if actual_err == expected => {}
+                Some(expected) => mismatches.push(format!(
+                    "{name} args={args:?}\n   expected error={expected:?}\n   actual   error={actual_err:?}"
+                )),
+                None => mismatches.push(format!(
+                    "{name} args={args:?}\n   expected ok={:?}\n   actual   error={actual_err:?}",
+                    c.get("ok")
+                )),
+            },
         }
     }
 

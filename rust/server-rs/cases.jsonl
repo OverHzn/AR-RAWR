@@ -15,6 +15,7 @@
 {"args":["  ",5],"fn":"trunc","ok":"  "}
 {"args":["  ",7],"fn":"atoiDefault","ok":7}
 {"args":["  ",9],"fn":"portOr","ok":9}
+{"args":["  "],"error":"invalid task id \"  \"","fn":"parseTaskID"}
 {"args":["  "],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["  "],"fn":"defaultPort","ok":443}
 {"args":["  "],"fn":"identity","ok":"  "}
@@ -113,6 +114,7 @@
 {"args":["  spaced  "],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["  spaced  "],"fn":"yamlScalar","ok":"'  spaced  '"}
 {"args":[" "],"fn":"skillPathRune","ok":true}
+{"args":[" 12"],"error":"invalid task id \" 12\"","fn":"parseTaskID"}
 {"args":[" 42 ",0],"fn":"firstLine","ok":"…"}
 {"args":[" 42 ",0],"fn":"preview","ok":"…"}
 {"args":[" 42 ",0],"fn":"trunc","ok":"…(truncated, 4 chars in total)"}
@@ -130,6 +132,7 @@
 {"args":[" 42 ",5],"fn":"trunc","ok":" 42 "}
 {"args":[" 42 ",7],"fn":"atoiDefault","ok":7}
 {"args":[" 42 ",9],"fn":"portOr","ok":9}
+{"args":[" 42 "],"error":"invalid task id \" 42 \"","fn":"parseTaskID"}
 {"args":[" 42 "],"fn":"canonicalTaskID","ok":["",false]}
 {"args":[" 42 "],"fn":"defaultPort","ok":443}
 {"args":[" 42 "],"fn":"identity","ok":" 42 "}
@@ -244,6 +247,7 @@
 {"args":["",5],"fn":"trunc","ok":""}
 {"args":["",7],"fn":"atoiDefault","ok":7}
 {"args":["",9],"fn":"portOr","ok":9}
+{"args":[""],"error":"invalid task id \"\"","fn":"parseTaskID"}
 {"args":[""],"fn":"canonicalTaskID","ok":["",false]}
 {"args":[""],"fn":"defaultPort","ok":443}
 {"args":[""],"fn":"identity","ok":""}
@@ -306,6 +310,7 @@
 {"args":["'quoted'"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["'quoted'"],"fn":"yamlScalar","ok":"'''quoted'''"}
 {"args":["*"],"fn":"skillPathRune","ok":false}
+{"args":["+7"],"fn":"parseTaskID","ok":7}
 {"args":["-",0],"fn":"firstLine","ok":"…"}
 {"args":["-",0],"fn":"preview","ok":"…"}
 {"args":["-",0],"fn":"trunc","ok":"…(truncated, 1 chars in total)"}
@@ -362,6 +367,7 @@
 {"args":["-1",5],"fn":"trunc","ok":"-1"}
 {"args":["-1",7],"fn":"atoiDefault","ok":-1}
 {"args":["-1",9],"fn":"portOr","ok":9}
+{"args":["-1"],"error":"invalid task id \"-1\"","fn":"parseTaskID"}
 {"args":["-1"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["-1"],"fn":"defaultPort","ok":443}
 {"args":["-1"],"fn":"identity","ok":"-1"}
@@ -476,6 +482,7 @@
 {"args":["-5",5],"fn":"trunc","ok":"-5"}
 {"args":["-5",7],"fn":"atoiDefault","ok":-5}
 {"args":["-5",9],"fn":"portOr","ok":9}
+{"args":["-5"],"error":"invalid task id \"-5\"","fn":"parseTaskID"}
 {"args":["-5"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["-5"],"fn":"defaultPort","ok":443}
 {"args":["-5"],"fn":"identity","ok":"-5"}
@@ -646,6 +653,7 @@
 {"args":["0",7],"fn":"atoiDefault","ok":0}
 {"args":["0",9],"fn":"portOr","ok":9}
 {"args":["0",9],"fn":"portOr","ok":9}
+{"args":["0"],"error":"invalid task id \"0\"","fn":"parseTaskID"}
 {"args":["0"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["0"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["0"],"fn":"defaultPort","ok":443}
@@ -689,6 +697,8 @@
 {"args":["0"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["0"],"fn":"yamlScalar","ok":"0"}
 {"args":["0"],"fn":"yamlScalar","ok":"0"}
+{"args":["007"],"fn":"parseTaskID","ok":7}
+{"args":["0x1f"],"error":"invalid task id \"0x1f\"","fn":"parseTaskID"}
 {"args":["1",0],"fn":"firstLine","ok":"…"}
 {"args":["1",0],"fn":"firstLine","ok":"…"}
 {"args":["1",0],"fn":"preview","ok":"…"}
@@ -743,6 +753,7 @@
 {"args":["1"],"fn":"normalizeConstraintKind","ok":""}
 {"args":["1"],"fn":"normalizeEvidenceText","ok":"1"}
 {"args":["1"],"fn":"normalizeEvidenceText","ok":"1"}
+{"args":["1"],"fn":"parseTaskID","ok":1}
 {"args":["1"],"fn":"proxyURLString","ok":"http://1"}
 {"args":["1"],"fn":"proxyURLString","ok":"http://1"}
 {"args":["1"],"fn":"sanitizeFilename","ok":"1"}
@@ -1107,6 +1118,7 @@
 {"args":["1073741824"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["1073741824"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["1073741824"],"fn":"yamlScalar","ok":"1073741824"}
+{"args":["12 "],"error":"invalid task id \"12 \"","fn":"parseTaskID"}
 {"args":["12.5",0],"fn":"firstLine","ok":"…"}
 {"args":["12.5",0],"fn":"preview","ok":"…"}
 {"args":["12.5",0],"fn":"trunc","ok":"…(truncated, 4 chars in total)"}
@@ -1124,6 +1136,7 @@
 {"args":["12.5",5],"fn":"trunc","ok":"12.5"}
 {"args":["12.5",7],"fn":"atoiDefault","ok":7}
 {"args":["12.5",9],"fn":"portOr","ok":9}
+{"args":["12.5"],"error":"invalid task id \"12.5\"","fn":"parseTaskID"}
 {"args":["12.5"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["12.5"],"fn":"defaultPort","ok":443}
 {"args":["12.5"],"fn":"identity","ok":"12.5"}
@@ -1172,6 +1185,7 @@
 {"args":["123"],"fn":"normFilter","ok":"123"}
 {"args":["123"],"fn":"normalizeConstraintKind","ok":""}
 {"args":["123"],"fn":"normalizeEvidenceText","ok":"123"}
+{"args":["123"],"fn":"parseTaskID","ok":123}
 {"args":["123"],"fn":"proxyURLString","ok":"http://123"}
 {"args":["123"],"fn":"sanitizeFilename","ok":"123"}
 {"args":["123"],"fn":"shellQuote","ok":"'123'"}
@@ -1259,6 +1273,7 @@
 {"args":["17charslongstring"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["17charslongstring"],"fn":"validatePassword","ok":""}
 {"args":["17charslongstring"],"fn":"yamlScalar","ok":"17charslongstring"}
+{"args":["1_000"],"error":"invalid task id \"1_000\"","fn":"parseTaskID"}
 {"args":["1abc",0],"fn":"firstLine","ok":"…"}
 {"args":["1abc",0],"fn":"preview","ok":"…"}
 {"args":["1abc",0],"fn":"trunc","ok":"…(truncated, 4 chars in total)"}
@@ -1297,6 +1312,7 @@
 {"args":["1abc"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["1abc"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["1abc"],"fn":"yamlScalar","ok":"1abc"}
+{"args":["2"],"fn":"parseTaskID","ok":2}
 {"args":["42",0],"fn":"firstLine","ok":"…"}
 {"args":["42",0],"fn":"preview","ok":"…"}
 {"args":["42",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -1335,6 +1351,8 @@
 {"args":["42"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["42"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["42"],"fn":"yamlScalar","ok":"42"}
+{"args":["9223372036854775807"],"fn":"parseTaskID","ok":9223372036854775807}
+{"args":["9223372036854775808"],"error":"invalid task id \"9223372036854775808\"","fn":"parseTaskID"}
 {"args":["999",0],"fn":"firstLine","ok":"…"}
 {"args":["999",0],"fn":"preview","ok":"…"}
 {"args":["999",0],"fn":"trunc","ok":"…(truncated, 3 chars in total)"}
@@ -1400,6 +1418,7 @@
 {"args":["999999999"],"fn":"normFilter","ok":"999999999"}
 {"args":["999999999"],"fn":"normalizeConstraintKind","ok":""}
 {"args":["999999999"],"fn":"normalizeEvidenceText","ok":"999999999"}
+{"args":["999999999"],"fn":"parseTaskID","ok":999999999}
 {"args":["999999999"],"fn":"proxyURLString","ok":"http://999999999"}
 {"args":["999999999"],"fn":"sanitizeFilename","ok":"999999999"}
 {"args":["999999999"],"fn":"shellQuote","ok":"'999999999'"}
@@ -1411,6 +1430,7 @@
 {"args":["999999999"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["999999999"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["999999999"],"fn":"yamlScalar","ok":"999999999"}
+{"args":["99999999999999999999999"],"error":"invalid task id \"99999999999999999999999\"","fn":"parseTaskID"}
 {"args":[":"],"fn":"skillPathRune","ok":false}
 {"args":["?"],"fn":"skillPathRune","ok":false}
 {"args":["A",0],"fn":"firstLine","ok":"…"}
@@ -2518,6 +2538,7 @@
 {"args":["abc",7],"fn":"atoiDefault","ok":7}
 {"args":["abc",9],"fn":"portOr","ok":9}
 {"args":["abc",9],"fn":"portOr","ok":9}
+{"args":["abc"],"error":"invalid task id \"abc\"","fn":"parseTaskID"}
 {"args":["abc"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["abc"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["abc"],"fn":"defaultPort","ok":443}
@@ -2767,6 +2788,7 @@
 {"args":["back\\slash",5],"fn":"trunc","ok":"back\\…(truncated, 10 chars in total)"}
 {"args":["back\\slash",7],"fn":"atoiDefault","ok":7}
 {"args":["back\\slash",9],"fn":"portOr","ok":9}
+{"args":["back\\slash"],"error":"invalid task id \"back\\\\slash\"","fn":"parseTaskID"}
 {"args":["back\\slash"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["back\\slash"],"fn":"defaultPort","ok":443}
 {"args":["back\\slash"],"fn":"identity","ok":"back\\slash"}
@@ -4118,6 +4140,7 @@
 {"args":["name.tar.gz"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["name.tar.gz"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["name.tar.gz"],"fn":"yamlScalar","ok":"name.tar.gz"}
+{"args":["new\nline"],"error":"invalid task id \"new\\nline\"","fn":"parseTaskID"}
 {"args":["no_ext",0],"fn":"firstLine","ok":"…"}
 {"args":["no_ext",0],"fn":"preview","ok":"…"}
 {"args":["no_ext",0],"fn":"trunc","ok":"…(truncated, 6 chars in total)"}
@@ -4211,6 +4234,7 @@
 {"args":["null\u0000byte",5],"fn":"trunc","ok":"null\u0000…(truncated, 9 chars in total)"}
 {"args":["null\u0000byte",7],"fn":"atoiDefault","ok":7}
 {"args":["null\u0000byte",9],"fn":"portOr","ok":9}
+{"args":["null\u0000byte"],"error":"invalid task id \"null\\x00byte\"","fn":"parseTaskID"}
 {"args":["null\u0000byte"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["null\u0000byte"],"fn":"defaultPort","ok":443}
 {"args":["null\u0000byte"],"fn":"identity","ok":"null\u0000byte"}
@@ -4574,6 +4598,7 @@
 {"args":["please disable"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["please disable"],"fn":"validatePassword","ok":""}
 {"args":["please disable"],"fn":"yamlScalar","ok":"please disable"}
+{"args":["quote\"id"],"error":"invalid task id \"quote\\\"id\"","fn":"parseTaskID"}
 {"args":["quote\"inside",0],"fn":"firstLine","ok":"…"}
 {"args":["quote\"inside",0],"fn":"preview","ok":"…"}
 {"args":["quote\"inside",0],"fn":"trunc","ok":"…(truncated, 12 chars in total)"}
@@ -5199,6 +5224,7 @@
 {"args":["tab\there",5],"fn":"trunc","ok":"tab\th…(truncated, 8 chars in total)"}
 {"args":["tab\there",7],"fn":"atoiDefault","ok":7}
 {"args":["tab\there",9],"fn":"portOr","ok":9}
+{"args":["tab\there"],"error":"invalid task id \"tab\\there\"","fn":"parseTaskID"}
 {"args":["tab\there"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["tab\there"],"fn":"defaultPort","ok":443}
 {"args":["tab\there"],"fn":"identity","ok":"tab\there"}

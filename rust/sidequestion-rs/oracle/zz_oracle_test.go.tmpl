@@ -1,0 +1,39 @@
+package sidequestion
+
+// TEMPORARY oracle used by ../record.sh to regenerate cases.jsonl. Runs the real
+// unexported method Parent.Key over a fixed corpus of Parent values and prints
+// one JSON object per call. record.sh copies this into sidequestion/, runs it,
+// then deletes it — the package is left untouched.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+var oracleParents = []Parent{
+	{},
+	{ConversationID: 5},
+	{ConversationID: 1, TaskID: 9, ExplorationID: 3, IntentID: 7}, // conv wins
+	{ConversationID: -1, IntentID: 3},                              // conv not >0 -> worker
+	{TaskID: 3, ExplorationID: 2},                                  // main
+	{TaskID: 3, ExplorationID: 2, IntentID: 7},                     // worker
+	{TaskID: 42, ExplorationID: 1, IntentID: 0},
+	{IntentID: 9}, // task-0-exp-0-worker-i9
+	{TaskID: 7},   // task-7-exp-0-main
+	{ConversationID: 123456789},
+	{TaskID: -5, ExplorationID: -2, IntentID: -1}, // all <=0 -> task--5-exp--2-main
+}
+
+func rec(t *testing.T, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": "Parent.Key", "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	for _, p := range oracleParents {
+		rec(t, []any{p.ConversationID, p.TaskID, p.ExplorationID, p.IntentID}, p.Key())
+	}
+}

@@ -46,16 +46,19 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 
 | Unit | Cases | Go source | Functions |
 |------|------:|----------|-----------|
-| `server-rs`   | 5910 | `server/` | 33 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, …) |
-| `traffic-rs`  | 91   | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName` |
-| `enrich-rs`   | 47   | `enrich/`  | `id0`, `itoa`, `hostOf` |
-| `guard-rs`    | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
+| `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
+| `traffic-rs`      | 91   | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName` |
+| `enrich-rs`       | 47   | `enrich/`  | `id0`, `itoa`, `hostOf` |
+| `guard-rs`        | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
+| `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
 the bridge is unusable there. `enrich-rs`'s `hostOf` reuses `gocompat::neturl`
-(`Url::hostname` / `split_host_port` added for it). `traffic-rs` excludes
-`runTestHook` (mutates package-global `testRuleHook`).
+(`Url::hostname` / `split_host_port` added for it); `server-rs`'s `parseTaskID`
+uses `gocompat::gojson::go_quote_string` (Go `%q`). `traffic-rs` excludes
+`runTestHook` (mutates package-global `testRuleHook`); `sidequestion-rs` excludes
+`Exchange::Running` (method on a large IO-laden struct).
 
 ## Reproducing a unit's gate
 
@@ -91,24 +94,25 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
   `EvaluateAssetGate`, …).
 - **`intercept-rs`**: 5 heavy-dependency functions.
 
-## Units not ported (no bridgeable pure functions)
+## Units not ported (no portable pure functions)
 
-The remaining Go packages are pointer/IO/concurrent-heavy and expose no pure,
-value-typed, deterministically-recordable functions the harness can prove parity
-for. The pure helpers that *do* exist there (unexported, so unreachable by the
-bridge) are ported separately via a Go oracle: `server-rs`, `traffic-rs`,
-`enrich-rs`, `guard-rs` (see above). What remains unported in these packages is the
-stateful / pointer / IO-heavy bulk:
+The remaining Go packages are pointer/IO/concurrent-heavy and expose no further
+pure, value-typed, deterministically-recordable functions. Every pure helper that
+*does* exist there (unexported, so unreachable by the bridge) is now ported via a
+Go oracle: `server-rs`, `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`
+(see above). What stays in Go is the stateful / pointer / IO-heavy bulk:
 
-- `server/` (27924 LOC) — 33 pure helpers ported in `server-rs`; the rest
+- `server/` (27924 LOC) — 34 pure helpers ported in `server-rs`; the rest
   (stateful HTTP handlers, `*Server` methods over DB/receiver, 1952 pointers) stays
   in Go.
 - `traffic/` (4282) — 5 pure helpers ported in `traffic-rs`; the stateful ingest /
-  replay / stream machinery stays in Go.
+  replay / stream machinery (and `runTestHook`, a global hook) stays in Go.
 - `enrich/` (281) — 3 pure helpers ported in `enrich-rs`; the `*Engine` DNS / asset
   upsert workers stay in Go.
 - `guard/` (330) — 2 pure helpers ported in `guard-rs`; the audit-log / decision
   layer stays in Go.
-- `sidequestion/` (707), `llmrec/` (543), `llmpool/` (481), `evidence/` (399),
-  `cmd/artex/` (154) — no exported and no side-effect-free unexported helpers;
-  fully pointer/IO/concurrent-bound.
+- `sidequestion/` (707) — `Parent::key` ported in `sidequestion-rs`; `Exchange`
+  (large IO struct) and the request/replay flow stay in Go.
+- `llmrec/` (543), `llmpool/` (481), `evidence/` (399), `cmd/artex/` (154) — no
+  exported and no side-effect-free unexported helpers; fully pointer/IO/concurrent-
+  bound. (`llmpool.State::Open` reads `time.Now`; not pure.)

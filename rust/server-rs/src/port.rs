@@ -9,6 +9,7 @@
 
 #![forbid(unsafe_code)]
 
+use gocompat::gojson::go_quote_string;
 use gocompat::strings::{go_to_lower, go_trim_space};
 
 // ---- supporting constants copied from the Go source ----
@@ -370,6 +371,15 @@ pub fn zip_method_name(m: u16) -> String {
 /// `llmFailKey` (server/task_llm.go).
 pub fn llm_fail_key(task_id: &str, profile_id: i64) -> String {
     format!("{}:{}", task_id, format_i64(profile_id))
+}
+
+/// `parseTaskID` (server/task_llm.go): `strconv.ParseInt(id, 10, 64)`, then
+/// require a positive id; otherwise `invalid task id "<id>"` (Go `%q` quoting).
+pub fn parse_task_id(id: &str) -> Result<i64, String> {
+    match id.parse::<i64>() {
+        Ok(n) if n > 0 => Ok(n),
+        _ => Err(format!("invalid task id {}", go_quote_string(id))),
+    }
 }
 
 // ---- traffic_ingest.go ----
