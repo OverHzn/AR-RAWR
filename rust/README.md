@@ -47,8 +47,8 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | Unit | Cases | Go source | Functions |
 |------|------:|----------|-----------|
 | `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
-| `traffic-rs`      | 91   | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName` |
-| `enrich-rs`       | 47   | `enrich/`  | `id0`, `itoa`, `hostOf` |
+| `traffic-rs`      | 104  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts` |
+| `enrich-rs`       | 60   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq` |
 | `guard-rs`        | 28   | `guard/`   | `capBlockReason`, `systemBlockMessage` |
 | `sidequestion-rs` | 11   | `sidequestion/` | `Parent::key` |
 
@@ -56,9 +56,10 @@ In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
 the bridge is unusable there. `enrich-rs`'s `hostOf` reuses `gocompat::neturl`
 (`Url::hostname` / `split_host_port` added for it); `server-rs`'s `parseTaskID`
-uses `gocompat::gojson::go_quote_string` (Go `%q`). `traffic-rs` excludes
-`runTestHook` (mutates package-global `testRuleHook`); `sidequestion-rs` excludes
-`Exchange::Running` (method on a large IO-laden struct).
+uses `gocompat::gojson::go_quote_string` (Go `%q`); `traffic-rs`'s
+`uniqueArchiveHosts` uses `gocompat::strings` (`go_to_lower`/`go_trim_space`).
+Excluded as impure / non-value: `traffic.runTestHook` (mutates package-global
+`testRuleHook`) and `sidequestion.Exchange::Running` (method on a large IO struct).
 
 ## Reproducing a unit's gate
 
@@ -108,11 +109,37 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 
 ## Units not ported (no portable pure functions)
 
-The remaining Go packages are pointer/IO/concurrent-heavy and expose no further
-pure, value-typed, deterministically-recordable functions. Every pure helper that
-*does* exist there (unexported, so unreachable by the bridge) is now ported via a
-Go oracle: `server-rs`, `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`
-(see above). What stays in Go is the stateful / pointer / IO-heavy bulk.
+The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
+take **primitive parameters** are all ported via a Go oracle (`server-rs`,
+`traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`). A further tier of pure
+functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
+other packages) — the bridge can't reach those either, and they are only
+*partially* portable; see "Composite-parameter tier" below. What stays in Go
+regardless is the stateful / pointer / IO-heavy bulk.
+
+### Composite-parameter pure functions (partially portable)
+
+Pure functions the primitive-param sweep missed. Portability depends on the
+parameter type:
+
+| Function | Params → return | Status |
+|----------|-----------------|--------|
+| `enrich.uniq`, `traffic.uniqueArchiveHosts` | `[]string` → `[]string` | **ported** (`enrich-rs`, `traffic-rs`); JSON arrays, deterministic |
+| `traffic.clipBytes`, `truncateUTF8` | `[]byte` | needs base64 in the harness (`[]byte` marshals to base64 in Go JSON) |
+| `traffic.isBinaryBody`, `binaryTag` | `string, []byte` | base64 + `binaryTypes` var / hex encoding |
+| `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
+| `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
+| `traffic.appliedRules` | `[]rewrite.TraceLine` | needs a `rewrite.TraceLine` struct port |
+| `guard.TargetBlockMessage` | `intercept.TargetResult` | needs TargetResult struct + `net.JoinHostPort` + Target* consts |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | need llm/harness struct ports |
+| `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | pointers + external structs |
+| `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
+
+The `[]string` subset was clean enough to port into the existing crates the same
+way as the primitive helpers; the rest need a base64/hex helper in the harness, a
+struct port, or are blocked (regex, map non-determinism).
+
+What stays in Go regardless is the stateful / pointer / IO-heavy bulk.
 "Src"/"Test" below are **code-LOC** (non-blank, non-comment lines; comments and
 blanks excluded, measured with a small script — so the numbers differ from a raw
 `wc -l`):

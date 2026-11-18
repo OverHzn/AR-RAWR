@@ -45,3 +45,16 @@
 {"args":[42],"fn":"itoa","ok":"42"}
 {"args":[9223372036854775807],"fn":"id0","ok":false}
 {"args":[9223372036854775807],"fn":"itoa","ok":"9223372036854775807"}
+{"args":[["  ","x","x"]],"fn":"uniq","ok":["  ","x"]}
+{"args":[["","",""]],"fn":"uniq","ok":[""]}
+{"args":[["a","A"]],"fn":"uniq","ok":["a","A"]}
+{"args":[["a","b","a"]],"fn":"uniq","ok":["a","b"]}
+{"args":[["a"]],"fn":"uniq","ok":["a"]}
+{"args":[["b","a","b","a"]],"fn":"uniq","ok":["b","a"]}
+{"args":[["dup","dup","dup","dup"]],"fn":"uniq","ok":["dup"]}
+{"args":[["first","second","third","third","second"]],"fn":"uniq","ok":["first","second","third"]}
+{"args":[["one","one","one"]],"fn":"uniq","ok":["one"]}
+{"args":[["x","y","z"]],"fn":"uniq","ok":["x","y","z"]}
+{"args":[["z","y","x"]],"fn":"uniq","ok":["z","y","x"]}
+{"args":[["日本語","x","x"]],"fn":"uniq","ok":["日本語","x"]}
+{"args":[[]],"fn":"uniq","ok":[]}

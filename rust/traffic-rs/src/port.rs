@@ -1,6 +1,6 @@
 //! `traffic-rs` — behavioral-parity Rust port of the unexported, side-effect-free
 //! helpers in the Go `traffic/` package (`sanitize`, `ftsQuote`, `clip`,
-//! `boolInt`, `validHeaderName`).
+//! `boolInt`, `validHeaderName`, `uniqueArchiveHosts`).
 //!
 //! These are unexported, so `rust-anything`'s bridge cannot reach them. Parity is
 //! proven against the real Go functions: `record.sh` runs a temporary oracle over
@@ -12,6 +12,8 @@
 //! the byte slice is always valid UTF-8; the ports preserve that byte semantics.
 
 #![forbid(unsafe_code)]
+
+use gocompat::strings::{go_to_lower, go_trim_space};
 
 /// `sanitize` (traffic/traffic.go): map path-unsafe chars to `_`, default
 /// empty/`_` to `root`, truncate to 120 bytes.
@@ -76,4 +78,23 @@ fn byte_truncate(s: &str, n: usize) -> String {
         end -= 1;
     }
     s[..end].to_string()
+}
+
+/// `uniqueArchiveHosts` (traffic/archive.go): lowercase + trim each host, drop
+/// empties and dups, return the survivors sorted (`sort.Strings`).
+pub fn unique_archive_hosts(hosts: &[String]) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out: Vec<String> = Vec::new();
+    for h in hosts {
+        let trimmed = go_trim_space(h);
+        let host = go_to_lower(trimmed);
+        if host.is_empty() {
+            continue;
+        }
+        if seen.insert(host.clone()) {
+            out.push(host);
+        }
+    }
+    out.sort();
+    out
 }

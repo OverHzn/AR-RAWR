@@ -30,6 +30,13 @@ var oracleURLs = []string{
 	"  http://spaces.com  ", "http://tab\there.com/",
 }
 
+var oracleStrSlices = [][]string{
+	{}, {"a"}, {"a", "b", "a"}, {"b", "a", "b", "a"}, {"", "", ""},
+	{"x", "y", "z"}, {"z", "y", "x"}, {"one", "one", "one"},
+	{"a", "A"}, {"  ", "  ", "x"}, {"日本語", "日本語", "x"},
+	{"dup", "dup", "dup", "dup"}, {"first", "second", "first", "third", "second"},
+}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -44,5 +51,8 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, u := range oracleURLs {
 		rec(t, "hostOf", []any{u}, hostOf(u))
+	}
+	for _, ss := range oracleStrSlices {
+		rec(t, "uniq", []any{ss}, uniq(ss))
 	}
 }

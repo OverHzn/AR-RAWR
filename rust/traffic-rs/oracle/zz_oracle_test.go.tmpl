@@ -47,6 +47,14 @@ var oracleHeaders = []string{
 	"space here", "semi;colon", "at@sign", "slash/es",
 }
 
+var oracleHosts = [][]string{
+	{}, {"a.com"}, {"b.com", "a.com"}, {"A.COM", "a.com"},
+	{" a.com ", "a.com"}, {"x", "", "y"}, {"", ""},
+	{"z.com", "Z.COM", " z.com "}, {"例え.jp", "example.com"},
+	{"host:80", "host:80", "HOST:80"}, {"a", "b", "c", "a", "b"},
+	{"  ", "\t", "\n"}, {"MixedCase.NET", "mixedcase.net", "  MixedCase.Net  "},
+}
+
 func rec(t *testing.T, fn string, args []any, out any) {
 	t.Helper()
 	c := map[string]any{"fn": fn, "args": args, "ok": out}
@@ -65,5 +73,8 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, b := range []bool{true, false} {
 		rec(t, "boolInt", []any{b}, boolInt(b))
+	}
+	for _, hs := range oracleHosts {
+		rec(t, "uniqueArchiveHosts", []any{hs}, uniqueArchiveHosts(hs))
 	}
 }

@@ -87,5 +87,18 @@
 {"args":["日本語/パス"],"fn":"sanitize","ok":"日本語_パス"}
 {"args":["日本語/パス"],"fn":"validHeaderName","ok":false}
 {"args":["日本語テキスト",100],"fn":"clip","ok":"日本語テキスト"}
+{"args":[["  ","\t","\n"]],"fn":"uniqueArchiveHosts","ok":[]}
+{"args":[[" a.com ","a.com"]],"fn":"uniqueArchiveHosts","ok":["a.com"]}
+{"args":[["",""]],"fn":"uniqueArchiveHosts","ok":[]}
+{"args":[["A.COM","a.com"]],"fn":"uniqueArchiveHosts","ok":["a.com"]}
+{"args":[["MixedCase.NET","mixedcase.net","  MixedCase.Net  "]],"fn":"uniqueArchiveHosts","ok":["mixedcase.net"]}
+{"args":[["a","b","c","a","b"]],"fn":"uniqueArchiveHosts","ok":["a","b","c"]}
+{"args":[["a.com"]],"fn":"uniqueArchiveHosts","ok":["a.com"]}
+{"args":[["b.com","a.com"]],"fn":"uniqueArchiveHosts","ok":["a.com","b.com"]}
+{"args":[["host:80","host:80","HOST:80"]],"fn":"uniqueArchiveHosts","ok":["host:80"]}
+{"args":[["x","","y"]],"fn":"uniqueArchiveHosts","ok":["x","y"]}
+{"args":[["z.com","Z.COM"," z.com "]],"fn":"uniqueArchiveHosts","ok":["z.com"]}
+{"args":[["例え.jp","example.com"]],"fn":"uniqueArchiveHosts","ok":["example.com","例え.jp"]}
+{"args":[[]],"fn":"uniqueArchiveHosts","ok":[]}
 {"args":[false],"fn":"boolInt","ok":0}
 {"args":[true],"fn":"boolInt","ok":1}

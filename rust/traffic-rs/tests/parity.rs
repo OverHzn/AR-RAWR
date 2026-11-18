@@ -22,6 +22,14 @@ fn arg_i64(args: &[Value], i: usize) -> i64 {
 fn arg_bool(args: &[Value], i: usize) -> bool {
     args[i].as_bool().expect("bool arg")
 }
+fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
+    args[i]
+        .as_array()
+        .expect("array arg")
+        .iter()
+        .map(|v| v.as_str().expect("str in array").to_string())
+        .collect()
+}
 
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
@@ -30,6 +38,7 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "clip" => json!(clip(&arg_str(args, 0), arg_i64(args, 1))),
         "boolInt" => json!(bool_int(arg_bool(args, 0))),
         "validHeaderName" => json!(valid_header_name(&arg_str(args, 0))),
+        "uniqueArchiveHosts" => json!(unique_archive_hosts(&arg_str_slice(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

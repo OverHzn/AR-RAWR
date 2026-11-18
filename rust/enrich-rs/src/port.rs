@@ -1,5 +1,5 @@
 //! `enrich-rs` — behavioral-parity Rust port of the unexported, side-effect-free
-//! helpers in the Go `enrich/` package (`id0`, `itoa`, `hostOf`).
+//! helpers in the Go `enrich/` package (`id0`, `itoa`, `hostOf`, `uniq`).
 //!
 //! These are unexported, so `rust-anything`'s bridge cannot reach them. Parity is
 //! proven against the real Go functions: `record.sh` runs a temporary oracle over
@@ -27,4 +27,16 @@ pub fn host_of(raw_url: &str) -> String {
         Ok(u) => u.hostname(),
         Err(_) => String::new(),
     }
+}
+
+/// `uniq` (enrich/enrich.go): order-preserving dedup of a string slice.
+pub fn uniq(inp: &[String]) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for s in inp {
+        if seen.insert(s.clone()) {
+            out.push(s.clone());
+        }
+    }
+    out
 }

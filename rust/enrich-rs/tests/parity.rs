@@ -19,12 +19,21 @@ fn arg_i64(args: &[Value], i: usize) -> i64 {
 fn arg_str(args: &[Value], i: usize) -> String {
     args[i].as_str().expect("str arg").to_string()
 }
+fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
+    args[i]
+        .as_array()
+        .expect("array arg")
+        .iter()
+        .map(|v| v.as_str().expect("str in array").to_string())
+        .collect()
+}
 
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "id0" => json!(id0(arg_i64(args, 0))),
         "itoa" => json!(itoa(arg_i64(args, 0))),
         "hostOf" => json!(host_of(&arg_str(args, 0))),
+        "uniq" => json!(uniq(&arg_str_slice(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
