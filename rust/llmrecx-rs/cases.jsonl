@@ -1,0 +1,15 @@
+{"args":[""],"fn":"parseSession","ok":["",""]}
+{"args":["EXp5-worker"],"fn":"parseSession","ok":["",""]}
+{"args":["exp"],"fn":"parseSession","ok":["",""]}
+{"args":["exp- - "],"fn":"parseSession","ok":[""," "]}
+{"args":["exp-foo"],"fn":"parseSession","ok":["","foo"]}
+{"args":["exp0-a"],"fn":"parseSession","ok":["0","a"]}
+{"args":["exp100-日本語-x"],"fn":"parseSession","ok":["100","日本語"]}
+{"args":["exp12-a-b-c"],"fn":"parseSession","ok":["12","a"]}
+{"args":["exp42-planner-x1"],"fn":"parseSession","ok":["42","planner"]}
+{"args":["exp5"],"fn":"parseSession","ok":["5",""]}
+{"args":["exp5-worker"],"fn":"parseSession","ok":["5","worker"]}
+{"args":["exp5-worker-i3"],"fn":"parseSession","ok":["5","worker"]}
+{"args":["exp7-"],"fn":"parseSession","ok":["7",""]}
+{"args":["nope5-worker"],"fn":"parseSession","ok":["",""]}
+{"args":["xexp5-worker"],"fn":"parseSession","ok":["",""]}

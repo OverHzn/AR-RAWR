@@ -1,0 +1,46 @@
+package llmrec
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers in
+// this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok}. record.sh sorts the lines so the
+// output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// parseSession(s) — "exp<N>-<role>[-suffix]" -> (taskID, worker)
+	keys := []string{
+		"",
+		"exp",
+		"exp5",
+		"exp5-worker",
+		"exp5-worker-i3",
+		"exp42-planner-x1",
+		"exp-foo",         // empty task id
+		"exp7-",           // trailing dash -> empty worker
+		"exp12-a-b-c",     // only first two segments matter
+		"nope5-worker",    // missing exp prefix
+		"exp0-a",          //
+		"EXp5-worker",     // wrong case
+		"xexp5-worker",    // exp not at start
+		"exp- - ",         // spaces are kept verbatim
+		"exp100-日本語-x", // unicode worker
+	}
+	for _, s := range keys {
+		taskID, worker := parseSession(s)
+		rec(t, "parseSession", []any{s}, []string{taskID, worker})
+	}
+}

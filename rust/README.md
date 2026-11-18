@@ -56,6 +56,8 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
 | `agentx-rs`       | 169  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote`, `clipBody`, `nmapWebScheme` (pure int/string/JSON helpers) |
+| `llmpoolx-rs`     | 12   | `llmpool/` | `trimErr` (one-line, 300-byte-capped error rendering; other helpers need regexp/`norma/llm` and stay in Go) |
+| `llmrecx-rs`      | 15   | `llmrec/`  | `parseSession` (`exp<N>-<role>[-suffix]` → taskID, worker; other helpers need `context`/`norma/llm` and stay in Go) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -73,7 +75,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 20 crates, each via its own
+To verify **every** unit at once (gocompat build + all 22 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -117,7 +119,7 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
-`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`). A further tier of pure
+`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`, `llmpoolx-rs`, `llmrecx-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
