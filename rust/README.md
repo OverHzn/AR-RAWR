@@ -25,7 +25,7 @@ bridge → record → (port.rs) → build → diff → gate
 | `mcphttp-rs`  | 76   | 585   | norma unit, direct |
 | `egress-rs`   | 147  | 565   | norma transitif (intercept→db→norma) |
 | `intercept-rs`| 361  | 4004  | 5 heavy funcs kept in Go (`--keep`) |
-| `db-rs`       | 1525 | 22078 | 17 funcs kept in Go (`--keep`) |
+| `db-rs`       | 1525 | 22078 | 17 funcs kept in Go (`--keep`); unexported dep-free helpers → `dbx-rs` |
 | `agent-rs`    | 2418 | 10181 | 7 funcs kept in Go; `gate.sh` re-patches generated files |
 
 `gocompat/` is a shared crate holding faithful Rust ports of the Go stdlib pieces
@@ -53,6 +53,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `sidequestion-rs` | 134  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget` |
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
+| `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -70,7 +71,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 17 crates, each via its own
+To verify **every** unit at once (gocompat build + all 18 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -114,7 +115,7 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
-`notifyx-rs`). A further tier of pure
+`notifyx-rs`, `dbx-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
@@ -131,6 +132,7 @@ parameter type:
 | `traffic.clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag` | `[]byte` / `string, []byte` | **ported** (`traffic-rs`); base64 in the harness via `gocompat::encoding`, hex helper for the magic tag |
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `notify.cfgString`/`cfgInt`/`cfgBool`/`cfgStrings`/`cfgMap` | `map[string]any` | **ported** (`notifyx-rs`); the harness passes the config as a JSON object (Go marshals keys sorted), reads `key`; nil slice/map → `null` |
+| `db.marshalStringArray` | `[]string` | **ported** (`dbx-rs`); Postgres text[] literal, nil slice → `{}`; `db.nullIfEmpty`/`nullableInt`/`isIdentStart`/`isIdentChar` are primitive-param and ported alongside |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |

@@ -1,0 +1,51 @@
+{"args":["  spaced  "],"fn":"nullIfEmpty","ok":"  spaced  "}
+{"args":[" "],"fn":"nullIfEmpty","ok":" "}
+{"args":[""],"fn":"nullIfEmpty","ok":null}
+{"args":["\t"],"fn":"nullIfEmpty","ok":"\t"}
+{"args":["hello"],"fn":"nullIfEmpty","ok":"hello"}
+{"args":["x"],"fn":"nullIfEmpty","ok":"x"}
+{"args":[-1],"fn":"nullableInt","ok":-1}
+{"args":[-42],"fn":"nullableInt","ok":-42}
+{"args":[-999999],"fn":"nullableInt","ok":-999999}
+{"args":[0],"fn":"isIdentChar","ok":false}
+{"args":[0],"fn":"isIdentStart","ok":false}
+{"args":[0],"fn":"nullableInt","ok":null}
+{"args":[1000000],"fn":"nullableInt","ok":1000000}
+{"args":[122],"fn":"isIdentChar","ok":true}
+{"args":[122],"fn":"isIdentStart","ok":true}
+{"args":[128],"fn":"isIdentChar","ok":false}
+{"args":[128],"fn":"isIdentStart","ok":false}
+{"args":[1],"fn":"nullableInt","ok":1}
+{"args":[200],"fn":"isIdentChar","ok":false}
+{"args":[200],"fn":"isIdentStart","ok":false}
+{"args":[255],"fn":"isIdentChar","ok":false}
+{"args":[255],"fn":"isIdentStart","ok":false}
+{"args":[42],"fn":"nullableInt","ok":42}
+{"args":[45],"fn":"isIdentChar","ok":false}
+{"args":[45],"fn":"isIdentStart","ok":false}
+{"args":[48],"fn":"isIdentChar","ok":true}
+{"args":[48],"fn":"isIdentStart","ok":false}
+{"args":[57],"fn":"isIdentChar","ok":true}
+{"args":[57],"fn":"isIdentStart","ok":false}
+{"args":[64],"fn":"isIdentChar","ok":false}
+{"args":[64],"fn":"isIdentStart","ok":false}
+{"args":[65],"fn":"isIdentChar","ok":true}
+{"args":[65],"fn":"isIdentStart","ok":true}
+{"args":[90],"fn":"isIdentChar","ok":true}
+{"args":[90],"fn":"isIdentStart","ok":true}
+{"args":[95],"fn":"isIdentChar","ok":true}
+{"args":[95],"fn":"isIdentStart","ok":true}
+{"args":[97],"fn":"isIdentChar","ok":true}
+{"args":[97],"fn":"isIdentStart","ok":true}
+{"args":[9],"fn":"isIdentChar","ok":false}
+{"args":[9],"fn":"isIdentStart","ok":false}
+{"args":[["  spaced  "]],"fn":"marshalStringArray","ok":"{\"  spaced  \"}"}
+{"args":[[""]],"fn":"marshalStringArray","ok":"{\"\"}"}
+{"args":[["a","b"]],"fn":"marshalStringArray","ok":"{\"a\",\"b\"}"}
+{"args":[["a"]],"fn":"marshalStringArray","ok":"{\"a\"}"}
+{"args":[["a,b","c"]],"fn":"marshalStringArray","ok":"{\"a,b\",\"c\"}"}
+{"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\slash\"}"}
+{"args":[["he said \"hi\""]],"fn":"marshalStringArray","ok":"{\"he said \\\"hi\\\"\"}"}
+{"args":[["quote\"and,comma","tab\there"]],"fn":"marshalStringArray","ok":"{\"quote\\\"and,comma\",\"tab\there\"}"}
+{"args":[[]],"fn":"marshalStringArray","ok":"{}"}
+{"args":[null],"fn":"marshalStringArray","ok":"{}"}
