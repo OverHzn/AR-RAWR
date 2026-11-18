@@ -1,0 +1,73 @@
+package mcphttp
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers in
+// this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok} on success or {fn, args, error} on
+// failure. record.sh sorts the lines so the output is byte-reproducible.
+//
+// normalizeHeaders ranges over its input map (random order in Go), so each case has
+// at most one invalid header key and no two keys that trim to the same name — that
+// keeps both the success map and the error message deterministic.
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func recErr(t *testing.T, fn string, args []any, err error) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "error": err.Error()}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	headers := []map[string]string{
+		{}, // empty -> empty map, no error
+		{"Authorization": "Bearer x"},
+		{"  Authorization  ": "Bearer x"}, // key trimmed
+		{"\tauto\t": "v"},                 // tabs trimmed
+		{"X-Custom": "v", "Accept": "json", "Content-Type": "text/plain"}, // several valid
+		{"tab\tkey": "v"},   // internal tab is allowed (not CR/LF)
+		{"": "v"},           // empty key -> error
+		{"   ": "v"},        // blank key -> error
+		{"a\nb": "v"},       // embedded newline -> error
+		{"a\rb": "v"},       // embedded CR -> error
+		{"good": "ok", "bad\nkey": "v"}, // one invalid key among valid ones -> deterministic error
+	}
+	for _, h := range headers {
+		out, err := normalizeHeaders(h)
+		if err != nil {
+			recErr(t, "normalizeHeaders", []any{h}, err)
+		} else {
+			rec(t, "normalizeHeaders", []any{h}, out)
+		}
+	}
+
+	msgs := []string{
+		"unsupported protocol version",
+		"Unsupported Protocol Version",
+		"UNSUPPORTED PROTOCOL VERSION",
+		"error: UNSUPPORTED_PROTOCOL_VERSION 2025-03-26",
+		"Unsupported_Protocol_Version",
+		"unsupported protocol versions",     // substring still matches
+		"xunsupported protocol versionx",    // substring still matches
+		"connection refused",                // no match
+		"something about protocol",          // no match
+		"",                                  // empty -> no match
+	}
+	for _, m := range msgs {
+		rec(t, "isUnsupportedVersion", []any{m}, isUnsupportedVersion(errors.New(m)))
+	}
+}

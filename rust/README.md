@@ -22,7 +22,7 @@ bridge → record → (port.rs) → build → diff → gate
 | `notify-rs`   | 254  | 2733  | |
 | `report-rs`   | 12   | 540   | |
 | `rewrite-rs`  | 91   | 1034  | (`traffic/rewrite/`) |
-| `mcphttp-rs`  | 76   | 585   | norma unit, direct |
+| `mcphttp-rs`  | 76   | 585   | norma unit, direct; unexported pure helpers → `mcphttpx-rs` |
 | `egress-rs`   | 147  | 565   | norma transitif (intercept→db→norma) |
 | `intercept-rs`| 361  | 4004  | 5 heavy funcs kept in Go (`--keep`) |
 | `db-rs`       | 1525 | 22078 | 17 funcs kept in Go (`--keep`); unexported dep-free helpers → `dbx-rs` |
@@ -54,6 +54,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
+| `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -71,7 +72,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 18 crates, each via its own
+To verify **every** unit at once (gocompat build + all 19 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -115,7 +116,7 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
-`notifyx-rs`, `dbx-rs`). A further tier of pure
+`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
@@ -133,6 +134,7 @@ parameter type:
 | `traffic.toHeaderMap` | `map[string]string` | returns a map (Go JSON sorts keys — deterministic but trivial) |
 | `notify.cfgString`/`cfgInt`/`cfgBool`/`cfgStrings`/`cfgMap` | `map[string]any` | **ported** (`notifyx-rs`); the harness passes the config as a JSON object (Go marshals keys sorted), reads `key`; nil slice/map → `null` |
 | `db.marshalStringArray` | `[]string` | **ported** (`dbx-rs`); Postgres text[] literal, nil slice → `{}`; `db.nullIfEmpty`/`nullableInt`/`isIdentStart`/`isIdentChar` are primitive-param and ported alongside |
+| `mcphttp.normalizeHeaders` | `map[string]string` | **ported** (`mcphttpx-rs`); harness passes a JSON object (Go marshals keys sorted); `(map, error)` — error message uses Go `%q`; corpus keeps ≤1 bad key so Go's random map order stays deterministic. `mcphttp.isUnsupportedVersion` (`error` → `err.Error()` string) ported alongside |
 | `traffic.headerLines` | `map[string][]string` | **not recordable** — Go map iteration order is random |
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |

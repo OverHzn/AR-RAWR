@@ -1,0 +1,21 @@
+{"args":[""],"fn":"isUnsupportedVersion","ok":false}
+{"args":["UNSUPPORTED PROTOCOL VERSION"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["Unsupported Protocol Version"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["Unsupported_Protocol_Version"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["connection refused"],"fn":"isUnsupportedVersion","ok":false}
+{"args":["error: UNSUPPORTED_PROTOCOL_VERSION 2025-03-26"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["something about protocol"],"fn":"isUnsupportedVersion","ok":false}
+{"args":["unsupported protocol version"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["unsupported protocol versions"],"fn":"isUnsupportedVersion","ok":true}
+{"args":["xunsupported protocol versionx"],"fn":"isUnsupportedVersion","ok":true}
+{"args":[{"   ":"v"}],"error":"invalid HTTP header name \"   \"","fn":"normalizeHeaders"}
+{"args":[{"  Authorization  ":"Bearer x"}],"fn":"normalizeHeaders","ok":{"Authorization":"Bearer x"}}
+{"args":[{"":"v"}],"error":"invalid HTTP header name \"\"","fn":"normalizeHeaders"}
+{"args":[{"Accept":"json","Content-Type":"text/plain","X-Custom":"v"}],"fn":"normalizeHeaders","ok":{"Accept":"json","Content-Type":"text/plain","X-Custom":"v"}}
+{"args":[{"Authorization":"Bearer x"}],"fn":"normalizeHeaders","ok":{"Authorization":"Bearer x"}}
+{"args":[{"\tauto\t":"v"}],"fn":"normalizeHeaders","ok":{"auto":"v"}}
+{"args":[{"a\nb":"v"}],"error":"invalid HTTP header name \"a\\nb\"","fn":"normalizeHeaders"}
+{"args":[{"a\rb":"v"}],"error":"invalid HTTP header name \"a\\rb\"","fn":"normalizeHeaders"}
+{"args":[{"bad\nkey":"v","good":"ok"}],"error":"invalid HTTP header name \"bad\\nkey\"","fn":"normalizeHeaders"}
+{"args":[{"tab\tkey":"v"}],"fn":"normalizeHeaders","ok":{"tab\tkey":"v"}}
+{"args":[{}],"fn":"normalizeHeaders","ok":{}}
