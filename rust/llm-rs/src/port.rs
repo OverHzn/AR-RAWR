@@ -5,6 +5,8 @@
 //! `Add` / `MergeEcho` receivers take their argument by value, exactly like Go's
 //! `func (u *Usage) Add(o Usage)`.
 
+use std::collections::HashSet;
+
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -22,7 +24,7 @@ pub const ROLE_ASSISTANT: &str = "assistant";
 
 /// `llm.ContentBlock`: one piece of message content (the Anthropic content-block union).
 /// Which fields are populated depends on `block_type`.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
 pub struct ContentBlock {
     #[serde(rename = "type")]
     pub block_type: String,
@@ -265,6 +267,186 @@ pub struct CompletionRequest {
     pub stop: Vec<String>,
     #[serde(default)]
     pub thinking: String,
+}
+
+// === Boundary (norma/llm boundary.go) ===
+
+/// `llm.BlockCompactBoundary` (`boundary.go`): marker block type for a compaction point.
+pub const BLOCK_COMPACT_BOUNDARY: &str = "compact_boundary";
+
+/// `llm.BoundaryMeta` (`boundary.go`). `Trigger` is `omitempty`, reproduced on the wire
+/// by the manual `Serialize` below.
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
+pub struct BoundaryMeta {
+    #[serde(default)]
+    pub trigger: String,
+    #[serde(default)]
+    pub pre_tokens: i64,
+    #[serde(default)]
+    pub messages_summarized: i64,
+    #[serde(default)]
+    pub post_tokens: i64,
+}
+
+impl Serialize for BoundaryMeta {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(None)?;
+        if !self.trigger.is_empty() {
+            m.serialize_entry("trigger", &self.trigger)?;
+        }
+        m.serialize_entry("pre_tokens", &self.pre_tokens)?;
+        m.serialize_entry("messages_summarized", &self.messages_summarized)?;
+        m.serialize_entry("post_tokens", &self.post_tokens)?;
+        m.end()
+    }
+}
+
+/// `llm.BoundaryStatus` (`boundary.go`) — why a boundary was classified as it was.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoundaryStatus {
+    /// `BoundaryNone`
+    None,
+    /// `BoundaryComplete`
+    Complete,
+    /// `BoundaryNoMessage`
+    NoMessage,
+    /// `BoundaryNoTokens`
+    NoTokens,
+    /// `BoundaryIncomplete`
+    Incomplete,
+}
+
+impl BoundaryStatus {
+    /// Go `String()` value for each constant.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            BoundaryStatus::None => "none",
+            BoundaryStatus::Complete => "complete",
+            BoundaryStatus::NoMessage => "no_message",
+            BoundaryStatus::NoTokens => "no_tokens",
+            BoundaryStatus::Incomplete => "incomplete",
+        }
+    }
+}
+
+/// Scalar inputs for [`parse_boundary_meta`] (a pointer-free stand-in for `*Message`).
+#[derive(Debug, Clone, Default)]
+pub struct ParseBoundaryMetaInput {
+    pub has_text: bool,
+    pub text: String,
+    pub has_content: bool,
+    pub has_thinking: bool,
+    pub has_signature: bool,
+    pub has_tool_use_id: bool,
+    pub has_tool_calls: bool,
+}
+
+/// `llm.IsBoundaryMarker` (`boundary.go`): a message is a boundary marker iff it is an
+/// assistant message whose only content block is a `compact_boundary` block.
+pub fn is_boundary_marker(m: &Message) -> bool {
+    m.role == ROLE_ASSISTANT
+        && m.content.len() == 1
+        && m.content[0].block_type == BLOCK_COMPACT_BOUNDARY
+}
+
+/// `llm.LastBoundaryIndex` (`boundary.go`): index of the last boundary marker, or `-1`.
+pub fn last_boundary_index(msgs: &[Message]) -> i64 {
+    let mut last: i64 = -1;
+    for (i, m) in msgs.iter().enumerate() {
+        if is_boundary_marker(m) {
+            last = i as i64;
+        }
+    }
+    last
+}
+
+/// `llm.MessagesAfterBoundary` (`boundary.go`): messages strictly after the last boundary
+/// marker; the whole slice when there is no boundary.
+pub fn messages_after_boundary(msgs: &[Message]) -> Vec<Message> {
+    let last = last_boundary_index(msgs);
+    if last < 0 {
+        return msgs.to_vec();
+    }
+    msgs[(last as usize + 1)..].to_vec()
+}
+
+/// `llm.MessagesForAPI` (`boundary.go`): drop everything up to and including the last
+/// compaction boundary (never send a boundary marker to the model), then pair tool
+/// blocks. Pure; the read side of the compaction contract.
+pub fn messages_for_api(msgs: &[Message]) -> Vec<Message> {
+    pair_tool_blocks(messages_after_boundary(msgs).as_slice())
+}
+
+/// `llm.PairToolBlocks` (`boundary.go`): drop `tool_result` blocks with no preceding
+/// `tool_use` of the same id, and any `tool_use` block left unpaired.
+pub fn pair_tool_blocks(msgs: &[Message]) -> Vec<Message> {
+    let mut pending: HashSet<String> = HashSet::new();
+    let mut out: Vec<Message> = Vec::new();
+    for m in msgs {
+        let mut kept: Vec<ContentBlock> = Vec::new();
+        for b in &m.content {
+            match b.block_type.as_str() {
+                "tool_result" => {
+                    if !pending.contains(&b.tool_use_id) {
+                        continue; // orphan result — drop
+                    }
+                    pending.remove(&b.tool_use_id);
+                }
+                "tool_use" => {
+                    pending.insert(b.id.clone());
+                }
+                _ => {}
+            }
+            kept.push(b.clone());
+        }
+        if kept.is_empty() {
+            continue;
+        }
+        let mut nm = m.clone();
+        nm.content = kept;
+        out.push(nm);
+    }
+    out
+}
+
+/// `llm.BoundaryMessage` (`boundary.go`): a boundary marker carrying `meta`.
+pub fn boundary_message(meta: &BoundaryMeta) -> Message {
+    Message {
+        role: ROLE_ASSISTANT.to_string(),
+        content: vec![ContentBlock {
+            block_type: BLOCK_COMPACT_BOUNDARY.to_string(),
+            input: Some(serde_json::to_value(meta).unwrap_or(Value::Null)),
+            ..ContentBlock::default()
+        }],
+    }
+}
+
+/// `llm.ParseBoundaryMeta` (`boundary.go`): decode a message's `BoundaryMeta` and report
+/// whether it is complete (`pre_tokens > 0`, some message summarized, `post_tokens >= 0`).
+pub fn parse_boundary_meta(inp: &ParseBoundaryMetaInput) -> (BoundaryMeta, BoundaryStatus) {
+    let mut meta = BoundaryMeta::default();
+    if inp.has_text && !inp.text.is_empty() {
+        if let Ok(v) = serde_json::from_str::<BoundaryMeta>(&inp.text) {
+            meta = v;
+        }
+    } else if inp.has_content
+        || inp.has_thinking
+        || inp.has_signature
+        || inp.has_tool_use_id
+        || inp.has_tool_calls
+    {
+        return (meta, BoundaryStatus::None);
+    }
+    if meta.pre_tokens > 0 && meta.messages_summarized > 0 && meta.post_tokens >= 0 {
+        return (meta, BoundaryStatus::Complete);
+    }
+    if meta.pre_tokens <= 0 {
+        return (meta, BoundaryStatus::NoTokens);
+    }
+    if meta.messages_summarized == 0 {
+        return (meta, BoundaryStatus::NoMessage);
+    }
+    (meta, BoundaryStatus::Incomplete)
 }
 
 /// Deserialize a field that Go may encode as `null` (nil slice) or omit entirely into

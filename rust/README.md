@@ -58,7 +58,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `agentx-rs`       | 169  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines`, `isEmptyJSON`, `pid`, `pidList`, `bbotQuote`, `clipBody`, `nmapWebScheme` (pure int/string/JSON helpers) |
 | `llmpoolx-rs`     | 23   | `llmpool/` | `trimErr`, `blocksLen`, `estimateTokens` (`blocksLen`/`estimateTokens` over the `norma/llm` model ported in `llm-rs`; other helpers need regexp/`[]*Member` pointers/context and stay in Go) |
 | `llmrecx-rs`      | 23   | `llmrec/`  | `parseSession`, `thinkingText` (`thinkingText` over the `norma/llm` model ported in `llm-rs`; other helpers need `context` and stay in Go) |
-| `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho` + the value model (`ContentBlock`/`Message`/`Usage`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
+| `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho`, the `boundary.go` functions (`IsBoundaryMarker`/`LastBoundaryIndex`/`MessagesAfterBoundary`/`PairToolBlocks`/`MessagesForAPI`/`BoundaryMessage`/`ParseBoundaryMeta`) + the value model (`ContentBlock`/`Message`/`Usage`/`ToolSchema`/`CompletionRequest`/`BoundaryMeta`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -145,7 +145,7 @@ parameter type:
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
-| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | `messageGroups` **ported** (`sidequestion-rs`, over `llm-rs`); `assemble`/`exchangeMessages` still need `time.Time` RFC3339 formatting and `BuildRequest` needs `llm.MessagesForAPI`/`CloneRequest` |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | `messageGroups` **ported** (`sidequestion-rs`, over `llm-rs`); `assemble`/`exchangeMessages` still need `time.Time` RFC3339 formatting; `BuildRequest` still needs `llm.CloneRequest`/`EstimateInputTokens` (its `llm.MessagesForAPI` is now ported in `llm-rs`) + `Snapshot`/`Exchange` |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen` (+ `estimateTokens`, over `llm-rs`'s `CompletionRequest`) **ported** (`llmpoolx-rs`); `rotateGroups` still needs `[]*Member` pointers |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 
