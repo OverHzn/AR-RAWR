@@ -26,7 +26,7 @@ bridge → record → (port.rs) → build → diff → gate
 | `egress-rs`   | 147  | 565   | norma transitif (intercept→db→norma) |
 | `intercept-rs`| 361  | 4004  | 5 heavy funcs kept in Go (`--keep`) |
 | `db-rs`       | 1525 | 22078 | 17 funcs kept in Go (`--keep`); unexported dep-free helpers → `dbx-rs` |
-| `agent-rs`    | 2418 | 10181 | 7 funcs kept in Go; `gate.sh` re-patches generated files |
+| `agent-rs`    | 2418 | 10181 | 7 funcs kept in Go; `gate.sh` re-patches generated files; unexported pure helpers → `agentx-rs` |
 
 `gocompat/` is a shared crate holding faithful Rust ports of the Go stdlib pieces
 the units rely on (`net/url`, `path/filepath`, `encoding/json` error shapes,
@@ -55,6 +55,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
+| `agentx-rs`       | 112  | `agent/`   | `budgetCap`, `left`, `relatedOverviewBudgetForSources`, `foldableKind`, `isFalsy`, `firstLine`, `truncOutput`, `workerChatMarker`, `normalizeDirection`, `hintAuthor`, `normalizeFactSource`, `splitLines` (pure int/string helpers) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -72,7 +73,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 19 crates, each via its own
+To verify **every** unit at once (gocompat build + all 20 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -116,7 +117,7 @@ via `rust-anything bridge --keep "<Name>: <reason>"`:
 The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers that
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
-`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`). A further tier of pure
+`notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go

@@ -1,0 +1,127 @@
+package agent
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers in
+// this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok} on success or {fn, args, error} on
+// failure. record.sh sorts the lines so the output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func recErr(t *testing.T, fn string, args []any, err error) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "error": err.Error()}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// budgetCap(n)
+	for _, n := range []int64{0, -1, -100, 1, 42, 1000, math.MaxInt64} {
+		rec(t, "budgetCap", []any{n}, budgetCap(n))
+	}
+
+	// left(capacity, spent)
+	pairs := [][2]int64{
+		{0, 0}, {100, 30}, {10, 30}, {100, 100}, {100, 0},
+		{1, 1}, {50, 100}, {math.MaxInt64, 0}, {math.MaxInt64, 10},
+		{-5, 3}, {7, -2},
+	}
+	for _, p := range pairs {
+		rec(t, "left", []any{p[0], p[1]}, left(p[0], p[1]))
+	}
+
+	// relatedOverviewBudgetForSources(sourceCount)
+	for _, c := range []int{0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 100} {
+		rec(t, "relatedOverviewBudgetForSources", []any{c}, relatedOverviewBudgetForSources(c))
+	}
+
+	// foldableKind(k)
+	for _, k := range []string{"intent", "fact", "", "asset", "INTENT", "intents", "finding"} {
+		rec(t, "foldableKind", []any{k}, foldableKind(k))
+	}
+
+	// isFalsy(s)
+	for _, s := range []string{"0", "false", "off", "no", "FALSE", "  yes  ", "1", "true", "", "  ", "No", "n", "disabled"} {
+		rec(t, "isFalsy", []any{s}, isFalsy(s))
+	}
+
+	// firstLine(s, max)
+	fl := []struct {
+		s   string
+		max int
+	}{
+		{"", 10}, {"hello", 10}, {"hello world", 5}, {"  trimmed  ", 100},
+		{"line1\nline2", 100}, {"line1\nline2", 3}, {"a\nb\nc", 0},
+		{"héllo wörld", 5}, {"日本語テスト", 3}, {"trailing \nnext", 100},
+		{"exact", 5}, {"exact!", 5},
+	}
+	for _, c := range fl {
+		rec(t, "firstLine", []any{c.s, c.max}, firstLine(c.s, c.max))
+	}
+
+	// truncOutput(s, n)
+	to := []struct {
+		s string
+		n int
+	}{
+		{"", 10}, {"short", 10}, {"exactly10!", 10},
+		{"this is a long output that needs truncation", 10},
+		{"héllo wörld 日本語", 5}, {"a", 0}, {"abc", 0}, {"abc", 3}, {"abc", 2},
+	}
+	for _, c := range to {
+		rec(t, "truncOutput", []any{c.s, c.n}, truncOutput(c.s, c.n))
+	}
+
+	// workerChatMarker(requestID)
+	for _, id := range []string{"", "abc", "req-123", "with space"} {
+		rec(t, "workerChatMarker", []any{id}, workerChatMarker(id))
+	}
+
+	// normalizeDirection(summary)
+	for _, s := range []string{
+		"", "found 3 open ports", "  MULTIPLE   spaces  ", "scan 10.0.0.1 and 10.0.0.2",
+		"v1 v2 v3", "no digits here", "42", "a1b2c3", "TAB\tseparated", "trailing  ",
+	} {
+		rec(t, "normalizeDirection", []any{s}, normalizeDirection(s))
+	}
+
+	// hintAuthor(origin)
+	for _, o := range []string{"human", "orchestrator", "", "planner", "worker", "HUMAN"} {
+		rec(t, "hintAuthor", []any{o}, hintAuthor(o))
+	}
+
+	// normalizeFactSource(s)
+	for _, s := range []string{
+		"", "  ", "target_response", "TOOL_OUTPUT", " third_party_intel ", "operator_input",
+		"inference", "Inference", "bogus", "target response", "tool output",
+	} {
+		out, err := normalizeFactSource(s)
+		if err != nil {
+			recErr(t, "normalizeFactSource", []any{s}, err)
+		} else {
+			rec(t, "normalizeFactSource", []any{s}, out)
+		}
+	}
+
+	// splitLines(s)
+	for _, s := range []string{
+		"", "   ", "one", "a\nb\nc", "  a  \n  b  ", "line1\n\nline2", "\n\n\n",
+		"trailing\n", "single ", "\ttabbed\t\nnext",
+	} {
+		rec(t, "splitLines", []any{s}, splitLines(s))
+	}
+}

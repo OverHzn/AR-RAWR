@@ -1,0 +1,112 @@
+{"args":["   "],"fn":"splitLines","ok":null}
+{"args":["  "],"fn":"isFalsy","ok":false}
+{"args":["  "],"fn":"normalizeFactSource","ok":"inference"}
+{"args":["  MULTIPLE   spaces  "],"fn":"normalizeDirection","ok":"multiple spaces"}
+{"args":["  a  \n  b  "],"fn":"splitLines","ok":["a","b"]}
+{"args":["  trimmed  ",100],"fn":"firstLine","ok":"trimmed"}
+{"args":["  yes  "],"fn":"isFalsy","ok":false}
+{"args":[" third_party_intel "],"fn":"normalizeFactSource","ok":"third_party_intel"}
+{"args":["",10],"fn":"firstLine","ok":""}
+{"args":["",10],"fn":"truncOutput","ok":""}
+{"args":[""],"fn":"foldableKind","ok":false}
+{"args":[""],"fn":"hintAuthor","ok":"A source that was not recorded"}
+{"args":[""],"fn":"isFalsy","ok":false}
+{"args":[""],"fn":"normalizeDirection","ok":""}
+{"args":[""],"fn":"normalizeFactSource","ok":"inference"}
+{"args":[""],"fn":"splitLines","ok":null}
+{"args":[""],"fn":"workerChatMarker","ok":"\u003c!-- ARTEX_WORKER_CHAT: --\u003e"}
+{"args":["0"],"fn":"isFalsy","ok":true}
+{"args":["1"],"fn":"isFalsy","ok":false}
+{"args":["42"],"fn":"normalizeDirection","ok":"#"}
+{"args":["FALSE"],"fn":"isFalsy","ok":true}
+{"args":["HUMAN"],"fn":"hintAuthor","ok":"An agent (HUMAN)"}
+{"args":["INTENT"],"fn":"foldableKind","ok":false}
+{"args":["Inference"],"fn":"normalizeFactSource","ok":"inference"}
+{"args":["No"],"fn":"isFalsy","ok":true}
+{"args":["TAB\tseparated"],"fn":"normalizeDirection","ok":"tab separated"}
+{"args":["TOOL_OUTPUT"],"fn":"normalizeFactSource","ok":"tool_output"}
+{"args":["\n\n\n"],"fn":"splitLines","ok":null}
+{"args":["\ttabbed\t\nnext"],"fn":"splitLines","ok":["tabbed","next"]}
+{"args":["a",0],"fn":"truncOutput","ok":" …(truncated; full text via get_worker_output)"}
+{"args":["a1b2c3"],"fn":"normalizeDirection","ok":"a#b#c#"}
+{"args":["a\nb\nc",0],"fn":"firstLine","ok":"…"}
+{"args":["a\nb\nc"],"fn":"splitLines","ok":["a","b","c"]}
+{"args":["abc",0],"fn":"truncOutput","ok":" …(truncated; full text via get_worker_output)"}
+{"args":["abc",2],"fn":"truncOutput","ok":"ab …(truncated; full text via get_worker_output)"}
+{"args":["abc",3],"fn":"truncOutput","ok":"abc"}
+{"args":["abc"],"fn":"workerChatMarker","ok":"\u003c!-- ARTEX_WORKER_CHAT:abc --\u003e"}
+{"args":["asset"],"fn":"foldableKind","ok":false}
+{"args":["bogus"],"error":"source \"bogus\" is not valid: use one of target_response, tool_output, third_party_intel, operator_input, inference (omit it for inference)","fn":"normalizeFactSource"}
+{"args":["disabled"],"fn":"isFalsy","ok":false}
+{"args":["exact!",5],"fn":"firstLine","ok":"exact…"}
+{"args":["exact",5],"fn":"firstLine","ok":"exact"}
+{"args":["exactly10!",10],"fn":"truncOutput","ok":"exactly10!"}
+{"args":["fact"],"fn":"foldableKind","ok":true}
+{"args":["false"],"fn":"isFalsy","ok":true}
+{"args":["finding"],"fn":"foldableKind","ok":false}
+{"args":["found 3 open ports"],"fn":"normalizeDirection","ok":"found # open ports"}
+{"args":["hello world",5],"fn":"firstLine","ok":"hello…"}
+{"args":["hello",10],"fn":"firstLine","ok":"hello"}
+{"args":["human"],"fn":"hintAuthor","ok":"The human (via the main agent)"}
+{"args":["héllo wörld 日本語",5],"fn":"truncOutput","ok":"héllo …(truncated; full text via get_worker_output)"}
+{"args":["héllo wörld",5],"fn":"firstLine","ok":"héllo…"}
+{"args":["inference"],"fn":"normalizeFactSource","ok":"inference"}
+{"args":["intent"],"fn":"foldableKind","ok":true}
+{"args":["intents"],"fn":"foldableKind","ok":false}
+{"args":["line1\n\nline2"],"fn":"splitLines","ok":["line1","line2"]}
+{"args":["line1\nline2",100],"fn":"firstLine","ok":"line1"}
+{"args":["line1\nline2",3],"fn":"firstLine","ok":"lin…"}
+{"args":["n"],"fn":"isFalsy","ok":false}
+{"args":["no digits here"],"fn":"normalizeDirection","ok":"no digits here"}
+{"args":["no"],"fn":"isFalsy","ok":true}
+{"args":["off"],"fn":"isFalsy","ok":true}
+{"args":["one"],"fn":"splitLines","ok":["one"]}
+{"args":["operator_input"],"fn":"normalizeFactSource","ok":"operator_input"}
+{"args":["orchestrator"],"fn":"hintAuthor","ok":"A cross-task orchestration"}
+{"args":["planner"],"fn":"hintAuthor","ok":"An agent (planner)"}
+{"args":["req-123"],"fn":"workerChatMarker","ok":"\u003c!-- ARTEX_WORKER_CHAT:req-123 --\u003e"}
+{"args":["scan 10.0.0.1 and 10.0.0.2"],"fn":"normalizeDirection","ok":"scan #.#.#.# and #.#.#.#"}
+{"args":["short",10],"fn":"truncOutput","ok":"short"}
+{"args":["single "],"fn":"splitLines","ok":["single"]}
+{"args":["target response"],"error":"source \"target response\" is not valid: use one of target_response, tool_output, third_party_intel, operator_input, inference (omit it for inference)","fn":"normalizeFactSource"}
+{"args":["target_response"],"fn":"normalizeFactSource","ok":"target_response"}
+{"args":["this is a long output that needs truncation",10],"fn":"truncOutput","ok":"this is a  …(truncated; full text via get_worker_output)"}
+{"args":["tool output"],"error":"source \"tool output\" is not valid: use one of target_response, tool_output, third_party_intel, operator_input, inference (omit it for inference)","fn":"normalizeFactSource"}
+{"args":["trailing  "],"fn":"normalizeDirection","ok":"trailing"}
+{"args":["trailing \nnext",100],"fn":"firstLine","ok":"trailing "}
+{"args":["trailing\n"],"fn":"splitLines","ok":["trailing"]}
+{"args":["true"],"fn":"isFalsy","ok":false}
+{"args":["v1 v2 v3"],"fn":"normalizeDirection","ok":"v# v# v#"}
+{"args":["with space"],"fn":"workerChatMarker","ok":"\u003c!-- ARTEX_WORKER_CHAT:with space --\u003e"}
+{"args":["worker"],"fn":"hintAuthor","ok":"An agent (worker)"}
+{"args":["日本語テスト",3],"fn":"firstLine","ok":"日本語…"}
+{"args":[-100],"fn":"budgetCap","ok":9223372036854775807}
+{"args":[-1],"fn":"budgetCap","ok":9223372036854775807}
+{"args":[-1],"fn":"relatedOverviewBudgetForSources","ok":0}
+{"args":[-5,3],"fn":"left","ok":0}
+{"args":[0,0],"fn":"left","ok":0}
+{"args":[0],"fn":"budgetCap","ok":9223372036854775807}
+{"args":[0],"fn":"relatedOverviewBudgetForSources","ok":0}
+{"args":[1,1],"fn":"left","ok":0}
+{"args":[10,30],"fn":"left","ok":0}
+{"args":[100,0],"fn":"left","ok":100}
+{"args":[100,100],"fn":"left","ok":0}
+{"args":[100,30],"fn":"left","ok":70}
+{"args":[1000],"fn":"budgetCap","ok":1000}
+{"args":[100],"fn":"relatedOverviewBudgetForSources","ok":6000}
+{"args":[1],"fn":"budgetCap","ok":1}
+{"args":[1],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[2],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[3],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[42],"fn":"budgetCap","ok":42}
+{"args":[4],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[50,100],"fn":"left","ok":0}
+{"args":[5],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[6],"fn":"relatedOverviewBudgetForSources","ok":8000}
+{"args":[7,-2],"fn":"left","ok":9}
+{"args":[7],"fn":"relatedOverviewBudgetForSources","ok":6857}
+{"args":[8],"fn":"relatedOverviewBudgetForSources","ok":6000}
+{"args":[9223372036854775807,0],"fn":"left","ok":9223372036854775807}
+{"args":[9223372036854775807,10],"fn":"left","ok":9223372036854775807}
+{"args":[9223372036854775807],"fn":"budgetCap","ok":9223372036854775807}
+{"args":[9],"fn":"relatedOverviewBudgetForSources","ok":6000}
