@@ -62,6 +62,8 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         "pid" => Ok(json!(pid(&arg_str(args, 0)))),
         "pidList" => Ok(json!(pid_list(&arg_str_slice(args, 0)))),
         "bbotQuote" => Ok(json!(bbot_quote(&arg_str(args, 0), &arg_str(args, 1)))),
+        "clipBody" => Ok(json!(clip_body(&arg_str(args, 0)))),
+        "nmapWebScheme" => Ok(json!(nmap_web_scheme(&arg_str(args, 0), &arg_str(args, 1)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

@@ -5,7 +5,7 @@ helpers in the Go `agent/` package that the `agent-rs` bridge leaves behind, ver
 against the Go original via a recorded oracle (the bridge can't reach unexported
 functions).
 
-## Functions (16)
+## Functions (18)
 
 | Go | Signature | Notes |
 |----|-----------|-------|
@@ -25,6 +25,8 @@ functions).
 | `pid` (tools.go) | `json.RawMessage → int64` | JSON integral number, or numeric string (trimmed, base-10); else 0 |
 | `pidList` (tools.go) | `[]json.RawMessage → []int64` | `pid` over an array, drop `<=0`; none left → nil (`null`) |
 | `bbotQuote` (bbot_ingest.go) | `(data, dataJSON json.RawMessage) string` | pick non-absent (`≠""/"null"`); JSON string → decode + Go-quote, else compact + Go-quote |
+| `clipBody` (provider.go) | `(string) string` | trim; empty → `(empty)`; >4096 bytes → first 4096 bytes + `…(truncated, N bytes total)` |
+| `nmapWebScheme` (scan_ingest.go) | `(name, tunnel string) string` | `http`/`http-alt`/`http-proxy` → `http` (`https` if `ssl`); `https`/`https-alt` → `https`; else `""` |
 
 All are pure and value-typed (ints, bools, strings, `[]string`, raw-JSON text); constants
 from the Go source (`Unlimited = math.MaxInt64`, the related-overview budget `48_000`/`8_000`,

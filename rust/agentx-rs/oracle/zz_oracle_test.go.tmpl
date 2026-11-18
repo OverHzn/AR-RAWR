@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -172,5 +173,26 @@ func TestZZOracle(t *testing.T) {
 	for _, p := range bq {
 		rec(t, "bbotQuote", []any{p[0], p[1]},
 			bbotQuote(json.RawMessage(p[0]), json.RawMessage(p[1])))
+	}
+
+	// clipBody(s) — trim; empty -> "(empty)"; >4096 bytes -> 4096-byte prefix + notice
+	clip := []string{
+		"", "   ", "hello", "  hello  ", "\t\ttabbed\t\n",
+		strings.Repeat("a", 4096),               // exactly max -> unchanged
+		strings.Repeat("a", 4097),               // one over -> truncated
+		strings.Repeat("b", 5000),               // well over
+		strings.Repeat("c", 4090) + "     \n",   // trailing ws trimmed before the check
+	}
+	for _, s := range clip {
+		rec(t, "clipBody", []any{s}, clipBody(s))
+	}
+
+	// nmapWebScheme(name, tunnel)
+	schemes := [][2]string{
+		{"http", ""}, {"http", "ssl"}, {"http-alt", "ssl"}, {"http-proxy", "tcp"},
+		{"https", ""}, {"https-alt", "ssl"}, {"ftp", "ssl"}, {"", ""}, {"HTTP", ""},
+	}
+	for _, p := range schemes {
+		rec(t, "nmapWebScheme", []any{p[0], p[1]}, nmapWebScheme(p[0], p[1]))
 	}
 }

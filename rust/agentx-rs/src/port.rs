@@ -255,3 +255,38 @@ pub fn bbot_quote(data: &str, data_json: &str) -> String {
     }
     go_quote_string(&json_compact(raw))
 }
+
+/// `clipBody` (`agent/provider.go`): trim; empty → `"(empty)"`; if longer than 4096
+/// **bytes**, keep the first 4096 bytes and append `…(truncated, N bytes total)` where
+/// `N` is the trimmed byte length. The byte slice can split a UTF-8 rune; this port
+/// mirrors Go's lossy rendering with `from_utf8_lossy` (exact for the ASCII corpus).
+pub fn clip_body(s: &str) -> String {
+    const MAX: usize = 4096;
+    let s = go_trim_space(s);
+    if s.is_empty() {
+        return "(empty)".to_string();
+    }
+    if s.len() > MAX {
+        let prefix = String::from_utf8_lossy(&s.as_bytes()[..MAX]);
+        format!("{prefix}\u{2026}(truncated, {} bytes total)", s.len())
+    } else {
+        s.to_string()
+    }
+}
+
+/// `nmapWebScheme` (`agent/scan_ingest.go`): map an nmap service name (+ tunnel) to a
+/// URL scheme — `http`/`http-alt`/`http-proxy` → `http` (or `https` when tunneled over
+/// SSL), `https`/`https-alt` → `https`, anything else → `""`. Case-sensitive.
+pub fn nmap_web_scheme(name: &str, tunnel: &str) -> String {
+    match name {
+        "http" | "http-alt" | "http-proxy" => {
+            if tunnel == "ssl" {
+                "https".to_string()
+            } else {
+                "http".to_string()
+            }
+        }
+        "https" | "https-alt" => "https".to_string(),
+        _ => String::new(),
+    }
+}
