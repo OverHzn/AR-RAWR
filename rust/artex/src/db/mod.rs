@@ -19,13 +19,20 @@
 pub mod browser_mcp;
 pub mod constants;
 pub mod error;
+pub mod gotime;
 pub mod llmhealth;
 pub mod migrate;
 pub mod secrets;
 pub mod seed;
 pub mod settings;
 pub mod skill_gaps;
+pub mod skill_usage;
+pub mod task_archive_aggregate;
 pub mod task_templates;
+pub mod tool_usage;
+
+/// Serde adapter module path alias used by `SkillStat`'s `#[serde(with = …)]`.
+pub use gotime as gotime_serde;
 
 pub use error::{Error, Result};
 pub use migrate::{

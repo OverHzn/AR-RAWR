@@ -285,7 +285,7 @@ resume without re-deriving state.
   shared DSN + async lock + unique-name fixtures, differential vs `artex-pg`, skip when DSN
   unreachable. artex **205 tests** green, clippy `-D warnings` clean, fmt clean, gate 30/30, Go
   `TestTaskTemplateCRUDAndNormalizedUniqueness|TestTaskTemplateDisjointPatchesCompose` green.
-- **D-1f llmhealth + skill_gaps + constants (this commit):** leaf db cluster.
+- **D-1f llmhealth + skill_gaps + constants (commit 28e5775):** leaf db cluster.
   `src/db/llmhealth.rs` — `LLMHealth{profile_id,fails,trips,open_until:Option<SystemTime>,
   last_error,last_at}` + `DB::{load,save,clear}_llm_health` (`open_until IS NOT NULL AND
   open_until > now()` filters expired windows; upsert stamps `last_at=now()`).
@@ -299,6 +299,20 @@ resume without re-deriving state.
   (no Go `_test.go` for these files): llmhealth upsert/load(expired+null excluded)/clear,
   skill_gaps aggregation + limit + cancellation, constants parity guard. artex **208 tests**
   green, clippy clean, fmt clean, gate 30/30.
+- **D-1g metering ledger cluster (this commit):** `src/db/gotime.rs` — self-contained
+  RFC3339 (Go `time.Time` JSON) <-> `SystemTime` codec (no chrono/time offline;
+  `days_from_civil`/`civil_from_days`), + `opt_system_time_rfc3339` serde adapter; locked to
+  Go via differential value (`2024-06-15T12:00:00+07:00` -> unix 1718427600). `src/db/skill_usage.rs`
+  — `SkillUsage`/`SkillStat`/`SkillCall` + `DB::{insert,skill_stats,missing_skill_stats,
+  recent_skill_calls,skill_calls_by_task}` (verbatim Go SQL; `null_if_zero` pub(crate) shared
+  with tool_usage). `src/db/task_archive_aggregate.rs` — `TaskArchiveAggregate` reader +
+  `archived_task_aggregates` + `merge_archived_skill_stats` (calls/tasks sum, agents via
+  reused `dbx_rs::port::merge_agent_keys`, newer `last_used` wins, v1 call-count fallback,
+  calls-desc/skill-asc sort). `src/db/tool_usage.rs` — `ToolUsage` + `DB::{insert,tool_usage_counts}`
+  (live per-key totals + archived `.tools` merge). Specs: `tests/db_skill_tool_usage_test.rs` (3)
+  — port of Go `TestSkillUsageLedger`+`TestToolUsageLedger` (unique names) + pure
+  `mergeArchivedSkillStats` case; Go oracle green on same DB. artex **214 tests** green, clippy
+  clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
