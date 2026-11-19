@@ -198,6 +198,13 @@
 {"args":[" 42 "],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":[" 42 "],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":[" 42 "],"fn":"yamlScalar","ok":"' 42 '"}
+{"args":[" 5 ",true,10,100],"fn":"notifyLimitValue","ok":5}
+{"args":[" 7 ",10,0],"fn":"findingPaginationParam","ok":10}
+{"args":[" 7 ",10,100],"fn":"findingPaginationParam","ok":10}
+{"args":[" 7 ",10,50],"fn":"findingPaginationParam","ok":10}
+{"args":[" 7 ",20,0],"fn":"findingPaginationParam","ok":20}
+{"args":[" 7 ",20,100],"fn":"findingPaginationParam","ok":20}
+{"args":[" 7 ",20,50],"fn":"findingPaginationParam","ok":20}
 {"args":[" \t\n mixed \r\n whitespace \t ",0],"fn":"firstLine","ok":"…"}
 {"args":[" \t\n mixed \r\n whitespace \t ",0],"fn":"preview","ok":"…"}
 {"args":[" \t\n mixed \r\n whitespace \t ",0],"fn":"trunc","ok":"…(truncated, 26 chars in total)"}
@@ -299,6 +306,9 @@
 {"args":["",0],"fn":"firstLine","ok":""}
 {"args":["",0],"fn":"preview","ok":""}
 {"args":["",0],"fn":"trunc","ok":""}
+{"args":["",10,0],"fn":"findingPaginationParam","ok":10}
+{"args":["",10,100],"fn":"findingPaginationParam","ok":10}
+{"args":["",10,50],"fn":"findingPaginationParam","ok":10}
 {"args":["",1000],"fn":"firstLine","ok":""}
 {"args":["",1000],"fn":"preview","ok":""}
 {"args":["",1000],"fn":"trunc","ok":""}
@@ -308,11 +318,15 @@
 {"args":["",1],"fn":"firstLine","ok":""}
 {"args":["",1],"fn":"preview","ok":""}
 {"args":["",1],"fn":"trunc","ok":""}
+{"args":["",20,0],"fn":"findingPaginationParam","ok":20}
+{"args":["",20,100],"fn":"findingPaginationParam","ok":20}
+{"args":["",20,50],"fn":"findingPaginationParam","ok":20}
 {"args":["",5],"fn":"firstLine","ok":""}
 {"args":["",5],"fn":"preview","ok":""}
 {"args":["",5],"fn":"trunc","ok":""}
 {"args":["",7],"fn":"atoiDefault","ok":7}
 {"args":["",9],"fn":"portOr","ok":9}
+{"args":["",true,7,100],"fn":"notifyLimitValue","ok":7}
 {"args":[""],"error":"invalid task id \"\"","fn":"parseTaskID"}
 {"args":[""],"fn":"canonicalTaskID","ok":["",false]}
 {"args":[""],"fn":"defaultPort","ok":443}
@@ -436,6 +450,7 @@
 {"args":["-1",5],"fn":"trunc","ok":"-1"}
 {"args":["-1",7],"fn":"atoiDefault","ok":-1}
 {"args":["-1",9],"fn":"portOr","ok":9}
+{"args":["-1",true,10,100],"fn":"notifyLimitValue","ok":10}
 {"args":["-1"],"error":"invalid task id \"-1\"","fn":"parseTaskID"}
 {"args":["-1"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["-1"],"fn":"defaultPort","ok":443}
@@ -534,6 +549,12 @@
 {"args":["-1048576"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["-1048576"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["-1048576"],"fn":"yamlScalar","ok":"-1048576"}
+{"args":["-3",10,0],"fn":"findingPaginationParam","ok":10}
+{"args":["-3",10,100],"fn":"findingPaginationParam","ok":10}
+{"args":["-3",10,50],"fn":"findingPaginationParam","ok":10}
+{"args":["-3",20,0],"fn":"findingPaginationParam","ok":20}
+{"args":["-3",20,100],"fn":"findingPaginationParam","ok":20}
+{"args":["-3",20,50],"fn":"findingPaginationParam","ok":20}
 {"args":["-5",0],"fn":"firstLine","ok":"…"}
 {"args":["-5",0],"fn":"preview","ok":"…"}
 {"args":["-5",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -694,6 +715,9 @@
 {"args":["0",0],"fn":"preview","ok":"…"}
 {"args":["0",0],"fn":"trunc","ok":"…(truncated, 1 chars in total)"}
 {"args":["0",0],"fn":"trunc","ok":"…(truncated, 1 chars in total)"}
+{"args":["0",10,0],"fn":"findingPaginationParam","ok":10}
+{"args":["0",10,100],"fn":"findingPaginationParam","ok":10}
+{"args":["0",10,50],"fn":"findingPaginationParam","ok":10}
 {"args":["0",1000],"fn":"firstLine","ok":"0"}
 {"args":["0",1000],"fn":"firstLine","ok":"0"}
 {"args":["0",1000],"fn":"preview","ok":"0"}
@@ -712,6 +736,9 @@
 {"args":["0",1],"fn":"preview","ok":"0"}
 {"args":["0",1],"fn":"trunc","ok":"0"}
 {"args":["0",1],"fn":"trunc","ok":"0"}
+{"args":["0",20,0],"fn":"findingPaginationParam","ok":20}
+{"args":["0",20,100],"fn":"findingPaginationParam","ok":20}
+{"args":["0",20,50],"fn":"findingPaginationParam","ok":20}
 {"args":["0",5],"fn":"firstLine","ok":"0"}
 {"args":["0",5],"fn":"firstLine","ok":"0"}
 {"args":["0",5],"fn":"preview","ok":"0"}
@@ -722,6 +749,7 @@
 {"args":["0",7],"fn":"atoiDefault","ok":0}
 {"args":["0",9],"fn":"portOr","ok":9}
 {"args":["0",9],"fn":"portOr","ok":9}
+{"args":["0",true,10,100],"fn":"notifyLimitValue","ok":0}
 {"args":["0"],"error":"invalid task id \"0\"","fn":"parseTaskID"}
 {"args":["0"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["0"],"fn":"canonicalTaskID","ok":["",false]}
@@ -1088,6 +1116,9 @@
 {"args":["100",0],"fn":"firstLine","ok":"…"}
 {"args":["100",0],"fn":"preview","ok":"…"}
 {"args":["100",0],"fn":"trunc","ok":"…(truncated, 3 chars in total)"}
+{"args":["100",10,0],"fn":"findingPaginationParam","ok":100}
+{"args":["100",10,100],"fn":"findingPaginationParam","ok":100}
+{"args":["100",10,50],"fn":"findingPaginationParam","ok":50}
 {"args":["100",1000],"fn":"firstLine","ok":"100"}
 {"args":["100",1000],"fn":"preview","ok":"100"}
 {"args":["100",1000],"fn":"trunc","ok":"100"}
@@ -1097,11 +1128,15 @@
 {"args":["100",1],"fn":"firstLine","ok":"1…"}
 {"args":["100",1],"fn":"preview","ok":"1…"}
 {"args":["100",1],"fn":"trunc","ok":"1…(truncated, 3 chars in total)"}
+{"args":["100",20,0],"fn":"findingPaginationParam","ok":100}
+{"args":["100",20,100],"fn":"findingPaginationParam","ok":100}
+{"args":["100",20,50],"fn":"findingPaginationParam","ok":50}
 {"args":["100",5],"fn":"firstLine","ok":"100"}
 {"args":["100",5],"fn":"preview","ok":"100"}
 {"args":["100",5],"fn":"trunc","ok":"100"}
 {"args":["100",7],"fn":"atoiDefault","ok":100}
 {"args":["100",9],"fn":"portOr","ok":100}
+{"args":["100",true,10,100],"fn":"notifyLimitValue","ok":100}
 {"args":["100"],"fn":"canonicalTaskID","ok":["100",true]}
 {"args":["100"],"fn":"defaultPort","ok":443}
 {"args":["100"],"fn":"identity","ok":"100"}
@@ -1642,6 +1677,8 @@
 {"args":["2.0","v"],"fn":"versionLess","ok":false}
 {"args":["2.0","v1.2.3"],"fn":"versionLess","ok":false}
 {"args":["2.0"],"fn":"parseVersion","ok":[2,0,0]}
+{"args":["200",true,10,100],"fn":"notifyLimitValue","ok":10}
+{"args":["3",true,7,0],"fn":"notifyLimitValue","ok":7}
 {"args":["42",0],"fn":"firstLine","ok":"…"}
 {"args":["42",0],"fn":"preview","ok":"…"}
 {"args":["42",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -1680,6 +1717,16 @@
 {"args":["42"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["42"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["42"],"fn":"yamlScalar","ok":"42"}
+{"args":["5",10,0],"fn":"findingPaginationParam","ok":5}
+{"args":["5",10,100],"fn":"findingPaginationParam","ok":5}
+{"args":["5",10,50],"fn":"findingPaginationParam","ok":5}
+{"args":["5",20,0],"fn":"findingPaginationParam","ok":5}
+{"args":["5",20,100],"fn":"findingPaginationParam","ok":5}
+{"args":["5",20,50],"fn":"findingPaginationParam","ok":5}
+{"args":["5",false,10,100],"fn":"notifyLimitValue","ok":10}
+{"args":["5",true,10,100],"fn":"notifyLimitValue","ok":5}
+{"args":["50",true,7,50],"fn":"notifyLimitValue","ok":50}
+{"args":["51",true,7,50],"fn":"notifyLimitValue","ok":7}
 {"args":["9223372036854775807"],"fn":"parseTaskID","ok":9223372036854775807}
 {"args":["9223372036854775808"],"error":"invalid task id \"9223372036854775808\"","fn":"parseTaskID"}
 {"args":["999",0],"fn":"firstLine","ok":"…"}
@@ -1720,6 +1767,12 @@
 {"args":["999"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["999"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["999"],"fn":"yamlScalar","ok":"999"}
+{"args":["999999",10,0],"fn":"findingPaginationParam","ok":999999}
+{"args":["999999",10,100],"fn":"findingPaginationParam","ok":100}
+{"args":["999999",10,50],"fn":"findingPaginationParam","ok":50}
+{"args":["999999",20,0],"fn":"findingPaginationParam","ok":999999}
+{"args":["999999",20,100],"fn":"findingPaginationParam","ok":100}
+{"args":["999999",20,50],"fn":"findingPaginationParam","ok":50}
 {"args":["999999999",0],"fn":"firstLine","ok":"…"}
 {"args":["999999999",0],"fn":"preview","ok":"…"}
 {"args":["999999999",0],"fn":"trunc","ok":"…(truncated, 9 chars in total)"}
@@ -2859,6 +2912,9 @@
 {"args":["abc",0],"fn":"preview","ok":"…"}
 {"args":["abc",0],"fn":"trunc","ok":"…(truncated, 3 chars in total)"}
 {"args":["abc",0],"fn":"trunc","ok":"…(truncated, 3 chars in total)"}
+{"args":["abc",10,0],"fn":"findingPaginationParam","ok":10}
+{"args":["abc",10,100],"fn":"findingPaginationParam","ok":10}
+{"args":["abc",10,50],"fn":"findingPaginationParam","ok":10}
 {"args":["abc",1000],"fn":"firstLine","ok":"abc"}
 {"args":["abc",1000],"fn":"firstLine","ok":"abc"}
 {"args":["abc",1000],"fn":"preview","ok":"abc"}
@@ -2877,6 +2933,9 @@
 {"args":["abc",1],"fn":"preview","ok":"a…"}
 {"args":["abc",1],"fn":"trunc","ok":"a…(truncated, 3 chars in total)"}
 {"args":["abc",1],"fn":"trunc","ok":"a…(truncated, 3 chars in total)"}
+{"args":["abc",20,0],"fn":"findingPaginationParam","ok":20}
+{"args":["abc",20,100],"fn":"findingPaginationParam","ok":20}
+{"args":["abc",20,50],"fn":"findingPaginationParam","ok":20}
 {"args":["abc",5],"fn":"firstLine","ok":"abc"}
 {"args":["abc",5],"fn":"firstLine","ok":"abc"}
 {"args":["abc",5],"fn":"preview","ok":"abc"}
@@ -2887,6 +2946,7 @@
 {"args":["abc",7],"fn":"atoiDefault","ok":7}
 {"args":["abc",9],"fn":"portOr","ok":9}
 {"args":["abc",9],"fn":"portOr","ok":9}
+{"args":["abc",true,10,100],"fn":"notifyLimitValue","ok":10}
 {"args":["abc"],"error":"invalid task id \"abc\"","fn":"parseTaskID"}
 {"args":["abc"],"fn":"canonicalTaskID","ok":["",false]}
 {"args":["abc"],"fn":"canonicalTaskID","ok":["",false]}
@@ -6280,6 +6340,11 @@
 {"args":[0],"fn":"i64s","ok":"0"}
 {"args":[0],"fn":"schemeForPort","ok":"http"}
 {"args":[0],"fn":"zipMethodName","ok":"Store"}
+{"args":[1,"",""],"fn":"taskContextHeader","ok":""}
+{"args":[1,"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",""],"fn":"taskContextHeader","ok":"[Task #1 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD…(truncated, 250 chars in total)]"}
+{"args":[1,"d","GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"],"fn":"taskContextHeader","ok":"[Task #1 d (goal: GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG…(truncated, 550 chars in total))]"}
+{"args":[1,"desc",""],"fn":"taskContextHeader","ok":"[Task #1 desc]"}
+{"args":[1,"desc","goal"],"fn":"taskContextHeader","ok":"[Task #1 desc (goal: goal)]"}
 {"args":[1,2],"fn":"minF","ok":1}
 {"args":[1.5,1.5],"fn":"minF","ok":1.5}
 {"args":[1000],"fn":"humanBytes","ok":"1000 B"}
@@ -6327,6 +6392,7 @@
 {"args":[32],"fn":"isHostByte","ok":false}
 {"args":[4096],"fn":"humanBytes","ok":"4.0 KB"}
 {"args":[4096],"fn":"i64s","ok":"4096"}
+{"args":[42,"my description","do the thing"],"fn":"taskContextHeader","ok":"[Task #42 my description (goal: do the thing)]"}
 {"args":[42],"fn":"humanBytes","ok":"42 B"}
 {"args":[42],"fn":"i64s","ok":"42"}
 {"args":[443],"fn":"schemeForPort","ok":"https"}
@@ -6354,6 +6420,7 @@
 {"args":[65536],"fn":"humanBytes","ok":"64.0 KB"}
 {"args":[65536],"fn":"i64s","ok":"65536"}
 {"args":[65],"fn":"isHostByte","ok":true}
+{"args":[7,"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"],"fn":"taskContextHeader","ok":"[Task #7 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD…(truncated, 250 chars in total) (goal: GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG…(truncated, 550 chars in total))]"}
 {"args":[7],"fn":"zipMethodName","ok":"unknown"}
 {"args":[8080],"fn":"schemeForPort","ok":"http"}
 {"args":[80],"fn":"schemeForPort","ok":"http"}
@@ -6390,6 +6457,12 @@
 {"args":[[" spaced "],"world"],"fn":"contains","ok":false}
 {"args":[[" spaced "],"world"],"fn":"containsFold","ok":false}
 {"args":[["","  ","a"," b ","","c"]],"fn":"cleanStrs","ok":["a","b","c"]}
+{"args":[["--proxy-bypass","only-flag-no-value"]],"fn":"stripProxyArgs","ok":[]}
+{"args":[["--proxy-bypass","z","a"]],"fn":"stripProxyArgs","ok":["a"]}
+{"args":[["--proxy-bypass=1","--proxy-server","p","cmd"]],"fn":"stripProxyArgs","ok":["cmd"]}
+{"args":[["--proxy-server","x","keep"]],"fn":"stripProxyArgs","ok":["keep"]}
+{"args":[["--proxy-server"]],"fn":"stripProxyArgs","ok":[]}
+{"args":[["--proxy-server=y","keep"]],"fn":"stripProxyArgs","ok":["keep"]}
 {"args":[["Hello","World"]," spaced "],"fn":"contains","ok":false}
 {"args":[["Hello","World"]," spaced "],"fn":"containsFold","ok":false}
 {"args":[["Hello","World"],""],"fn":"contains","ok":false}
@@ -6405,6 +6478,7 @@
 {"args":[["Hello","World"],"world"],"fn":"contains","ok":false}
 {"args":[["Hello","World"],"world"],"fn":"containsFold","ok":true}
 {"args":[["\ttabbed\t","\nnewlined\n"]],"fn":"cleanStrs","ok":["tabbed","newlined"]}
+{"args":[["a","--proxy-server="]],"fn":"stripProxyArgs","ok":["a"]}
 {"args":[["a","b","c"]," spaced "],"fn":"contains","ok":false}
 {"args":[["a","b","c"]," spaced "],"fn":"containsFold","ok":false}
 {"args":[["a","b","c"],""],"fn":"contains","ok":false}
@@ -6419,6 +6493,17 @@
 {"args":[["a","b","c"],"hello"],"fn":"containsFold","ok":false}
 {"args":[["a","b","c"],"world"],"fn":"contains","ok":false}
 {"args":[["a","b","c"],"world"],"fn":"containsFold","ok":false}
+{"args":[["a","b"]],"fn":"stripProxyArgs","ok":["a","b"]}
+{"args":[[-1,0,42]],"fn":"idStrings","ok":["-1","0","42"]}
+{"args":[[-1,0],2],"fn":"normalizeFindingIDs","ok":[]}
+{"args":[[0,-1,5,5,6],0],"fn":"normalizeFindingIDs","ok":[5,6]}
+{"args":[[1,1,2,2,3],0],"fn":"normalizeFindingIDs","ok":[1,2,3]}
+{"args":[[1,2,3,4,5],3],"fn":"normalizeFindingIDs","ok":[1,2,3]}
+{"args":[[1,2,3],0],"fn":"normalizeFindingIDs","ok":[1,2,3]}
+{"args":[[1,2,3]],"fn":"idStrings","ok":["1","2","3"]}
+{"args":[[1]],"fn":"idStrings","ok":["1"]}
+{"args":[[7,7,7],2],"fn":"normalizeFindingIDs","ok":[7]}
+{"args":[[9999999999]],"fn":"idStrings","ok":["9999999999"]}
 {"args":[[]," spaced "],"fn":"contains","ok":false}
 {"args":[[]," spaced "],"fn":"containsFold","ok":false}
 {"args":[[],""],"fn":"contains","ok":false}
@@ -6433,18 +6518,24 @@
 {"args":[[],"hello"],"fn":"containsFold","ok":false}
 {"args":[[],"world"],"fn":"contains","ok":false}
 {"args":[[],"world"],"fn":"containsFold","ok":false}
+{"args":[[],5],"fn":"normalizeFindingIDs","ok":[]}
 {"args":[[]],"fn":"cleanStrs","ok":[]}
+{"args":[[]],"fn":"idStrings","ok":[]}
+{"args":[[]],"fn":"stripProxyArgs","ok":[]}
 {"args":[false],"fn":"enabledWord","ok":"disabled"}
 {"args":[null,""],"fn":"coalesceStr","ok":""}
 {"args":[null,"DEF"],"fn":"coalesceStr","ok":"DEF"}
 {"args":[null,"fallback"],"fn":"coalesceStr","ok":"fallback"}
 {"args":[null,-1],"fn":"sameOptionalID","ok":false}
+{"args":[null,0],"fn":"normalizeFindingIDs","ok":[]}
 {"args":[null,0],"fn":"sameOptionalID","ok":false}
 {"args":[null,5],"fn":"sameOptionalID","ok":false}
 {"args":[null,5],"fn":"sameOptionalID","ok":false}
 {"args":[null,null],"fn":"sameOptionalID","ok":true}
 {"args":[null],"fn":"cleanStrs","ok":[]}
 {"args":[null],"fn":"cloneInt64Ptr","ok":null}
+{"args":[null],"fn":"idStrings","ok":[]}
 {"args":[null],"fn":"keepIfMasked","ok":null}
 {"args":[null],"fn":"stringValue","ok":""}
+{"args":[null],"fn":"stripProxyArgs","ok":[]}
 {"args":[true],"fn":"enabledWord","ok":"enabled"}

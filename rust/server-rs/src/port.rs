@@ -585,3 +585,94 @@ pub fn version_less(a: &str, b: &str) -> bool {
     }
     false
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ab: pure scalar/slice helpers in `server/` that build on helpers
+// already ported above (`atoi_default`, `i64s`, `trunc`, `go_atoi`).
+// ---------------------------------------------------------------------------
+
+/// `findingPaginationParam` (`server/...`): parse `raw` (default `fallback`),
+/// floor at `fallback` when non-positive, and cap at `upperBound` when positive.
+pub fn finding_pagination_param(raw: &str, fallback: i64, upper_bound: i64) -> i64 {
+    let mut value = atoi_default(raw, fallback);
+    if value <= 0 {
+        value = fallback;
+    }
+    if upper_bound > 0 && value > upper_bound {
+        value = upper_bound;
+    }
+    value
+}
+
+/// `notifyLimitValue` (`server/...`): when `ok`, parse `v` (trimmed) and keep it
+/// only if it is a non-negative int within `[0, max]`; otherwise `def`.
+pub fn notify_limit_value(v: &str, ok: bool, def: i64, max: i64) -> i64 {
+    if !ok {
+        return def;
+    }
+    match go_atoi(go_trim_space(v)) {
+        Some(n) if n >= 0 && n <= max => n,
+        _ => def,
+    }
+}
+
+/// `idStrings` (`server/...`): render each id with [`i64s`].
+pub fn id_strings(input: &[i64]) -> Vec<String> {
+    input.iter().map(|&v| i64s(v)).collect()
+}
+
+/// `normalizeFindingIDs` (`server/...`): drop non-positive ids and duplicates,
+/// keep first-seen order, and stop after `capN` results (`capN <= 0` = no cap).
+pub fn normalize_finding_ids(ids: &[i64], cap_n: i64) -> Vec<i64> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out: Vec<i64> = Vec::with_capacity(ids.len());
+    for &id in ids {
+        if id <= 0 || seen.contains(&id) {
+            continue;
+        }
+        seen.insert(id);
+        out.push(id);
+        if cap_n > 0 && out.len() as i64 == cap_n {
+            break;
+        }
+    }
+    out
+}
+
+/// `stripProxyArgs` (`server/...`): drop `--proxy-server`/`--proxy-bypass` (and
+/// their following value) and their `=`-joined forms.
+pub fn strip_proxy_args(args: &[String]) -> Vec<String> {
+    let mut out = Vec::with_capacity(args.len());
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if a == "--proxy-server" || a == "--proxy-bypass" {
+            i += 2; // skip the flag and its following value
+            continue;
+        }
+        if a.starts_with("--proxy-server=") || a.starts_with("--proxy-bypass=") {
+            i += 1;
+            continue;
+        }
+        out.push(a.clone());
+        i += 1;
+    }
+    out
+}
+
+/// `taskContextHeader` (`server/...`): the `[Task #N …]` header line, with the
+/// description truncated to 200 runes and the goal to 500; empty when both empty.
+pub fn task_context_header(task_id: i64, desc: &str, goal: &str) -> String {
+    if desc.is_empty() && goal.is_empty() {
+        return String::new();
+    }
+    if !goal.is_empty() {
+        return format!(
+            "[Task #{} {} (goal: {})]",
+            task_id,
+            trunc(desc, 200),
+            trunc(goal, 500)
+        );
+    }
+    format!("[Task #{} {}]", task_id, trunc(desc, 200))
+}

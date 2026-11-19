@@ -61,6 +61,14 @@ fn go_float(f: f64) -> Value {
     }
 }
 
+fn arg_i64_slice(args: &[Value], i: usize) -> Vec<i64> {
+    match &args[i] {
+        Value::Array(a) => a.iter().map(|v| v.as_i64().expect("int element")).collect(),
+        Value::Null => Vec::new(),
+        other => panic!("expected array or null, got {other}"),
+    }
+}
+
 /// Dispatch one case to the matching port. `Ok(value)` is a normal return,
 /// `Err(message)` mirrors a Go `error` return (compared against the recorded
 /// `error` string).
@@ -158,6 +166,29 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
             })
         }
         "versionLess" => ok(json!(version_less(&arg_str(args, 0), &arg_str(args, 1)))),
+        // (composite) — batch 9ab
+        "findingPaginationParam" => ok(json!(finding_pagination_param(
+            &arg_str(args, 0),
+            arg_i64(args, 1),
+            arg_i64(args, 2)
+        ))),
+        "notifyLimitValue" => ok(json!(notify_limit_value(
+            &arg_str(args, 0),
+            arg_bool(args, 1),
+            arg_i64(args, 2),
+            arg_i64(args, 3)
+        ))),
+        "idStrings" => ok(json!(id_strings(&arg_i64_slice(args, 0)))),
+        "normalizeFindingIDs" => ok(json!(normalize_finding_ids(
+            &arg_i64_slice(args, 0),
+            arg_i64(args, 1)
+        ))),
+        "stripProxyArgs" => ok(json!(strip_proxy_args(&arg_str_slice(args, 0)))),
+        "taskContextHeader" => ok(json!(task_context_header(
+            arg_i64(args, 0),
+            &arg_str(args, 1),
+            &arg_str(args, 2)
+        ))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

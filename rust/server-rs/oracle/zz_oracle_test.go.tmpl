@@ -268,3 +268,108 @@ func versionTuple(v [3]int, ok bool) any {
 	}
 	return v
 }
+
+func TestZZOracle9ab(t *testing.T) {
+	// findingPaginationParam(raw, fallback, upperBound)
+	raws := []string{"", "abc", "5", "-3", "0", "100", " 7 ", "999999"}
+	for _, raw := range raws {
+		for _, fb := range []int{10, 20} {
+			for _, ub := range []int{0, 50, 100} {
+				rec(t, "findingPaginationParam", []any{raw, fb, ub}, findingPaginationParam(raw, fb, ub), nil)
+			}
+		}
+	}
+
+	// notifyLimitValue(v, ok, def, max)
+	type nl struct {
+		v       string
+		ok      bool
+		def     int
+		max     int
+	}
+	nlCases := []nl{
+		{"5", true, 10, 100},
+		{"abc", true, 10, 100},
+		{" 5 ", true, 10, 100},
+		{"-1", true, 10, 100},
+		{"200", true, 10, 100},
+		{"100", true, 10, 100},
+		{"0", true, 10, 100},
+		{"5", false, 10, 100},
+		{"", true, 7, 100},
+		{"3", true, 7, 0},
+		{"50", true, 7, 50},
+		{"51", true, 7, 50},
+	}
+	for _, c := range nlCases {
+		rec(t, "notifyLimitValue", []any{c.v, c.ok, c.def, c.max}, notifyLimitValue(c.v, c.ok, c.def, c.max), nil)
+	}
+
+	// idStrings(in)
+	for _, in := range [][]int64{nil, {}, {1}, {1, 2, 3}, {-1, 0, 42}, {9999999999}} {
+		rec(t, "idStrings", []any{in}, idStrings(in), nil)
+	}
+
+	// normalizeFindingIDs(ids, capN)
+	type nf struct {
+		ids  []int64
+		capN int
+	}
+	nfCases := []nf{
+		{nil, 0},
+		{[]int64{}, 5},
+		{[]int64{1, 2, 3}, 0},
+		{[]int64{1, 1, 2, 2, 3}, 0},
+		{[]int64{0, -1, 5, 5, 6}, 0},
+		{[]int64{1, 2, 3, 4, 5}, 3},
+		{[]int64{-1, 0}, 2},
+		{[]int64{7, 7, 7}, 2},
+	}
+	for _, c := range nfCases {
+		rec(t, "normalizeFindingIDs", []any{c.ids, c.capN}, normalizeFindingIDs(c.ids, c.capN), nil)
+	}
+
+	// stripProxyArgs(args)
+	argCases := [][]string{
+		nil,
+		{},
+		{"a", "b"},
+		{"--proxy-server", "x", "keep"},
+		{"--proxy-server=y", "keep"},
+		{"--proxy-bypass", "z", "a"},
+		{"--proxy-bypass=1", "--proxy-server", "p", "cmd"},
+		{"--proxy-server"},
+		{"a", "--proxy-server="},
+		{"--proxy-bypass", "only-flag-no-value"},
+	}
+	for _, a := range argCases {
+		rec(t, "stripProxyArgs", []any{a}, stripProxyArgs(a), nil)
+	}
+
+	// taskContextHeader(taskID, desc, goal)
+	longDesc := ""
+	for len(longDesc) < 250 {
+		longDesc += "D"
+	}
+	longGoal := ""
+	for len(longGoal) < 550 {
+		longGoal += "G"
+	}
+	type tc struct {
+		id   int64
+		desc string
+		goal string
+	}
+	tcCases := []tc{
+		{1, "", ""},
+		{1, "desc", ""},
+		{1, "desc", "goal"},
+		{42, "my description", "do the thing"},
+		{1, longDesc, ""},
+		{1, "d", longGoal},
+		{7, longDesc, longGoal},
+	}
+	for _, c := range tcCases {
+		rec(t, "taskContextHeader", []any{c.id, c.desc, c.goal}, taskContextHeader(c.id, c.desc, c.goal), nil)
+	}
+}
