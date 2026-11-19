@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/Autumn-27/norma/noa"
@@ -1697,4 +1698,180 @@ func TestZZOracle9n2(t *testing.T) {
 		}
 		rec(t, "ComputeProtectedRefs", []any{c.msgs, c.refs, nil, arg}, keys)
 	}
+}
+
+// TestZZOracle9r records DecideNudge — the nudge-decision capstone. It composes the
+// unexported helpers (resolveAdaptiveGrowth, growthFloorOf, minPressureBenefit,
+// computeTierPending, tierCadenceReady, pendingSummary, decidePressure, decideGrowth),
+// all reached transitively through the exported DecideNudge. Cases cover both bands
+// (pressure / growth), tier-1/2/3 selection, cadence gating, tiers-disabled, the
+// first-sight path, and the passthrough fields (ranges, block spans, truncation).
+func TestZZOracle9r(t *testing.T) {
+	big := func(n int) string { return strings.Repeat("a", n) }
+	cm := func(id, role, ct, text string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text}
+	}
+	mkBlocks := func(tier noa.Tier, n, summaryLen int) []noa.CompressionBlock {
+		out := make([]noa.CompressionBlock, 0, n)
+		for i := 0; i < n; i++ {
+			ref := fmt.Sprintf("m%05d", i)
+			out = append(out, noa.CompressionBlock{
+				BlockID:             fmt.Sprintf("b%d", i),
+				Tier:                tier,
+				Topic:               "topic",
+				Summary:             big(summaryLen),
+				EffectiveMessageIDs: []string{fmt.Sprintf("msg%d", i)},
+				Active:              true,
+				StartRef:            ref,
+				EndRef:              ref,
+			})
+		}
+		return out
+	}
+	cfgMap := func(c noa.Config) map[string]any {
+		var mp any
+		if c.Nudge.MinPressureBenefitTokens != nil {
+			mp = *c.Nudge.MinPressureBenefitTokens
+		}
+		return map[string]any{
+			"ModelContextLimit": c.ModelContextLimit,
+			"Tiers": map[string]any{
+				"Enabled": c.Tiers.Enabled, "Tier2Trigger": c.Tiers.Tier2Trigger, "Tier3Trigger": c.Tiers.Tier3Trigger,
+			},
+			"Nudge": map[string]any{
+				"MaxContextLimitPct": c.Nudge.MaxContextLimitPct, "MinContextLimitPct": c.Nudge.MinContextLimitPct,
+				"EmergencyThresholdPct": c.Nudge.EmergencyThresholdPct, "GrowthRatio": c.Nudge.GrowthRatio,
+				"GrowthFloor": c.Nudge.GrowthFloor, "GrowthCap": c.Nudge.GrowthCap,
+				"MinGrowthFloor": c.Nudge.MinGrowthFloor, "MinGrowthRatio": c.Nudge.MinGrowthRatio,
+				"Tier2GrowthMultiplier": c.Nudge.Tier2GrowthMultiplier, "MinPressureBenefitTokens": mp,
+			},
+			"Compress": map[string]any{"MinCompressRange": c.Compress.MinCompressRange},
+		}
+	}
+	run := func(in noa.DecideNudgeInput) {
+		arg := map[string]any{
+			"Messages": in.Messages,
+			"Blocks":   in.State.Blocks,
+			"Nudge": map[string]any{
+				"LastPerMessageNudgeTokens": in.State.Nudge.LastPerMessageNudgeTokens,
+				"LastNudgeShownTokens":      in.State.Nudge.LastNudgeShownTokens,
+				"LastShownByTier":           in.State.Nudge.LastShownByTier,
+			},
+			"Config":     cfgMap(in.Config),
+			"TokenCount": in.TokenCount,
+			"Recommendation": map[string]any{
+				"CompressibleRanges": in.Recommendation.CompressibleRanges,
+				"ProtectedRanges":    in.Recommendation.ProtectedRanges,
+			},
+			"TruncatedCount": in.TruncatedCount,
+		}
+		rec(t, "DecideNudge", []any{arg}, noa.DecideNudge(in))
+	}
+
+	rng := func(refs string, tokens, chars, count int) noa.RangeInfo {
+		return noa.RangeInfo{StartRef: refs, EndRef: refs, Count: count, Tokens: tokens, Chars: chars, TextPct: 100, UserMsgs: count}
+	}
+
+	// A: limit<=0 -> usage 0, below cadence, no injection.
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(0), TokenCount: 50000})
+
+	// B: pressure but nothing worth reclaiming (no compressible, no blocks).
+	run(noa.DecideNudgeInput{
+		Config:     noa.DefaultConfig(200000),
+		TokenCount: 160000,
+		Messages:   []noa.CoreMessage{cm("a1", "user", "text", big(100))},
+	})
+
+	// C: pressure, tier-1 reclaim clears the benefit floor -> inject T1.
+	run(noa.DecideNudgeInput{
+		Config:         noa.DefaultConfig(200000),
+		TokenCount:     160000,
+		Messages:       []noa.CoreMessage{cm("a1", "user", "text", big(100))},
+		Recommendation: noa.Recommendation{CompressibleRanges: []noa.RangeInfo{rng("m00001", 12000, 9000, 3)}},
+	})
+
+	// D: emergency band (0.975) still resolves to tier 1; exercises %.0f rounding of 97.5.
+	run(noa.DecideNudgeInput{
+		Config:         noa.DefaultConfig(200000),
+		TokenCount:     195000,
+		Messages:       []noa.CoreMessage{cm("a1", "user", "text", big(80))},
+		Recommendation: noa.Recommendation{CompressibleRanges: []noa.RangeInfo{rng("m00001", 20000, 15000, 4)}},
+	})
+
+	// E: pressure, tier-2 reclaims the most (5 active tier-1 blocks) -> inject T2 + targets.
+	run(noa.DecideNudgeInput{
+		Config:     noa.DefaultConfig(200000),
+		TokenCount: 170000,
+		State:      noa.CompressionState{Blocks: mkBlocks(1, 5, 5000)},
+	})
+
+	// F: same as E but tiers disabled -> only tier 1 is a candidate, nothing clears -> no inject.
+	cfgF := noa.DefaultConfig(200000)
+	cfgF.Tiers.Enabled = false
+	run(noa.DecideNudgeInput{
+		Config:     cfgF,
+		TokenCount: 170000,
+		State:      noa.CompressionState{Blocks: mkBlocks(1, 5, 5000)},
+	})
+
+	// G: growth band, not enough growth since the last nudge -> below cadence.
+	stG := noa.CompressionState{}
+	stG.Nudge.LastNudgeShownTokens = 50000
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(200000), TokenCount: 60000, State: stG})
+
+	// H: growth band, tier 1 clears the adaptive floor -> inject T1.
+	stH := noa.CompressionState{}
+	stH.Nudge.LastNudgeShownTokens = 10000
+	run(noa.DecideNudgeInput{
+		Config:         noa.DefaultConfig(200000),
+		TokenCount:     100000,
+		State:          stH,
+		Recommendation: noa.Recommendation{CompressibleRanges: []noa.RangeInfo{rng("m00001", 60000, 50000, 5)}},
+	})
+
+	// I: growth, tier 2 via count trigger (5 blocks, usage above the floor) -> inject T2.
+	stI := noa.CompressionState{Blocks: mkBlocks(1, 5, 400)}
+	stI.Nudge.LastNudgeShownTokens = 10000
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(200000), TokenCount: 100000, State: stI})
+
+	// J: same as I but tier 2 is cadence-blocked -> suppressed, reason carries the gate.
+	stJ := noa.CompressionState{Blocks: mkBlocks(1, 5, 400)}
+	stJ.Nudge.LastNudgeShownTokens = 10000
+	stJ.Nudge.LastShownByTier = map[noa.Tier]int{2: 95000}
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(200000), TokenCount: 100000, State: stJ})
+
+	// K: growth, tier 3 via count trigger (10 tier-2 blocks) -> inject T3 + targets.
+	stK := noa.CompressionState{Blocks: mkBlocks(2, 10, 400)}
+	stK.Nudge.LastNudgeShownTokens = 10000
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(200000), TokenCount: 100000, State: stK})
+
+	// L: growth ready but no tier qualifies (3 tier-1 blocks, below both triggers).
+	stL := noa.CompressionState{Blocks: mkBlocks(1, 3, 400)}
+	stL.Nudge.LastNudgeShownTokens = 10000
+	run(noa.DecideNudgeInput{Config: noa.DefaultConfig(200000), TokenCount: 100000, State: stL})
+
+	// M: first sight — a backlog with no baseline still injects despite zero growth.
+	run(noa.DecideNudgeInput{
+		Config:         noa.DefaultConfig(200000),
+		TokenCount:     100000,
+		Recommendation: noa.Recommendation{CompressibleRanges: []noa.RangeInfo{rng("m00001", 60000, 50000, 5)}},
+	})
+
+	// N: protected ranges pass through on an injected tier-1 nudge.
+	run(noa.DecideNudgeInput{
+		Config:     noa.DefaultConfig(200000),
+		TokenCount: 160000,
+		Recommendation: noa.Recommendation{
+			CompressibleRanges: []noa.RangeInfo{rng("m00001", 12000, 9000, 3)},
+			ProtectedRanges:    []noa.ProtectedRange{{StartRef: "m00004", EndRef: "m00004", Count: 1, Tokens: 30, Tools: []string{"Write"}}},
+		},
+	})
+
+	// O: truncation count passes through on an injected nudge.
+	run(noa.DecideNudgeInput{
+		Config:         noa.DefaultConfig(200000),
+		TokenCount:     160000,
+		Recommendation: noa.Recommendation{CompressibleRanges: []noa.RangeInfo{rng("m00001", 12000, 9000, 3)}},
+		TruncatedCount: 3,
+	})
 }

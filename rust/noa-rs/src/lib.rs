@@ -10,6 +10,7 @@
 pub mod blocks;
 pub mod breakdown;
 pub mod buildranges;
+pub mod nudge;
 pub mod nudgetext;
 pub mod panel;
 pub mod parseargs;

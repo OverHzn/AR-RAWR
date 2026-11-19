@@ -516,8 +516,129 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 "NothingToCompress": rec.nothing_to_compress,
             })
         }
+        "DecideNudge" => {
+            let a = &args[0];
+            // Config: start from defaults, override the fields DecideNudge reads.
+            let cm = &a["Config"];
+            let limit = cm["ModelContextLimit"].as_i64().expect("ModelContextLimit");
+            let mut cfg = noa_rs::port::default_config(limit);
+            let tiers = &cm["Tiers"];
+            cfg.tiers.enabled = tiers["Enabled"].as_bool().unwrap_or(true);
+            cfg.tiers.tier2_trigger = tiers["Tier2Trigger"].as_i64().unwrap_or(5);
+            cfg.tiers.tier3_trigger = tiers["Tier3Trigger"].as_i64().unwrap_or(10);
+            let n = &cm["Nudge"];
+            cfg.nudge.max_context_limit_pct = n["MaxContextLimitPct"].as_f64().unwrap_or(0.0);
+            cfg.nudge.min_context_limit_pct = n["MinContextLimitPct"].as_f64().unwrap_or(0.0);
+            cfg.nudge.emergency_threshold_pct = n["EmergencyThresholdPct"].as_f64().unwrap_or(0.0);
+            cfg.nudge.growth_ratio = n["GrowthRatio"].as_f64().unwrap_or(0.0);
+            cfg.nudge.growth_floor = n["GrowthFloor"].as_i64().unwrap_or(0);
+            cfg.nudge.growth_cap = n["GrowthCap"].as_i64().unwrap_or(0);
+            cfg.nudge.min_growth_floor = n["MinGrowthFloor"].as_i64().unwrap_or(0);
+            cfg.nudge.min_growth_ratio = n["MinGrowthRatio"].as_f64().unwrap_or(0.0);
+            cfg.nudge.tier2_growth_multiplier = n["Tier2GrowthMultiplier"].as_f64().unwrap_or(0.0);
+            cfg.nudge.min_pressure_benefit_tokens = if n["MinPressureBenefitTokens"].is_null() {
+                None
+            } else {
+                Some(n["MinPressureBenefitTokens"].as_i64().expect("mpb"))
+            };
+            cfg.compress.min_compress_range =
+                cm["Compress"]["MinCompressRange"].as_i64().unwrap_or(0);
+
+            let messages = decode_core_messages(&a["Messages"]);
+            let blocks = decode_full_blocks(&a["Blocks"]);
+            let ns = &a["Nudge"];
+            let nudge = noa_rs::nudge::NudgeState {
+                last_per_message_nudge_tokens: ns["LastPerMessageNudgeTokens"]
+                    .as_i64()
+                    .unwrap_or(0),
+                last_nudge_shown_tokens: ns["LastNudgeShownTokens"].as_i64().unwrap_or(0),
+                last_shown_by_tier: ns["LastShownByTier"]
+                    .as_object()
+                    .map(|m| {
+                        m.iter()
+                            .filter_map(|(k, v)| {
+                                k.parse::<i64>()
+                                    .ok()
+                                    .map(|kk| (kk, v.as_i64().unwrap_or(0)))
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            };
+            let token_count = a["TokenCount"].as_i64().expect("TokenCount");
+            let truncated = a["TruncatedCount"].as_i64().unwrap_or(0);
+            let rc = &a["Recommendation"];
+            let compressible = if rc["CompressibleRanges"].is_null() {
+                None
+            } else {
+                Some(
+                    serde_json::from_value::<Vec<RangeInfo>>(rc["CompressibleRanges"].clone())
+                        .expect("compressible ranges"),
+                )
+            };
+            let protected = if rc["ProtectedRanges"].is_null() {
+                None
+            } else {
+                Some(decode_protected(&rc["ProtectedRanges"]))
+            };
+            let inp = noa_rs::nudge::DecideNudgeInput {
+                cfg: &cfg,
+                messages: &messages,
+                blocks: &blocks,
+                nudge: &nudge,
+                token_count,
+                compressible_ranges: compressible,
+                protected_ranges: protected,
+                truncated_count: truncated,
+            };
+            let d = noa_rs::nudge::decide_nudge(&inp, noa_rs::port::default_count_tokens);
+            d.to_value()
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
+}
+
+/// Decode a recorded `[]noa.CompressionBlock` (full model) into `Vec<FullBlock>`.
+/// A nil slice marshals to `null`; the three id slices are `Option` so null round-trips.
+fn decode_full_blocks(v: &Value) -> Vec<noa_rs::nudge::FullBlock> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    v.as_array()
+        .expect("blocks array")
+        .iter()
+        .map(|b| noa_rs::nudge::FullBlock {
+            block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
+            tier: b["Tier"].as_i64().unwrap_or(0),
+            topic: b["Topic"].as_str().unwrap_or("").to_string(),
+            summary: b["Summary"].as_str().unwrap_or("").to_string(),
+            direct_message_ids: decode_opt_str_vec(&b["DirectMessageIDs"]),
+            effective_message_ids: decode_opt_str_vec(&b["EffectiveMessageIDs"]),
+            direct_block_ids: decode_opt_str_vec(&b["DirectBlockIDs"]),
+            archive_path: b["ArchivePath"].as_str().unwrap_or("").to_string(),
+            archive_rel: b["ArchiveRel"].as_str().unwrap_or("").to_string(),
+            compressed_tokens: b["CompressedTokens"].as_i64().unwrap_or(0),
+            start_ref: b["StartRef"].as_str().unwrap_or("").to_string(),
+            end_ref: b["EndRef"].as_str().unwrap_or("").to_string(),
+            created_at: b["CreatedAt"].as_i64().unwrap_or(0),
+            active: b["Active"].as_bool().unwrap_or(false),
+            compress_call_id: b["CompressCallID"].as_str().unwrap_or("").to_string(),
+        })
+        .collect()
+}
+
+/// Decode a JSON string slice that may be null (Go nil slice) into `Option<Vec<String>>`.
+fn decode_opt_str_vec(v: &Value) -> Option<Vec<String>> {
+    if v.is_null() {
+        return None;
+    }
+    Some(
+        v.as_array()
+            .expect("string array")
+            .iter()
+            .filter_map(|x| x.as_str().map(String::from))
+            .collect(),
+    )
 }
 
 /// Decode a recorded `[]RangeInfo` (array of objects) into `Vec<RangeInfo>`.
