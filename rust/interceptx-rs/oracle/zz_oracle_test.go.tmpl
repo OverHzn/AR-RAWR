@@ -10,6 +10,7 @@ package intercept
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -116,5 +117,22 @@ func TestZZOracle(t *testing.T) {
 	}
 	for _, c := range spCases {
 		rec(t, "subset", []any{c.resolved, c.pinned}, subset(c.resolved, c.pinned))
+	}
+}
+
+func TestZZOracle9ai(t *testing.T) {
+	hosts := []string{
+		"", "example.com", "a", "localhost", "a-b.example.com",
+		"under_score.example", "0start.ok", "foo_bar.example",
+		"-start.com", "end-.com", "ex..com", "UPPER.com",
+		"example.com.", "has space.com", "dot.", "a.b.c.d.e",
+		"127.0.0.1", "xn--bcher-kva.example", "_dmarc.example.com",
+		strings.Repeat("a", 63), strings.Repeat("a", 64),
+		"toolong" + strings.Repeat("a", 60) + ".com",
+		strings.Repeat("a", 250), strings.Repeat("a", 254),
+		strings.Repeat("ab.", 100) + "cd",
+	}
+	for _, h := range hosts {
+		rec(t, "validHostname", []any{h}, validHostname(h))
 	}
 }

@@ -13,17 +13,21 @@
 {"args":[""],"fn":"argvProgramName","ok":"."}
 {"args":[""],"fn":"judgeActionLabel","ok":""}
 {"args":[""],"fn":"stripCodeFence","ok":""}
+{"args":[""],"fn":"validHostname","ok":false}
 {"args":[""],"fn":"validPort","ok":0}
 {"args":["+80"],"fn":"validPort","ok":80}
 {"args":["-1"],"fn":"validPort","ok":0}
+{"args":["-start.com"],"fn":"validHostname","ok":false}
 {"args":["..."],"fn":"argvProgramName","ok":"..."}
 {"args":["./script.sh"],"fn":"argvProgramName","ok":"script.sh"}
 {"args":["/sbin/mkfs.xfs"],"fn":"argvProgramName","ok":"mkfs"}
 {"args":["/usr/bin/"],"fn":"argvProgramName","ok":"bin"}
 {"args":["/usr/bin/cat"],"fn":"argvProgramName","ok":"cat"}
 {"args":["0"],"fn":"validPort","ok":0}
+{"args":["0start.ok"],"fn":"validHostname","ok":true}
 {"args":["1"],"fn":"validPort","ok":1}
 {"args":["123"],"fn":"argvProgramName","ok":"123"}
+{"args":["127.0.0.1"],"fn":"validHostname","ok":true}
 {"args":["443"],"fn":"validPort","ok":443}
 {"args":["65535"],"fn":"validPort","ok":65535}
 {"args":["65536"],"fn":"validPort","ok":0}
@@ -33,6 +37,8 @@
 {"args":["ALLOW"],"fn":"judgeActionLabel","ok":"ALLOW"}
 {"args":["CAT"],"fn":"argvProgramName","ok":"cat"}
 {"args":["Docker"],"fn":"argvProgramName","ok":"docker"}
+{"args":["UPPER.com"],"fn":"validHostname","ok":false}
+{"args":["_dmarc.example.com"],"fn":"validHostname","ok":true}
 {"args":["```\nplain\n```"],"fn":"stripCodeFence","ok":"plain"}
 {"args":["``````"],"fn":"stripCodeFence","ok":"``````"}
 {"args":["```code```"],"fn":"stripCodeFence","ok":"code"}
@@ -50,7 +56,15 @@
 {"args":["a",5],"fn":"bounded","ok":["a",false]}
 {"args":["a",6],"fn":"bounded","ok":["a",false]}
 {"args":["a",7],"fn":"bounded","ok":["a",false]}
+{"args":["a"],"fn":"validHostname","ok":true}
+{"args":["a-b.example.com"],"fn":"validHostname","ok":true}
 {"args":["a.b.c"],"fn":"argvProgramName","ok":"a.b.c"}
+{"args":["a.b.c.d.e"],"fn":"validHostname","ok":true}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHostname","ok":true}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHostname","ok":false}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHostname","ok":false}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validHostname","ok":false}
+{"args":["ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.ab.cd"],"fn":"validHostname","ok":false}
 {"args":["abc"],"fn":"validPort","ok":0}
 {"args":["abcdef",0],"fn":"bounded","ok":["",true]}
 {"args":["abcdef",100],"fn":"bounded","ok":["abcdef",false]}
@@ -70,8 +84,15 @@
 {"args":["curl7.8"],"fn":"argvProgramName","ok":"curl"}
 {"args":["deny","my-rule"],"fn":"defaultMessage","ok":"intercept rule [my-rule] forbids executing this tool"}
 {"args":["deny"],"fn":"judgeActionLabel","ok":"block"}
+{"args":["dot."],"fn":"validHostname","ok":false}
+{"args":["end-.com"],"fn":"validHostname","ok":false}
+{"args":["ex..com"],"fn":"validHostname","ok":false}
+{"args":["example.com"],"fn":"validHostname","ok":true}
+{"args":["example.com."],"fn":"validHostname","ok":false}
+{"args":["foo_bar.example"],"fn":"validHostname","ok":true}
 {"args":["gcc-12"],"fn":"argvProgramName","ok":"gcc-"}
 {"args":["git"],"fn":"argvProgramName","ok":"git"}
+{"args":["has space.com"],"fn":"validHostname","ok":false}
 {"args":["hello",0],"fn":"bounded","ok":["",true]}
 {"args":["hello",100],"fn":"bounded","ok":["hello",false]}
 {"args":["hello",1],"fn":"bounded","ok":["h",true]}
@@ -90,6 +111,7 @@
 {"args":["héllo wörld",5],"fn":"bounded","ok":["héll",true]}
 {"args":["héllo wörld",6],"fn":"bounded","ok":["héllo",true]}
 {"args":["héllo wörld",7],"fn":"bounded","ok":["héllo ",true]}
+{"args":["localhost"],"fn":"validHostname","ok":true}
 {"args":["mkfs"],"fn":"argvProgramName","ok":"mkfs"}
 {"args":["mkfs.ext4"],"fn":"argvProgramName","ok":"mkfs"}
 {"args":["no fence here"],"fn":"stripCodeFence","ok":"no fence here"}
@@ -98,6 +120,9 @@
 {"args":["python3"],"fn":"argvProgramName","ok":"python"}
 {"args":["python3.11"],"fn":"argvProgramName","ok":"python"}
 {"args":["short"],"fn":"stripCodeFence","ok":"short"}
+{"args":["toolongaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com"],"fn":"validHostname","ok":false}
+{"args":["under_score.example"],"fn":"validHostname","ok":true}
+{"args":["xn--bcher-kva.example"],"fn":"validHostname","ok":true}
 {"args":["日本語テキスト",0],"fn":"bounded","ok":["",true]}
 {"args":["日本語テキスト",100],"fn":"bounded","ok":["日本語テキスト",false]}
 {"args":["日本語テキスト",1],"fn":"bounded","ok":["",true]}

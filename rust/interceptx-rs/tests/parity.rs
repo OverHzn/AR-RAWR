@@ -61,6 +61,7 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "judgeActionLabel" => json!(judge_action_label(&arg_str(args, 0))),
         "defaultMessage" => json!(default_message(&arg_str(args, 0), &arg_str(args, 1))),
         "subset" => json!(subset(&arg_str_slice(args, 0), &arg_str_slice(args, 1))),
+        "validHostname" => json!(valid_hostname(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

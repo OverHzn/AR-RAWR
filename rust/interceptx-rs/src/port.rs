@@ -175,3 +175,28 @@ pub fn subset(resolved: &[String], pinned: &[String]) -> bool {
     }
     resolved.iter().all(|ip| pinned.contains(ip))
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ai: hostname label validation in `intercept/` (pure byte-wise check).
+// ---------------------------------------------------------------------------
+
+/// `validHostname` (`intercept/...`): whether `h` is a syntactically valid
+/// hostname — at most 253 bytes, each dot-separated label 1-63 bytes, no leading
+/// or trailing `-` per label, and only `[a-z0-9_-]` (lower-case only) per byte.
+pub fn valid_hostname(h: &str) -> bool {
+    if h.len() > 253 {
+        return false;
+    }
+    for label in h.split('.') {
+        let b = label.as_bytes();
+        if b.is_empty() || b.len() > 63 || b[0] == b'-' || b[b.len() - 1] == b'-' {
+            return false;
+        }
+        for &c in b {
+            if !(c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-' || c == b'_') {
+                return false;
+            }
+        }
+    }
+    true
+}
