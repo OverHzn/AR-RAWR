@@ -46,7 +46,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 
 | Unit | Cases | Go source | Functions |
 |------|------:|----------|-----------|
-| `server-rs`       | 5936 | `server/` | 34 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …) |
+| `server-rs`       | 6450 | `server/` | 47 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …; +`coalesceStr`/`stringValue`/`cleanStrs`/`contains`/`containsFold`/`minF`/`isHostByte`/`cloneInt64Ptr`/`keepIfMasked`/`sameOptionalID`/`parseVersion`/`versionLess`) |
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
