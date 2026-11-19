@@ -17,11 +17,14 @@
 //! byte-identical to the Go binary and cannot drift.
 
 pub mod browser_mcp;
+pub mod constants;
 pub mod error;
+pub mod llmhealth;
 pub mod migrate;
 pub mod secrets;
 pub mod seed;
 pub mod settings;
+pub mod skill_gaps;
 pub mod task_templates;
 
 pub use error::{Error, Result};

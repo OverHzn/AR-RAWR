@@ -38,7 +38,7 @@ frozen Go source snapshot under `<crate>/go/` or `<crate>/oracle/`. `artex`
 | notify (sign+http+channels) | — | `src/notify/{sign,http}.rs` + adapters | IN_PROGRESS | `tests/notify_sign_test.rs` (sign+ssrf+redact) | Unit 8: sign+SSRF+redact substrate VERIFIED; channel adapters next |
 | sidequestion | 761 | `src/sidequestion.rs` | NOT_STARTED | — | leaf (←llmpool) |
 | mcphttp | 619 | `src/mcphttp.rs` | DONE (`72ccc22`) | `tests/mcphttp_test.rs` (4) | leaf; Streamable + legacy SSE |
-| db | 23639 | `src/db/` | IN_PROGRESS | `tests/db_secrets_test.rs` (4), `tests/db_migrate_test.rs` (8), `tests/db_settings_test.rs` (4), `tests/db_seed_test.rs` (3), `tests/db_task_templates_test.rs` (2) | D-1a crypto + D-1b boot/migrate + D-1c settings/secrets + D-1d seed (agents/intercept v1-v3/asset/skill-vis/browser-mcp via dbx_rs/target-gate) + D-1e task_templates (sentinel-error model + SystemTime codec) VERIFIED (differential vs Postgres); next db resource groups |
+| db | 23639 | `src/db/` | IN_PROGRESS | `tests/db_secrets_test.rs` (4), `tests/db_migrate_test.rs` (8), `tests/db_settings_test.rs` (4), `tests/db_seed_test.rs` (3), `tests/db_task_templates_test.rs` (2), `tests/db_llmhealth_skillgaps_test.rs` (3) | D-1a crypto + D-1b boot/migrate + D-1c settings/secrets + D-1d seed (agents/intercept v1-v3/asset/skill-vis/browser-mcp via dbx_rs/target-gate) + D-1e task_templates (sentinel-error model + SystemTime codec) + D-1f llmhealth/skill_gaps/constants VERIFIED (differential vs Postgres); next db resource groups |
 | intercept | 4328 | `src/intercept.rs` | NOT_STARTED | — | ←db,enrich |
 | egress | 616 | `src/egress.rs` | NOT_STARTED | — | ←intercept |
 | traffic (+rewrite) | 6814 | `src/traffic/` | NOT_STARTED | — | ←db,egress |

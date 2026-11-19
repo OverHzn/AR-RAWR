@@ -285,6 +285,20 @@ resume without re-deriving state.
   shared DSN + async lock + unique-name fixtures, differential vs `artex-pg`, skip when DSN
   unreachable. artex **205 tests** green, clippy `-D warnings` clean, fmt clean, gate 30/30, Go
   `TestTaskTemplateCRUDAndNormalizedUniqueness|TestTaskTemplateDisjointPatchesCompose` green.
+- **D-1f llmhealth + skill_gaps + constants (this commit):** leaf db cluster.
+  `src/db/llmhealth.rs` — `LLMHealth{profile_id,fails,trips,open_until:Option<SystemTime>,
+  last_error,last_at}` + `DB::{load,save,clear}_llm_health` (`open_until IS NOT NULL AND
+  open_until > now()` filters expired windows; upsert stamps `last_at=now()`).
+  `src/db/skill_gaps.rs` — `SkillGap` + `DB::skill_gaps(&Context, limit)` (limit<=0->50;
+  verbatim Go SQL: `COUNT(*) FILTER` misses/hits, `EXTRACT(EPOCH FROM MAX(ts))::bigint`;
+  honours ctx cancellation via `tokio::select!` on `Context::cancelled()` -> `Error::Canceled`,
+  Go `QueryContext` semantics). `src/db/constants.rs` — exploration node kinds/digest+intent
+  states/edge rels (consumed by the exploration group later). Added `From<llm::Error> for
+  db::Error` (-> `Error::msg(e.message())`, keeps "context canceled"/"context deadline
+  exceeded"). Specs: `tests/db_llmhealth_skillgaps_test.rs` (3) — fresh differential tests
+  (no Go `_test.go` for these files): llmhealth upsert/load(expired+null excluded)/clear,
+  skill_gaps aggregation + limit + cancellation, constants parity guard. artex **208 tests**
+  green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

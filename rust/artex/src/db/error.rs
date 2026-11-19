@@ -92,5 +92,11 @@ impl From<std::io::Error> for Error {
     }
 }
 
+impl From<crate::llm::Error> for Error {
+    fn from(e: crate::llm::Error) -> Error {
+        Error::msg(e.message())
+    }
+}
+
 /// Convenience result alias used throughout the `db` module.
 pub type Result<T> = std::result::Result<T, Error>;
