@@ -198,6 +198,54 @@ fn zero_policy_keeps_defaults() {
     );
 }
 
+/// Port of `TestBackoffLadderGrows`: the cooldown ladder is non-decreasing and
+/// plateaus at its last rung (~30m).
+#[test]
+fn backoff_ladder_grows() {
+    let reg = Registry::new(None, None);
+    let mut prev = Duration::ZERO;
+    for i in 0..4i64 {
+        reg.reset(1);
+        reg.restore(
+            1,
+            State {
+                trips: i,
+                ..Default::default()
+            },
+        );
+        reg.trip(1, "402", true);
+        let d = remaining(&reg.get(1));
+        // Non-decreasing, with a second of slack: the ladder plateaus and each Trip
+        // stamps its own time.Now().
+        if i > 0 && d + Duration::from_secs(1) < prev {
+            panic!(
+                "trip #{} cools for {d:?}, shorter than the previous {prev:?}",
+                i + 1
+            );
+        }
+        prev = d;
+    }
+    assert!(
+        prev >= Duration::from_secs(25 * 60),
+        "ladder tops out at {prev:?}, want ~30m"
+    );
+}
+
+/// Port of `TestExpiredWindowIsClosed`: an expired cooling-off window reads closed.
+#[test]
+fn expired_window_is_closed() {
+    let reg = Registry::new(None, None);
+    reg.restore(
+        1,
+        State {
+            trips: 1,
+            open_until: Some(SystemTime::now() - Duration::from_secs(1)),
+            ..Default::default()
+        },
+    );
+    assert!(!reg.is_open(1), "expired window should read as closed");
+}
+
 /// Port of `TestHealthCallbacksStayInStateOrder`: persist and forget run under the
 /// registry lock, so a second update on the same profile cannot enqueue until the
 /// first callback returns — the queue cannot observe the later state first.

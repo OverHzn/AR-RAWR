@@ -383,6 +383,23 @@ mod tests {
             trim_err(&Error::msg(mixed)),
             format!("a{}\u{2026}", "\u{20ac}".repeat(99))
         );
+        // Port of TestTrimErrKeepsValidUTF8: a CJK body cut at 300 bytes must stay
+        // valid UTF-8 (else PostgreSQL rejects the breaker's last_error) and end
+        // with the ellipsis.
+        let cjk = Error::msg(format!(
+            "openai: status 503: {}",
+            "\u{670d}\u{52a1}\u{6682}\u{65f6}\u{4e0d}\u{53ef}\u{7528}\u{ff0c}\u{8bf7}\u{7a0d}\u{540e}\u{91cd}\u{8bd5}\u{3002}".repeat(10)
+        ));
+        let got = trim_err(&cjk);
+        assert!(
+            got.is_char_boundary(got.len())
+                && got.ends_with('\u{2026}')
+                && got.len() <= 300 + '\u{2026}'.len_utf8(),
+            "trim_err = {got:?} ({} bytes), want ≤300 bytes plus …",
+            got.len()
+        );
+        // The cut must not split a multi-byte rune: re-decoding the bytes is infallible.
+        assert_eq!(std::str::from_utf8(got.as_bytes()).unwrap(), got);
     }
 
     #[test]
