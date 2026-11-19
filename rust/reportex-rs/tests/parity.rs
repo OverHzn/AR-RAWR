@@ -69,6 +69,8 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let q = decode_quality(&args[0]);
             json!(quality_narrative(&q))
         }
+        "detailedReport" => json!(detailed_report(&arg_str(args, 0), &arg_str(args, 1))),
+        "detailedReportFull" => json!(detailed_report_full(&arg_str(args, 0), &arg_str(args, 1))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

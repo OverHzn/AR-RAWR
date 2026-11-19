@@ -158,3 +158,29 @@ func TestZZOracle9v(t *testing.T) {
 		rec(t, "qualityNarrative", []any{q}, qualityNarrative(q))
 	}
 }
+
+func TestZZOracle9x(t *testing.T) {
+	// detailedReport(body, heading) == detailedReportLimit(...,8192)
+	// detailedReportFull(body, heading) == detailedReportLimit(...,0)
+	long := ""
+	for len(long) < 9000 {
+		long += "line of report body that keeps going and going.\n"
+	}
+	// A body just over 8 KiB ending inside an open fence (exercises fence-close).
+	fenceLong := "```\n"
+	for len(fenceLong) < 8300 {
+		fenceLong += "code line inside an unclosed fence\n"
+	}
+	cases := [][2]string{
+		{"", "Report"},
+		{"   \n\t ", "Heading"},
+		{"short body", "My Heading"},
+		{"  leading and trailing  ", "H"},
+		{long, "Full Report"},
+		{fenceLong, "Capped"},
+	}
+	for _, c := range cases {
+		rec(t, "detailedReport", []any{c[0], c[1]}, detailedReport(c[0], c[1]))
+		rec(t, "detailedReportFull", []any{c[0], c[1]}, detailedReportFull(c[0], c[1]))
+	}
+}

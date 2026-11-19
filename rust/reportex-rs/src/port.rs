@@ -178,3 +178,24 @@ pub fn quality_narrative(q: &Quality) -> String {
     }
     b
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9x: `detailedReport` / `detailedReportFull` (`report/report.go`) — thin
+// wrappers over `detailedReportLimit` with a fixed / no cap.
+// ---------------------------------------------------------------------------
+
+/// `reportMaxReportBytes` (`report/quality.go`): the default detailed-report cap,
+/// `8 << 10` bytes (8 KiB).
+pub const REPORT_MAX_REPORT_BYTES: i64 = 8 << 10;
+
+/// `detailedReport` (`report/report.go`): `detailedReportLimit` with the default
+/// 8 KiB cap.
+pub fn detailed_report(body: &str, heading: &str) -> String {
+    detailed_report_limit(body, heading, REPORT_MAX_REPORT_BYTES)
+}
+
+/// `detailedReportFull` (`report/report.go`): `detailedReportLimit` with no cap
+/// (`limit == 0` renders the whole body).
+pub fn detailed_report_full(body: &str, heading: &str) -> String {
+    detailed_report_limit(body, heading, 0)
+}
