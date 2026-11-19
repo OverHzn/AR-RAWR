@@ -40,11 +40,15 @@ pub use notifyx_rs::port::{
     smtp_reply_code, snippet, telegram_escape, telegram_escape_attr,
 };
 
+pub mod dingtalk;
+pub mod feishu;
 pub mod html;
 pub mod http;
 pub mod markdown;
 pub mod mask;
 pub mod sign;
+pub mod telegram;
+pub mod wecom;
 
 use async_trait::async_trait;
 use serde_json::Value;
@@ -354,18 +358,51 @@ pub trait Channel: Send + Sync {
     async fn send(&self, ctx: &Context, cfg: &Value, m: &Message) -> Result<usize, Error>;
 
     /// `DefaultRatePerMin`: the channel's recommended per-minute delivery cap (`0`
-    /// = no known limit).
-    fn default_rate_per_min(&self) -> i64;
+    /// = no known limit). Defaults to [`default_rate_per_min`] of [`Channel::kind`].
+    fn default_rate_per_min(&self) -> i64 {
+        default_rate_per_min(self.kind())
+    }
 
     /// `SecretKeys`: the config keys that are credentials (masked on readback; a
-    /// masked value on update keeps the stored original).
-    fn secret_keys(&self) -> Vec<String>;
+    /// masked value on update keeps the stored original). Defaults to
+    /// [`secret_keys`] of [`Channel::kind`].
+    fn secret_keys(&self) -> Vec<String> {
+        secret_keys(self.kind())
+            .unwrap_or(&[])
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    }
 
     /// `DestinationKeys`: the config keys that decide "where messages go". Kept
     /// separate from [`Channel::secret_keys`] so a config edit cannot redirect the
     /// stored real credentials to an attacker-controlled server (see Go
-    /// `PrepareConfigUpdate`).
-    fn destination_keys(&self) -> Vec<String>;
+    /// `PrepareConfigUpdate`). Defaults to [`destination_keys`] of [`Channel::kind`].
+    fn destination_keys(&self) -> Vec<String> {
+        destination_keys(self.kind())
+            .unwrap_or(&[])
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    }
+}
+
+/// `Get` (`channel.go`): the channel adapter registered for `kind`, or `None` if the
+/// kind is unknown. Each call returns a fresh **stateless** instance (the Go registry
+/// holds zero-sized structs; adapters carry no fields, credentials always arrive via
+/// `cfg`), so a boxed value per call is equivalent and keeps call sites simple.
+///
+/// The set here grows unit by unit as each adapter lands (webhook, then email); the
+/// pure `valid_kind`/`kinds` from `notify-rs` already describe the full six-kind
+/// registry for the config-masking layer.
+pub fn channel(kind: &str) -> Option<Box<dyn Channel>> {
+    match kind {
+        KIND_DINGTALK => Some(Box::new(dingtalk::DingTalkChannel)),
+        KIND_FEISHU => Some(Box::new(feishu::FeishuChannel)),
+        KIND_WECOM => Some(Box::new(wecom::WeComChannel)),
+        KIND_TELEGRAM => Some(Box::new(telegram::TelegramChannel)),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

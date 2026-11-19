@@ -56,15 +56,38 @@ resume without re-deriving state.
   (TestDoJSONClassifiesHTTPStatus/IncludesResponseSnippet/SnippetIsSingleLineAndBounded/
   RejectsOversizedResponse) + dial-guard (literal + resolver) + cross/same-host redirect.
   Go baseline green for all of these. New dep: reqwest 0.12 (rustls-tls), offline-buildable.
-- **9b TODO:** the 6 concrete adapters (dingtalk/feishu/wecom/webhook/telegram/email) with
-  `feishuCard`/`telegramHTML` + webhook templates + the email SMTP dial guard. Add default
-  trait bodies for `default_rate_per_min`/`secret_keys`/`destination_keys` (read
-  `channel_meta(self.kind())`) so adapters implement only kind/validate/send. Channel-level
-  `Send` returns delivered-item count (truncated batch marks only first `kept`).
-  Port: `channels_test.go`, `http_test.go` channel cases, `pack_test.go` channel cases,
-  `email_test.go`, `webhook_template_test.go`, channel cases in `redact_test.go`
-  (TestChannelErrorsNeverLeakCredentials*, TestCrossHostRedirectRefused/SameHostRedirectAllowed)
-  + `ssrf_test.go` dial-guard (TestDialGuard* through `dingTalkChannel.Send`, TestEmailDialGuard*).
+- **9b-1 DONE (ready to commit):** the four HTTP JSON adapters (dingtalk/feishu/wecom/telegram)
+  on top of `do_json`. Trait `Channel::validate -> Result<(),Error>` (Go `Validate` messages:
+  "missing Webhook address" / "missing Bot Token" / "missing Chat ID" / "invalid API URL"), and
+  default trait bodies for `default_rate_per_min`/`secret_keys`/`destination_keys` reading
+  `channel_meta(self.kind())`. Adapters stateless (creds via `cfg`; `cfg_string` already trims).
+  `src/notify/dingtalk.rs` (actionCard for single+backlink else markdown; `errcode!=0` always
+  Permanent), `wecom.rs` (markdown 4096-byte pack; 45009 transient else permanent),
+  `feishu.rs` (`feishu_card` whole-item packing measured with the SAME `serde_json` that
+  `do_json` sends with — envelope=113 holds; `code`/`StatusCode` dual check; sign only with
+  secret), `telegram.rs` (`telegram_html`/`telegram_batch_line`/`telegram_batch_title`;
+  endpoint builder; `ok` check; 429 transient else permanent). `channel(kind)` factory registers
+  the 4 (webhook/email join in 9b-2/9b-3). Specs in `tests/notify_channels_test.rs` (12): port of
+  `channels_test.go` channel cases + feishu `pack_test.go` (TestFeishuPackingReportsKept,
+  TestFeishuDigestBodiesStayWithinCardLimit — body ≤16000, envelope=113, every item once & in
+  order across messages) + validate-message cases for the 4 kinds. Go baseline green.
+- **9b-2 TODO:** generic webhook = **Go `text/template` engine** (`{{.Field}}`/`{{range}}`/
+  `{{if}}`/`{{- -}}`/`{{json .X}}`/`{{printf}}`/`{{index}}`; unknown field errors; result must be
+  valid JSON → else Permanent; custom method/headers; `Validate` rejects empty url, non-http(s),
+  bad method, unparseable template). No existing Rust text/template port — needs a small engine.
+  Specs: `webhook_template_test.go` (capability boundary: pure-data context, no methods) +
+  `channels_test.go` webhook cases (TestWebhookDefaultTemplateProducesValidJSON / CustomTemplateAndHeaders
+  / RejectsNonJSONRenderResult / ValidateCatchesBadConfigEarly) + `pack_test.go`
+  (TestWebhookAndEmailReportAllItems). JSON-marshal parity: Go HTML-escapes `<>&` (serde does not)
+  but template output is validated by re-parsing, not byte-compared — confirm no test byte-counts it.
+- **9b-3 TODO:** email = **SMTP client** (EHLO/STARTTLS/AUTH PLAIN/MAIL/RCPT/DATA/QUIT) + TLS +
+  RFC 2047 Q-encoded subject + RFC 5322 + base64 HTML body (`buildEmailMessage`) + the email
+  dial guard (reuse `is_blocked_dial_ip`/`allow_local_targets`). `smtpStageError`: 4xx transient,
+  5xx permanent, unparseable→transient. Also add webhook+email to `channel()` factory, and port
+  the full `TestChannelValidateReportsMissingFields` (email cases) + `TestRegistryCoversAllKinds`
+  + `ssrf_test.go` TestEmailDialGuard*. Specs: `email_test.go` (fake SMTP server),
+  `channels_test.go` email cases (TestEmailMessageIsWellFormed / EscapesStructuralInjection /
+  SMTPErrorClassification).
 
 ## Next
 - Unit 9b (above), then sidequestion → mcphttp → db (differential) → intercept → egress →
