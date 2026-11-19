@@ -252,21 +252,20 @@ resume without re-deriving state.
   DB-destructive, 4 prio-80 HTTP-DELETE) with verbatim Go regex; v2 = 2 rules (destructive
   enabled, exfil-pipe disabled); v3 = delete-endpoint path rule (`DELETE_ENDPOINT_PATH_PATTERN`,
   INSERT…SELECT…WHERE NOT EXISTS). `seed_target_gate_exemptions` marshals `[{host,port,note}]`
-  via `insert_setting_if_absent(SettingTargetExemptHosts)`. `src/db/browser_mcp.rs` — pure
-  `rewrite_stock_npx_browser_mcp`/`rewrite_browser_mcp_row`/`playwright_mcp_package_index`/
-  `has_cli_flag` (npx meta flags -y/--yes/--/-q/--quiet; `@playwright/mcp[@ver]` → `playwright-mcp`
-  + fill `--headless`/`--browser chromium`, never mutate input) + `DB::migrate_stock_browser_mcp`
+  via `insert_setting_if_absent(SettingTargetExemptHosts)`. `src/db/browser_mcp.rs` — the pure
+  rewrite logic (`rewrite_stock_npx_browser_mcp`/`rewrite_browser_mcp_row`/`playwright_mcp_package_index`/
+  `has_cli_flag`) is **reused from `dbx_rs::port`** (parity-proven, single source of truth — no
+  hand-port); this module keeps only the `BROWSER_MCP_*` consts + `DB::migrate_stock_browser_mcp`
   (one-time npx→binary row rewrite gated `browser_mcp_direct_bin_v1`, always marks flag done).
   `mod.rs`: `seed_builtins` STUB → real `seed::seed_builtins` via temp `DB{pool}`; `pub mod
   browser_mcp; pub mod seed;`; `DB::{execute,query,query_opt,query_one}` made `pub` (parity
   with Go's embedded `*sql.DB`, used by tests + the resource-group layer ahead). `Cargo.toml`
-  main `tokio-postgres` gains `with-serde_json-1` (jsonb args/env binds, no string casts).
-  Specs: 3 in-module `db::browser_mcp::tests` (13-case rewrite table + row-rewrite + no-alias)
-  + `tests/db_seed_test.rs` (3) ported from `db_test.go` `TestOpenSeed`, `browser_mcp_test.go`
-  `TestSeedAndMigrateBrowserMCP` (5 subtests), `target_pins_test.go`
+  main `tokio-postgres` gains `with-serde_json-1` (jsonb args/env binds, no string casts); gains
+  `dbx-rs` dep. Specs: `tests/db_seed_test.rs` (3) ported from `db_test.go` `TestOpenSeed`,
+  `browser_mcp_test.go` `TestSeedAndMigrateBrowserMCP` (5 subtests), `target_pins_test.go`
   `TestTargetGateExemptionSeedAndLog` (seed portion) — scratch DBs + shared async lock +
-  raw-SQL fixtures, differential vs `artex-pg`, skip when DSN unreachable. artex **200 + 6 = 206
-  tests** green, clippy `-D warnings` clean, gate 30/30, Go `TestOpenSeed|TestRewriteStockNpxBrowserMCP
+  raw-SQL fixtures, differential vs `artex-pg`, skip when DSN unreachable. artex **203 tests**
+  green, clippy `-D warnings` clean, gate 30/30, Go `TestOpenSeed|TestRewriteStockNpxBrowserMCP
   |TestRewriteBrowserMCPRow|TestSeedAndMigrateBrowserMCP|TestTargetGateExemptionSeed` green.
 
 ## Next

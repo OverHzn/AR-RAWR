@@ -13,6 +13,7 @@ notify-rs = { path = "../notify-rs" }
 notifyx-rs = { path = "../notifyx-rs" }
 tool-rs = { path = "../tool-rs" }
 permission-rs = { path = "../permission-rs" }
+dbx-rs = { path = "../dbx-rs" }
 mcphttp-rs = { path = "../mcphttp-rs" }
 mcphttpx-rs = { path = "../mcphttpx-rs" }
 serde = { version = "1", features = ["derive"] }
