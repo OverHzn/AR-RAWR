@@ -16,6 +16,7 @@ use noa_rs::protection::{is_message_protected, is_never_preserve_recent_tool, ma
 use noa_rs::protrefs::compute_protected_refs;
 use noa_rs::ranges::{ProtectedRange, format_ranges};
 use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
+use noa_rs::recommend_build::{RecConfig, build_recommendation};
 use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
 use noa_rs::schema::compress_tool_schema;
 use noa_rs::state::{StateBlock, active_block_spans, active_blocks, covered_message_ids};
@@ -462,6 +463,58 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let msgs = decode_core_messages(&args[0]);
             let map = compute_context_breakdown(&msgs, noa_rs::port::default_count_tokens);
             serde_json::to_value(map).expect("serialize breakdown")
+        }
+        "BuildRecommendation" => {
+            let msgs = decode_core_messages(&args[0]);
+            let by_raw = args[1]
+                .as_object()
+                .map(|m| {
+                    m.iter()
+                        .map(|(k, val)| (k.clone(), val.as_str().unwrap_or("").to_string()))
+                        .collect::<std::collections::HashMap<_, _>>()
+                })
+                .unwrap_or_default();
+            let blocks = args[2]
+                .as_array()
+                .map(|arr| decode_block_array(arr))
+                .unwrap_or_default();
+            let protected_tools: Vec<String> = args[3]["ProtectedTools"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let min_range = args[3]["MinCompressRange"]
+                .as_i64()
+                .expect("MinCompressRange");
+            let p_msg = args[3]["PreserveRecentMessages"].as_i64().expect("pMsg");
+            let p_tok = args[3]["PreserveRecentTokens"].as_i64().expect("pTok");
+            let rec = build_recommendation(
+                &msgs,
+                &blocks,
+                &by_raw,
+                &protected_tools,
+                RecConfig {
+                    min_compress_range: min_range,
+                    preserve_recent_messages: p_msg,
+                    preserve_recent_tokens: p_tok,
+                },
+                noa_rs::port::default_count_tokens,
+            );
+            // CompressibleRanges is non-nil (always an array); ProtectedRanges is a
+            // Go nil slice (-> null when empty).
+            let protected_v = if rec.protected_ranges.is_empty() {
+                Value::Null
+            } else {
+                serde_json::to_value(&rec.protected_ranges).expect("serialize protected")
+            };
+            serde_json::json!({
+                "CompressibleRanges": rec.compressible_ranges,
+                "ProtectedRanges": protected_v,
+                "NothingToCompress": rec.nothing_to_compress,
+            })
         }
         other => panic!("no dispatcher arm for {other}"),
     }

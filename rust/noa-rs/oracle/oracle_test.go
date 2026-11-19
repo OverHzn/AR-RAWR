@@ -1509,3 +1509,192 @@ func TestZZOracle9p(t *testing.T) {
 		rec(t, "ComputeContextBreakdown", []any{c.msgs}, got)
 	}
 }
+
+func TestZZOracle9q(t *testing.T) {
+	cm := func(id, role, ct, text, tool string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text, ToolName: tool}
+	}
+	mkRefs := func(byRaw map[string]string) noa.MessageRefMap {
+		byRef := map[string]string{}
+		for raw, ref := range byRaw {
+			if ref != noa.BlockedRef {
+				byRef[ref] = raw
+			}
+		}
+		return noa.MessageRefMap{ByRaw: byRaw, ByRef: byRef}
+	}
+	// big text to clear MinCompressRange and ViableRangeMinTokens
+	big := func(n int) string {
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = 'a'
+		}
+		return string(b)
+	}
+	type sc struct {
+		name       string
+		msgs       []noa.CoreMessage
+		byRaw      map[string]string
+		blocks     []noa.CompressionBlock
+		pTools     []string
+		minRange   int
+		pMsg, pTok int
+	}
+	cases := []sc{
+		{
+			name:  "empty",
+			byRaw: map[string]string{},
+		},
+		{
+			// small text -> merged below minRange -> viable empty -> nothing to compress
+			name: "too-small",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "hi", ""),
+			},
+			byRaw:    map[string]string{"a1": "m00001"},
+			minRange: 1000,
+		},
+		{
+			// large single span clears minRange and viable tokens
+			name: "viable-single",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", big(2000), ""),
+			},
+			byRaw:    map[string]string{"a1": "m00001"},
+			minRange: 1000,
+		},
+		{
+			// two spans merged across a protected tool
+			name: "protected-between",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", big(1500), ""),
+				cm("a2", "assistant", "tool-call", "write", "Write"),
+				cm("a3", "user", "text", big(1500), ""),
+			},
+			byRaw:    map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			pTools:   []string{"Write"},
+			minRange: 1000,
+		},
+		{
+			// preserve-recent removes the tail from compressibility
+			name: "preserve-tail",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", big(1500), ""),
+				cm("a2", "assistant", "text", big(1500), ""),
+			},
+			byRaw:    map[string]string{"a1": "m00001", "a2": "m00002"},
+			minRange: 1000,
+			pMsg:     1, // a2 preserved -> only a1 compressible
+		},
+		{
+			// minRange 0 -> merge passthrough (no merge), single big span viable
+			name: "minrange-zero",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", big(2000), ""),
+			},
+			byRaw:    map[string]string{"a1": "m00001"},
+			minRange: 0,
+		},
+	}
+	for _, c := range cases {
+		st := noa.CompressionState{Blocks: c.blocks, MessageRefs: mkRefs(c.byRaw)}
+		cfg := noa.Config{}
+		cfg.ProtectedTools = c.pTools
+		cfg.Compress.MinCompressRange = c.minRange
+		cfg.PreserveRecentMessages = c.pMsg
+		cfg.PreserveRecentTokens = c.pTok
+		rec0 := noa.BuildRecommendation(c.msgs, st, cfg, nil)
+		rec(t, "BuildRecommendation",
+			[]any{c.msgs, c.byRaw, c.blocks, map[string]any{
+				"ProtectedTools":         c.pTools,
+				"MinCompressRange":       c.minRange,
+				"PreserveRecentMessages": c.pMsg,
+				"PreserveRecentTokens":   c.pTok,
+			}},
+			rec0)
+	}
+}
+
+// TestZZOracle9n2 adds focused regression cases for ComputeProtectedRefs's THIRD rule:
+// when PreserveRecentMessages > 0, the most-recent *user* message is always protected,
+// even when it already fell outside the recent-messages window. These cases distinguish
+// that rule from the recent-window alone (a naive port that omits it fails them).
+func TestZZOracle9n2(t *testing.T) {
+	msg := func(id, role, ct, text string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text}
+	}
+	mkRefs := func(pairs [][2]string) noa.MessageRefMap {
+		byRaw := map[string]string{}
+		byRef := map[string]string{}
+		for _, p := range pairs {
+			byRaw[p[0]] = p[1]
+			byRef[p[1]] = p[0]
+		}
+		return noa.MessageRefMap{ByRaw: byRaw, ByRef: byRef}
+	}
+	type sc struct {
+		name    string
+		msgs    []noa.CoreMessage
+		refs    noa.MessageRefMap
+		pMsg    int
+		pTok    int
+	}
+	cases := []sc{
+		{
+			// recent window = {a2 asst}; 3rd rule adds a1 (most-recent user).
+			name: "recent-window-excludes-user",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "the live instruction"),
+				msg("a2", "assistant", "text", "the answer"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}}),
+			pMsg: 1,
+		},
+		{
+			// recent window (2) = {a2 asst, a3 asst}; 3rd rule adds a1 (most-recent user).
+			name: "two-recent-nonuser",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "instruction"),
+				msg("a2", "assistant", "text", "step one"),
+				msg("a3", "assistant", "text", "step two"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}, {"a3", "m00003"}}),
+			pMsg: 2,
+		},
+		{
+			// most-recent user already inside the window -> no change (sanity).
+			name: "user-inside-window",
+			msgs: []noa.CoreMessage{
+				msg("a1", "assistant", "text", "old answer"),
+				msg("a2", "user", "text", "new instruction"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}}),
+			pMsg: 1,
+		},
+		{
+			// pMsg=0 -> 3rd rule disabled entirely.
+			name: "pmsg-zero-no-rule",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "instruction"),
+				msg("a2", "assistant", "text", "answer"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}}),
+			pMsg: 0,
+		},
+	}
+	for _, c := range cases {
+		st := noa.CompressionState{MessageRefs: c.refs}
+		cfg := noa.Config{PreserveRecentMessages: c.pMsg, PreserveRecentTokens: c.pTok}
+		got := noa.ComputeProtectedRefs(c.msgs, st, cfg)
+		keys := make([]string, 0, len(got))
+		for k := range got {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		arg := map[string]any{
+			"PreserveRecentMessages": c.pMsg,
+			"PreserveRecentTokens":   c.pTok,
+		}
+		rec(t, "ComputeProtectedRefs", []any{c.msgs, c.refs, nil, arg}, keys)
+	}
+}

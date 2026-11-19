@@ -18,6 +18,7 @@ pub mod protection;
 pub mod protrefs;
 pub mod ranges;
 pub mod recommend;
+pub mod recommend_build;
 pub mod refsmap;
 pub mod schema;
 pub mod state;

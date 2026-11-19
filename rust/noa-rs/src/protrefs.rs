@@ -33,6 +33,7 @@ pub(crate) fn is_rendered_summary_message(m: &CoreMessage) -> bool {
 struct VisibleMsg {
     reference: String,
     tokens: i64,
+    is_user: bool,
 }
 
 /// `noa.ComputeProtectedRefs` — the set of refs inside the soft protected tail zone.
@@ -71,6 +72,7 @@ pub fn compute_protected_refs(
         visible.push(VisibleMsg {
             reference: reference.clone(),
             tokens: default_count_tokens(&m.text),
+            is_user: m.role == ROLE_USER,
         });
     }
 
@@ -88,6 +90,16 @@ pub fn compute_protected_refs(
             }
             out.insert(v.reference.clone());
             acc += v.tokens;
+        }
+    }
+    if preserve_recent_messages > 0 {
+        // The most recent user message carries the live instruction; compressing it
+        // changes the task.
+        for v in visible.iter().rev() {
+            if v.is_user {
+                out.insert(v.reference.clone());
+                break;
+            }
         }
     }
 
