@@ -34,12 +34,14 @@ pub use notify_rs::port::{
 };
 
 pub use notifyx_rs::port::{
-    asset_line, cfg_bool, cfg_int, cfg_map, cfg_string, cfg_strings, contains_any_fold,
-    feishu_severity_template, html_escape, html_escape_attr, intersects_int, is_blank_config_value,
-    markdown_escape, markdown_text, same_config_value, smtp_reply_code, snippet, telegram_escape,
-    telegram_escape_attr,
+    asset_line, byte_size, cfg_bool, cfg_int, cfg_map, cfg_string, cfg_strings, contains_any_fold,
+    feishu_severity_template, html_escape, html_escape_attr, html_severity_color, intersects_int,
+    is_blank_config_value, markdown_escape, markdown_text, rune_size, same_config_value,
+    smtp_reply_code, snippet, telegram_escape, telegram_escape_attr,
 };
 
+pub mod html;
+pub mod markdown;
 pub mod mask;
 
 use async_trait::async_trait;
@@ -73,6 +75,11 @@ pub const MASKED_PREFIX: &str = "__masked__";
 pub const DEFAULT_MAX_ASSETS_SHOWN: i64 = 3;
 /// `DefaultMaxSummaryRunes`: default max runes of a single push's summary.
 pub const DEFAULT_MAX_SUMMARY_RUNES: i64 = 120;
+
+/// `markdownReservedBytes` (`markdown.go:28`): bytes reserved for a digest's header
+/// (count line + severity distribution + truncation notice) and footer (platform
+/// link), deducted from the packing budget so head and tail are never cut off.
+pub const MARKDOWN_RESERVED_BYTES: i64 = 320;
 
 // === Context (Go context.Context) ===
 
