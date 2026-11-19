@@ -343,13 +343,22 @@ resume without re-deriving state.
   port of Go `TestLLMRetryPolicyRoundTrip` (round-trip + clamp + missing-key, restores
   prior setting) + pure clamp/or/interval + override-clamp; Go oracle green. artex
   **224 tests** green, clippy clean, fmt clean, gate 30/30.
-- **D-1k asset intercept rules (this commit):** `src/db/asset_intercept.rs` —
+- **D-1k asset intercept rules (commit 378fa88):** `src/db/asset_intercept.rs` —
   `AssetInterceptRule` + `DB::{list (builtin DESC, id DESC), create (builtin=false),
   update (RETURNING; missing id errors like Go ErrNoRows), delete, toggle}` (port of
   `db/asset_intercept.go`; global rules have no action column -> action always empty).
   No Go `_test.go` for the CRUD (only the matching logic has one) -> fresh differential
   test `tests/db_asset_intercept_test.rs` (1): CRUD round-trip + ordering + missing-id
   update error. artex **225 tests** green, clippy clean, fmt clean, gate 30/30.
+- **D-1l task credentials (this commit):** `src/db/task_credentials.rs` —
+  `TaskCredential`/`TaskCredentialInput` (normalize: trim, source default user,
+  empty-password only for user) + `DB::{upsert (ON CONFLICT overwrite, sealed via
+  COL_CRED_PASS, returns plaintext), list (decrypt on read), delete (taskID-scoped,
+  not-found errors)}` (port of `db/task_credentials.go`; ErrTaskCredentialInvalid
+  sentinel as msg). Go's ExplorationStore wrappers forward here. No dedicated Go
+  CRUD test -> fresh differential `tests/db_task_credentials_test.rs` (2): upsert-
+  in-place + sealed-at-rest (is_sealed) + decrypt round-trip + delete, and normalize
+  validation. artex **227 tests** green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
