@@ -24,7 +24,7 @@ bridge → record → (port.rs) → build → diff → gate
 | `rewrite-rs`  | 91   | 1034  | (`traffic/rewrite/`); unexported pure helpers → `rewritex-rs` |
 | `mcphttp-rs`  | 76   | 585   | norma unit, direct; unexported pure helpers → `mcphttpx-rs` |
 | `egress-rs`   | 147  | 565   | norma transitif (intercept→db→norma) |
-| `intercept-rs`| 361  | 4004  | 5 heavy funcs kept in Go (`--keep`) |
+| `intercept-rs`| 361  | 4004  | 5 heavy funcs kept in Go (`--keep`); unexported pure helpers → `interceptx-rs` |
 | `db-rs`       | 1525 | 22078 | 17 funcs kept in Go (`--keep`); unexported dep-free helpers → `dbx-rs` |
 | `agent-rs`    | 2418 | 10181 | 7 funcs kept in Go; `gate.sh` re-patches generated files; unexported pure helpers → `agentx-rs` |
 
@@ -49,6 +49,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `server-rs`       | 6541 | `server/` | 53 helpers (`humanBytes`, `firstLine`, `trunc`, `validatePassword`, `skillPathRune`, `parseTaskID`, …; +`coalesceStr`/`stringValue`/`cleanStrs`/`contains`/`containsFold`/`minF`/`isHostByte`/`cloneInt64Ptr`/`keepIfMasked`/`sameOptionalID`/`parseVersion`/`versionLess`, `findingPaginationParam`/`notifyLimitValue`/`idStrings`/`normalizeFindingIDs`/`stripProxyArgs`/`taskContextHeader`) |
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `rewritex-rs`     | 86   | `traffic/rewrite/` | `validToken`, `nulInHead`, `actionClass`, `bodyAllowedForStatus`, `headerTarget` (`headerTarget` reproduces `net/http.CanonicalHeaderKey` over `net/textproto.CanonicalMIMEHeaderKey` byte-for-byte — token check + first-letter/post-dash upper-casing + hop-by-hop & `Proxy-` rejection; `ruleSnapshot`/`sha256Hex` need a JSON `Rule` model + SHA-256 and stay in Go) |
+| `interceptx-rs`   | 169  | `intercept/` | `argvPrefixLen` (25-entry `argvArity` table), `argvProgramName` (`path.Base`+`mkfs.*`+trailing-digit strip), `isWord`/`endsToken`, `bounded` (UTF-8-boundary truncation), `stripCodeFence` (fence + language-tag strip), `validPort`, `riskLevel`, `judgeActionLabel`, `defaultMessage`, `subset` (gocompat `path.Base`/`ToLower`/`TrimSpace`; `ArgvPrefix`/`ruleMatches`/`canonicalIPs` need the shell parser / `compiledRule` / `netip` and stay in Go) |
 | `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 174  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups`, `EstimateInputTokens`, `snapshotSummaryMessages` (prepend summary user message onto `[]llm.Message`; `messageGroups`/`EstimateInputTokens`/`snapshotSummaryMessages` over the `llm-rs` + `compaction-rs` models; `BuildRequest` needs `time.Time` via `assemble` and stays in Go) |
