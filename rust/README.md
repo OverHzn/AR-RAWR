@@ -51,7 +51,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
 | `sidequestion-rs` | 149  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups`, `EstimateInputTokens` (`messageGroups`/`EstimateInputTokens` over the `llm-rs` + `compaction-rs` models; `BuildRequest` needs `time.Time` via `assemble` and stays in Go) |
-| `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
+| `reportex-rs`     | 89   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit`, `qualityBullets`, `qualityNarrative` (over value-typed `Quality`) |
 | `notifyx-rs`      | 1132 | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param), render/escape leaves `htmlEscape`/`htmlEscapeAttr`/`telegramEscape`/`telegramEscapeAttr`/`markdownEscape`/`htmlSeverityColor`/`containsAnyFold`/`intersectsInt`/`assetLine`/`byteSize`/`runeSize`/`itoa` |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
 | `mcphttpx-rs`     | 21   | `mcphttp/` | `normalizeHeaders` (composite `map[string]string`, `(map, error)`), `isUnsupportedVersion` (`error` → message string) |
