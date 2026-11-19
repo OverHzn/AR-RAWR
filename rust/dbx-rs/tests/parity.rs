@@ -151,6 +151,7 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             json!([tok, np])
         }
         "interceptSource" => json!(intercept_source(arg_i64(args, 0), &arg_str(args, 1))),
+        "archiveAssetIDsQuery" => json!(archive_asset_ids_query()),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

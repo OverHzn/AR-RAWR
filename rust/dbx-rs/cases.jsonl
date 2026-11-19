@@ -499,6 +499,7 @@
 {"args":[[]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[]],"fn":"marshalStringArray","ok":"{}"}
 {"args":[[]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset_ids is required"]}
+{"args":[],"fn":"archiveAssetIDsQuery","ok":"SELECT id FROM assets WHERE $1=ANY(task_ids)\nUNION SELECT link.asset_id FROM task_asset_links link WHERE link.task_id=$1\nUNION SELECT anchor.asset_id FROM exploration_anchors anchor\n      JOIN exploration_nodes node ON node.id=anchor.node_id WHERE node.exploration_id=$2\nUNION SELECT value::bigint FROM findings finding\n      CROSS JOIN LATERAL jsonb_array_elements_text(\n        CASE WHEN jsonb_typeof(finding.asset_ids)='array' THEN finding.asset_ids ELSE '[]'::jsonb END\n      ) value WHERE finding.task_id=$1 AND value ~ '^[0-9]+$'"}
 {"args":[null,-3],"fn":"sameMainSegment","ok":false}
 {"args":[null,-3],"fn":"sameOptionalInt64","ok":false}
 {"args":[null,0],"fn":"sameMainSegment","ok":true}

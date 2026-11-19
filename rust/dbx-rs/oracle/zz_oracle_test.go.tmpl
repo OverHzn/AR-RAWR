@@ -443,3 +443,7 @@ func TestZZOracle9am(t *testing.T) {
 		rec(t, "interceptSource", []any{c.id, c.reason}, interceptSource(c.id, c.reason))
 	}
 }
+
+func TestZZOracle9ao(t *testing.T) {
+	rec(t, "archiveAssetIDsQuery", []any{}, archiveAssetIDsQuery())
+}

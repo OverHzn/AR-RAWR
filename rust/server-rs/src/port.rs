@@ -732,3 +732,36 @@ pub fn pool_less(active_a: bool, prio_a: i64, active_b: bool, prio_b: i64) -> bo
         prio_a > prio_b
     }
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ap: archive-id normalisation + terminal-status predicate in `server/`.
+// ---------------------------------------------------------------------------
+
+/// `normalizeArchiveIDs` (`server/...`): validate and de-duplicate `ids` keeping
+/// first-seen order — rejecting an empty input, more than 100 input ids, and
+/// non-positive ids. The `> 100` cap is on the raw input length, before de-dup.
+pub fn normalize_archive_ids(ids: &[i64]) -> Result<Vec<i64>, String> {
+    if ids.is_empty() {
+        return Err("archive_ids cannot be empty".to_string());
+    }
+    if ids.len() > 100 {
+        return Err("at most 100 archives can be processed at once".to_string());
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut out: Vec<i64> = Vec::with_capacity(ids.len());
+    for &id in ids {
+        if id <= 0 {
+            return Err(format!("invalid archive id {id}"));
+        }
+        if seen.insert(id) {
+            out.push(id);
+        }
+    }
+    Ok(out)
+}
+
+/// `isTerminalStatus` (`server/...`, wrapping `pgdb.IsTerminal`): whether
+/// `status` is one of the terminal task states `done`, `failed`, `timeout`.
+pub fn is_terminal_status(status: &str) -> bool {
+    matches!(status, "done" | "failed" | "timeout")
+}

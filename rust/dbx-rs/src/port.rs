@@ -714,3 +714,21 @@ pub fn intercept_source(rule_id: i64, reason: &str) -> String {
     }
     "unknown".to_string()
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ao: the asset-ids archive query in `db/` (a constant SQL string).
+// ---------------------------------------------------------------------------
+
+/// `archiveAssetIDsQuery` (`db/...`): the constant SQL that resolves the asset
+/// ids archived for a task (unions direct links, exploration anchors and finding
+/// `asset_ids`), returned byte-for-byte.
+pub fn archive_asset_ids_query() -> String {
+    r#"SELECT id FROM assets WHERE $1=ANY(task_ids)
+UNION SELECT link.asset_id FROM task_asset_links link WHERE link.task_id=$1
+UNION SELECT anchor.asset_id FROM exploration_anchors anchor
+      JOIN exploration_nodes node ON node.id=anchor.node_id WHERE node.exploration_id=$2
+UNION SELECT value::bigint FROM findings finding
+      CROSS JOIN LATERAL jsonb_array_elements_text(
+        CASE WHEN jsonb_typeof(finding.asset_ids)='array' THEN finding.asset_ids ELSE '[]'::jsonb END
+      ) value WHERE finding.task_id=$1 AND value ~ '^[0-9]+$'"#.to_string()
+}

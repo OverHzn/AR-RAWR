@@ -198,6 +198,11 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
             arg_bool(args, 2),
             arg_i64(args, 3)
         ))),
+        "normalizeArchiveIDs" => match normalize_archive_ids(&arg_i64_slice(args, 0)) {
+            Ok(v) => ok(json!([v, Value::Null])),
+            Err(e) => ok(json!([Value::Null, e])),
+        },
+        "isTerminalStatus" => ok(json!(is_terminal_status(&arg_str(args, 0)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

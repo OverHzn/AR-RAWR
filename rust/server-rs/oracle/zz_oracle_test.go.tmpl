@@ -416,3 +416,30 @@ func TestZZOracle9an(t *testing.T) {
 		rec(t, "poolLess", []any{c.aa, c.pa, c.ba, c.pb}, poolLess(a, b), nil)
 	}
 }
+
+func seqN(n int) []int64 { s := make([]int64, n); for i := range s { s[i] = int64(i + 1) }; return s }
+
+func TestZZOracle9ap(t *testing.T) {
+	// normalizeArchiveIDs(ids) -> [ids_or_null, err_or_null]
+	idss := [][]int64{
+		nil, {}, {1}, {1, 2, 3}, {3, 1, 3, 2}, {0}, {-1}, {5, 0, 6},
+		{7, 7, 7}, seqN(100), seqN(101),
+	}
+	for _, ids := range idss {
+		res, err := normalizeArchiveIDs(ids)
+		var rj any
+		if res != nil {
+			rj = res
+		}
+		var ej any
+		if err != nil {
+			ej = err.Error()
+		}
+		rec(t, "normalizeArchiveIDs", []any{ids}, []any{rj, ej}, nil)
+	}
+
+	// isTerminalStatus(status)
+	for _, s := range []string{"done", "failed", "timeout", "running", "queued", "", "DONE", "paused"} {
+		rec(t, "isTerminalStatus", []any{s}, isTerminalStatus(s), nil)
+	}
+}
