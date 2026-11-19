@@ -1,0 +1,19 @@
+[package]
+name = "permission-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of the pure decision logic of the external norma/permission package (Allowed/Denied/AskUser constructors + the Evaluate deny-priority pipeline), parity-tested against the real Go permission package"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
