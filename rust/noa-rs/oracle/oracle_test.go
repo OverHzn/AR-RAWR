@@ -748,3 +748,35 @@ func TestZZOracle9h(t *testing.T) {
 		rec(t, "IsMessageProtected", []any{arg}, got)
 	}
 }
+
+// sumArg is the subset of CompressionBlock that RenderSummaryMessage reads.
+type sumArg struct {
+	ID, Topic, Summary, Start, End, Path string
+	Tier                                 int
+}
+
+func TestZZOracle9i(t *testing.T) {
+	cases := []sumArg{
+		// full: topic + summary
+		{"b5", "auth flow", "Resumed the auth refactor.", "m00001", "m00010", "/arc/b5.md", 1},
+		// no topic
+		{"b6", "", "Just a summary with no topic.", "m00011", "m00020", "/arc/b6.md", 1},
+		// topic but empty summary
+		{"b7", "db migration", "", "m00021", "m00030", "/arc/b7.md", 2},
+		// both empty
+		{"b8", "", "", "m00031", "m00040", "/arc/b8.md", 2},
+		// summary with leading/trailing whitespace -> TrimSpace
+		{"b9", "  spaced topic  ", "   \n trimmed body \t ", "m00041", "m00050", "/arc/b9.md", 3},
+		// unicode topic + summary
+		{"b12", "café ☕ 世界", "résumé of the 世界 section 😀", "m00001", "m00100", "/arc/tier2/b12.md", 3},
+		// tier 1 with special chars in summary
+		{"b1", "quotes \" and \\ backslash", "line with \"quotes\" and path C:\\x", "m00001", "m00005", "/a b/c.md", 1},
+	}
+	for _, c := range cases {
+		cb := noa.CompressionBlock{
+			BlockID: c.ID, Tier: noa.Tier(c.Tier), Topic: c.Topic, Summary: c.Summary,
+			StartRef: c.Start, EndRef: c.End, ArchivePath: c.Path,
+		}
+		rec(t, "RenderSummaryMessage", []any{c}, noa.RenderSummaryMessage(cb))
+	}
+}

@@ -3,6 +3,7 @@
 
 use serde_json::Value;
 
+use noa_rs::blocks::{CompressionBlock, render_summary_message};
 use noa_rs::nudgetext::{
     BlockSpan, TierTargetBlock, format_block_map, format_breakdown, format_tier_target_blocks,
 };
@@ -258,6 +259,19 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             });
             serde_json::to_value(is_message_protected(&tn, &protected, host.as_deref()))
                 .expect("serialize bool")
+        }
+        "RenderSummaryMessage" => {
+            let a = &args[0];
+            let b = CompressionBlock {
+                block_id: a["ID"].as_str().unwrap_or("").to_string(),
+                tier: a["Tier"].as_i64().unwrap_or(0),
+                topic: a["Topic"].as_str().unwrap_or("").to_string(),
+                summary: a["Summary"].as_str().unwrap_or("").to_string(),
+                start_ref: a["Start"].as_str().unwrap_or("").to_string(),
+                end_ref: a["End"].as_str().unwrap_or("").to_string(),
+                archive_path: a["Path"].as_str().unwrap_or("").to_string(),
+            };
+            serde_json::to_value(render_summary_message(&b)).expect("serialize message")
         }
         other => panic!("no dispatcher arm for {other}"),
     }

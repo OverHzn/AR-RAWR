@@ -7,6 +7,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod blocks;
 pub mod nudgetext;
 pub mod parseargs;
 pub mod port;
