@@ -87,6 +87,8 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
             &arg_str(args, 0),
             &arg_str(args, 1)
         ))),
+        // batch 9aq
+        "validChatSessionID" => Ok(json!(valid_chat_session_id(&arg_str(args, 0)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

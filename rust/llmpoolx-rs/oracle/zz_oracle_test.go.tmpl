@@ -94,3 +94,17 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "estimateTokens", []any{mustJSON(req)}, estimateTokens(req))
 	}
 }
+
+func TestZZOracle9aq(t *testing.T) {
+	// trimErr — UTF-8 rune-boundary backoff on truncation (>300 bytes).
+	msgs := []string{
+		"a" + strings.Repeat("é", 200), // "a" + 200*2 = 401 bytes; byte 300 splits é
+		"a" + strings.Repeat("€", 150), // "a" + 150*3 = 451 bytes; byte 300 splits €
+		strings.Repeat("é", 151),       // 302 bytes, even boundary
+		strings.Repeat("€", 101),       // 303 bytes
+		"a" + strings.Repeat("b", 299) + "é", // 1+299+2 = 302, split at 300/301
+	}
+	for _, m := range msgs {
+		rec(t, "trimErr", []any{m}, trimErr(errors.New(m)))
+	}
+}

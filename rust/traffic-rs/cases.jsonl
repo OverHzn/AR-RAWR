@@ -806,6 +806,19 @@
 {"args":["日本語/パス"],"fn":"sanitize","ok":"日本語_パス"}
 {"args":["日本語/パス"],"fn":"validHeaderName","ok":false}
 {"args":["日本語テキスト",100],"fn":"clip","ok":"日本語テキスト"}
+{"args":[-5,10,100],"fn":"clampBlobRange","ok":[0,10,false]}
+{"args":[0,0,0],"fn":"clampBlobRange","ok":[0,0,true]}
+{"args":[0,10,-1],"fn":"clampBlobRange","ok":[0,0,true]}
+{"args":[0,10,100],"fn":"clampBlobRange","ok":[0,10,false]}
+{"args":[0,10,10],"fn":"clampBlobRange","ok":[0,10,false]}
+{"args":[0,4611686018427387904,100],"fn":"clampBlobRange","ok":[0,100,false]}
+{"args":[10,0,10],"fn":"clampBlobRange","ok":[10,0,true]}
+{"args":[100,10,100],"fn":"clampBlobRange","ok":[100,0,true]}
+{"args":[200,10,100],"fn":"clampBlobRange","ok":[200,0,true]}
+{"args":[50,4611686018427387904,100],"fn":"clampBlobRange","ok":[50,50,false]}
+{"args":[90,-1,100],"fn":"clampBlobRange","ok":[90,10,false]}
+{"args":[90,0,100],"fn":"clampBlobRange","ok":[90,10,false]}
+{"args":[90,50,100],"fn":"clampBlobRange","ok":[90,10,false]}
 {"args":[["  ","\t","\n"]],"fn":"uniqueArchiveHosts","ok":[]}
 {"args":[[" a.com ","a.com"]],"fn":"uniqueArchiveHosts","ok":["a.com"]}
 {"args":[["",""]],"fn":"uniqueArchiveHosts","ok":[]}

@@ -71,6 +71,8 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         }
         "detailedReport" => json!(detailed_report(&arg_str(args, 0), &arg_str(args, 1))),
         "detailedReportFull" => json!(detailed_report_full(&arg_str(args, 0), &arg_str(args, 1))),
+        // batch 9aq
+        "csvCell" => json!(csv_cell(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

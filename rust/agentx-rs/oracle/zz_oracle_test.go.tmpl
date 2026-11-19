@@ -324,3 +324,25 @@ func TestZZOracle9ag(t *testing.T) {
 		rec(t, "plannerGoalAnchor", []any{c.goal, c.constraints}, plannerGoalAnchor(c.goal, c.constraints))
 	}
 }
+
+func TestZZOracle9aq(t *testing.T) {
+	for _, id := range []string{
+		"conv-1",
+		"conv-123",
+		"a",
+		"A_b-c-9",
+		"",
+		"has space",
+		"dot.name",
+		"slash/name",
+		"..",
+		"dotdot..",
+		"tab\tname",
+		"unicode_世界",
+		strings.Repeat("a", 64),  // exactly 64 bytes -> valid
+		strings.Repeat("a", 65),  // 65 bytes -> invalid
+		strings.Repeat("a", 63) + "-",
+	} {
+		rec(t, "validChatSessionID", []any{id}, validChatSessionID(id))
+	}
+}

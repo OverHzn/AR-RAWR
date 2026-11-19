@@ -199,3 +199,18 @@ pub fn detailed_report(body: &str, heading: &str) -> String {
 pub fn detailed_report_full(body: &str, heading: &str) -> String {
     detailed_report_limit(body, heading, 0)
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9aq: `csvCell` (`report/findings.go`) — prefix cells that spreadsheet
+// apps treat as formulas. Pure string predicate, value-typed.
+// ---------------------------------------------------------------------------
+
+/// `csvCell` (`report/findings.go`): prefix a cell with a single quote when it
+/// begins with `=`, `+`, `-`, `@`, tab, or CR, so Excel/LibreOffice do not
+/// evaluate it as a formula on open. The empty string is returned unchanged.
+pub fn csv_cell(s: &str) -> String {
+    match s.as_bytes().first() {
+        Some(b'=' | b'+' | b'-' | b'@' | b'\t' | b'\r') => format!("'{s}"),
+        _ => s.to_string(),
+    }
+}

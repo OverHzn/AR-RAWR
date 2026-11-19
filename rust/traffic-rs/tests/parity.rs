@@ -97,6 +97,11 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             json!(rules_is_binary(ct.as_str(), b.as_slice()))
         }
         "proxyCausedErr" => json!(proxy_caused_err(&arg_str(args, 0))),
+        // batch 9aq
+        "clampBlobRange" => {
+            let (o, n, e) = clamp_blob_range(arg_i64(args, 0), arg_i64(args, 1), arg_i64(args, 2));
+            json!([o, n, e])
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

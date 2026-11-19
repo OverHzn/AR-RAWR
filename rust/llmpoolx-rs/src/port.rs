@@ -5,16 +5,22 @@ use llm_rs::port::{CompletionRequest, ContentBlock};
 use serde_json::Value;
 
 /// `trimErr` (`llmpool/pool.go`): a one-line, length-capped rendering of an error.
-/// Replaces every `\n` with a space, trims surrounding whitespace, and if the result
-/// is longer than 300 bytes keeps the first 300 bytes and appends `…`. Go slices bytes
-/// (`s[:300]`), which can split a UTF-8 rune; this port mirrors Go's lossy rendering
-/// with `from_utf8_lossy` (exact for the ASCII corpus, which is where truncation is
-/// exercised).
+/// Replaces every `\n` with a space and trims surrounding whitespace. If the result
+/// is longer than 300 bytes, the cut is moved back to the nearest UTF-8 rune start at
+/// or before byte 300 (Go: `for cut > 0 && !utf8.RuneStart(s[cut]) { cut-- }`) so no
+/// rune is split, then `…` is appended.
 pub fn trim_err(err: &str) -> String {
     let replaced = err.replace('\n', " ");
     let s = go_trim_space(&replaced);
-    if s.len() > 300 {
-        let prefix = String::from_utf8_lossy(&s.as_bytes()[..300]);
+    let bytes = s.as_bytes();
+    if bytes.len() > 300 {
+        // `utf8.RuneStart(b)` == `b & 0xC0 != 0x80`; back off to a rune boundary.
+        let mut cut = 300usize;
+        while cut > 0 && (bytes[cut] & 0xC0) == 0x80 {
+            cut -= 1;
+        }
+        // `cut` is a char boundary, so this slice is valid UTF-8.
+        let prefix = std::str::from_utf8(&bytes[..cut]).unwrap_or("");
         format!("{prefix}\u{2026}")
     } else {
         s.to_string()

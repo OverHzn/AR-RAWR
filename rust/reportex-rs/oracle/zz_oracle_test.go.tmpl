@@ -184,3 +184,22 @@ func TestZZOracle9x(t *testing.T) {
 		rec(t, "detailedReportFull", []any{c[0], c[1]}, detailedReportFull(c[0], c[1]))
 	}
 }
+
+func TestZZOracle9aq(t *testing.T) {
+	for _, s := range []string{
+		"",
+		"plain text",
+		"=1+1",
+		"+1",
+		"-1",
+		"@cmd",
+		"\tTAB",
+		"\rCR",
+		"\nLF-not-prefixed",
+		" leading space",
+		"a=b",
+		"0",
+	} {
+		rec(t, "csvCell", []any{s}, csvCell(s))
+	}
+}

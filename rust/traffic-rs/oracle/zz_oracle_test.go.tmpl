@@ -171,3 +171,27 @@ func TestZZOracle9aj(t *testing.T) {
 		rec(t, "proxyCausedErr", []any{e}, proxyCausedErr(fmt.Errorf("%s", e)))
 	}
 }
+
+func TestZZOracle9aq(t *testing.T) {
+	type cr struct {
+		offset, length, size int64
+	}
+	for _, c := range []cr{
+		{0, 10, 100},
+		{-5, 10, 100},
+		{200, 10, 100},
+		{100, 10, 100},
+		{90, 50, 100},
+		{90, 0, 100},
+		{90, -1, 100},
+		{0, 0, 0},
+		{0, 10, -1},
+		{0, 1 << 62, 100},
+		{50, 1 << 62, 100},
+		{0, 10, 10},
+		{10, 0, 10},
+	} {
+		off, n, empty := clampBlobRange(c.offset, c.length, c.size)
+		rec(t, "clampBlobRange", []any{c.offset, c.length, c.size}, []any{off, n, empty})
+	}
+}

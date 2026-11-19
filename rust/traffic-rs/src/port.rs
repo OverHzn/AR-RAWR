@@ -238,3 +238,27 @@ pub fn proxy_caused_err(msg: &str) -> bool {
     .iter()
     .any(|p| s.contains(p))
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9aq: `clampBlobRange` (`traffic/traffic.go`) — upstream hardening of
+// BlobRange so a huge `length` cannot wrap int64 and skip the cap. Pure int64
+// arithmetic; value-typed.
+// ---------------------------------------------------------------------------
+
+/// `clampBlobRange` (`traffic/traffic.go`): return a safe `(off, n, empty)` for a
+/// blob of `size` bytes. `empty` is true when the size is non-positive or `offset`
+/// is past the end (caller returns no data). `length > size-offset` (not
+/// `offset+length > size`) avoids int64 overflow. `off` is clamped to >= 0.
+pub fn clamp_blob_range(mut offset: i64, mut length: i64, size: i64) -> (i64, i64, bool) {
+    if offset < 0 {
+        offset = 0;
+    }
+    if size <= 0 || offset >= size {
+        return (offset, 0, true);
+    }
+    let remain = size - offset;
+    if length <= 0 || length > remain {
+        length = remain;
+    }
+    (offset, length, false)
+}
