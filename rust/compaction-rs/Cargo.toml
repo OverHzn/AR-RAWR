@@ -1,0 +1,19 @@
+[package]
+name = "compaction-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of the pure functions of the external norma/compaction package (EstimateTokens, IsOverflow), parity-tested against the real Go compaction package"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+llm-rs = { path = "../llm-rs" }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

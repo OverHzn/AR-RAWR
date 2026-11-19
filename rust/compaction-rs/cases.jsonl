@@ -1,0 +1,21 @@
+{"args":[""],"fn":"IsOverflow","ok":false}
+{"args":["Too Long"],"fn":"IsOverflow","ok":true}
+{"args":["context length exceeded"],"fn":"IsOverflow","ok":true}
+{"args":["context_length exceeded"],"fn":"IsOverflow","ok":true}
+{"args":["maximum context reached"],"fn":"IsOverflow","ok":true}
+{"args":["prompt is TOO LONG for this model"],"fn":"IsOverflow","ok":true}
+{"args":["request too long"],"fn":"IsOverflow","ok":true}
+{"args":["some unrelated error"],"fn":"IsOverflow","ok":false}
+{"args":["unexpected status 413 from provider"],"fn":"IsOverflow","ok":true}
+{"args":[[]],"fn":"EstimateTokens","ok":0}
+{"args":[[{"role":"assistant","content":[{"type":"text","text":"ab"},{"type":"text","text":"cde"}]}]],"fn":"EstimateTokens","ok":1}
+{"args":[[{"role":"assistant","content":[{"type":"thinking","thinking":"reasoning"}]}]],"fn":"EstimateTokens","ok":2}
+{"args":[[{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"run","input":{"cmd":"ls"}}]}]],"fn":"EstimateTokens","ok":3}
+{"args":[[{"role":"user","content":[{"type":"image","text":"fallback"}]}]],"fn":"EstimateTokens","ok":2}
+{"args":[[{"role":"user","content":[{"type":"text","text":"hello world"}]},{"role":"assistant","content":[{"type":"text","text":"foo bar baz"}]}]],"fn":"EstimateTokens","ok":5}
+{"args":[[{"role":"user","content":[{"type":"text","text":"hello"}]}]],"fn":"EstimateTokens","ok":1}
+{"args":[[{"role":"user","content":[{"type":"text"}]}]],"fn":"EstimateTokens","ok":0}
+{"args":[[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":[{"type":"text","text":"nested"},{"type":"tool_use","name":"deep","input":{}}]}]}]],"fn":"EstimateTokens","ok":3}
+{"args":[[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":[{"type":"text","text":"output"}]}]}]],"fn":"EstimateTokens","ok":1}
+{"args":[null],"fn":"EstimateTokens","ok":0}
+{"args":[null],"fn":"IsOverflow","ok":false}
