@@ -13,7 +13,8 @@ against the Go original with [`rust-anything`](https://github.com/erkamyaman/rus
   module-by-module in dependency order. Because that code is IO/stateful (Postgres,
   HTTP, crypto), it is verified by porting the Go `_test.go` specs into `tests/`
   (`rust/artex/gate.sh` = fmt + clippy + test), reusing `gocompat` for Go-stdlib
-  semantics. Ported so far: **config**.
+  semantics. Ported so far: **config**, **llmpool (health registry + failover
+  classification)**.
 
 Each pure-helper unit is a standalone crate (`crate-type = ["cdylib", "rlib"]`) that exposes
 the same API as its Go package, plus a JSON dispatcher (`call_json`) and typed/wire

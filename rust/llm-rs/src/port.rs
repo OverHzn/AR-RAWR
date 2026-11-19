@@ -248,7 +248,7 @@ impl ToolSchema {
 /// (`rename_all = "PascalCase"`), and its nil slices marshal as `null` (handled by the
 /// `null`-tolerant deserializer). Only `System`, `Messages`, and `Tools` are read by the
 /// ported helpers; the rest are carried for wire-shape fidelity.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct CompletionRequest {
     #[serde(default, deserialize_with = "de_null_default")]

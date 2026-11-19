@@ -1,19 +1,25 @@
-//! Rust port of the pure (Pool-free) Go `llmpool` health tests — the behavioral
-//! spec for the circuit-breaker registry and its failure classification.
+//! Rust port of the `llmpool` Go tests — the behavioral spec for the circuit-breaker
+//! registry, its failure classification, and the failover Pool.
 //!
 //! Ported from `llmpool/health_record_test.go` (`TestRecordCallPolicy`),
-//! `llmpool/health_policy_test.go`, and `llmpool/health_order_test.go`. The Pool
-//! tests (`TestPoolFeedsRecordCallPolicy`, and all of `pool_test.go`) depend on the
-//! async `llm::Provider` failover loop and land with the Pool unit.
+//! `llmpool/health_policy_test.go`, `llmpool/health_order_test.go`, and the
+//! provider-facing specs in `llmpool/pool_test.go` (failover, breaker, resume,
+//! context-cancel, and chain-order). Fakes are scripted providers. The db-backed
+//! `TestPoolFeedsRecordCallPolicy` needs the agent `Workspace` persistence callbacks
+//! and lands with the agent unit.
 
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-use artex::llm::{Context, Error};
-use artex::llmpool::{Registry, State};
+use artex::llm::{
+    CompletionRequest, Context, Error, Message, Provider, StreamEvent, Usage, SE_TEXT_DELTA,
+};
+use artex::llmpool::{Member, Pool, Registry, State};
+use async_trait::async_trait;
+use futures::StreamExt;
 
 /// `time.Until(st.OpenUntil)` in Rust: how long until the breaker closes.
 fn remaining(st: &State) -> Duration {
@@ -318,5 +324,400 @@ fn callbacks_stay_in_state_order() {
         entered.load(Ordering::SeqCst),
         2,
         "callbacks, want Trip then Pass"
+    );
+}
+
+// === Scripted fake providers + Pool tests (llmpool/pool_test.go) ===
+
+/// A scripted provider: `script[i]` is what the i-th call yields — some events, then
+/// optionally an error. Indexing past the end repeats the last entry, so "always
+/// succeeds" / "always 402" behaves that way across repeated calls (Go `at`).
+struct FakeProv {
+    calls: Arc<AtomicU64>,
+    events: Vec<Vec<StreamEvent>>,
+    errs: Vec<Option<Error>>,
+}
+
+impl FakeProv {
+    fn new(events: Vec<Vec<StreamEvent>>, errs: Vec<Option<Error>>) -> Arc<Self> {
+        Arc::new(FakeProv {
+            calls: Arc::new(AtomicU64::new(0)),
+            events,
+            errs,
+        })
+    }
+
+    fn calls(&self) -> u64 {
+        self.calls.load(Ordering::SeqCst)
+    }
+
+    /// Go `at(s, n)`: script entry n, repeating the last once the script runs out.
+    fn at<T: Clone>(s: &[T], n: u64) -> Option<T> {
+        if s.is_empty() {
+            return None;
+        }
+        let idx = if (n as usize) >= s.len() {
+            s.len() - 1
+        } else {
+            n as usize
+        };
+        Some(s[idx].clone())
+    }
+}
+
+#[async_trait]
+impl Provider for FakeProv {
+    async fn complete(
+        &self,
+        _ctx: Context,
+        _req: CompletionRequest,
+    ) -> Result<(Message, String, Usage), Error> {
+        // Mirror `stream` so Complete and Stream drive the same script.
+        let n = self.calls.fetch_add(1, Ordering::SeqCst);
+        let events = Self::at(&self.events, n).unwrap_or_default();
+        if let Some(Some(e)) = Self::at(&self.errs, n) {
+            return Err(e);
+        }
+        let mut text = String::new();
+        for ev in &events {
+            if ev.ty == SE_TEXT_DELTA {
+                text.push_str(&ev.text);
+            }
+        }
+        let msg = Message {
+            role: "assistant".to_string(),
+            content: vec![artex::llm::text_block(&text)],
+        };
+        Ok((msg, "end_turn".to_string(), Usage::default()))
+    }
+
+    fn stream(
+        &self,
+        _ctx: Context,
+        _req: CompletionRequest,
+    ) -> futures::stream::BoxStream<'static, Result<StreamEvent, Error>> {
+        let n = self.calls.fetch_add(1, Ordering::SeqCst);
+        let events = Self::at(&self.events, n).unwrap_or_default();
+        let err = Self::at(&self.errs, n).flatten();
+        Box::pin(async_stream::stream! {
+            for ev in events {
+                yield Ok(ev);
+            }
+            if let Some(e) = err {
+                yield Err(e);
+            }
+        })
+    }
+}
+
+fn text_delta(s: &str) -> StreamEvent {
+    StreamEvent {
+        ty: SE_TEXT_DELTA.to_string(),
+        text: s.to_string(),
+        ..Default::default()
+    }
+}
+
+/// `failProv`: fails every call (before any event) with a `status <code>` error.
+fn fail_prov(name: &str, code: u16) -> Arc<FakeProv> {
+    let _ = name;
+    FakeProv::new(
+        vec![],
+        vec![Some(Error::msg(format!("anthropic: status {code}: nope")))],
+    )
+}
+
+/// `okProv`: streams `text` (one text delta) on every call.
+fn ok_prov(name: &str, text: &str) -> Arc<FakeProv> {
+    let _ = name;
+    FakeProv::new(vec![vec![text_delta(text)]], vec![None])
+}
+
+/// A pool member over `prov` with the given chain `rank` and context window.
+/// Mirrors the Go `member()` helper (`Model = "m"+name`, `WindowTokens = 0`).
+fn member(id: i64, name: &str, rank: i64, window: i64, prov: Arc<FakeProv>) -> Member {
+    Member {
+        id,
+        name: name.to_string(),
+        model: format!("m{name}"),
+        format: "anthropic".to_string(),
+        priority: 0,
+        active: false,
+        rank,
+        window_tokens: window,
+        prov,
+    }
+}
+
+/// Drain a stream into its concatenated text and terminal error (Go `drain`).
+async fn drain(
+    mut s: futures::stream::BoxStream<'static, Result<StreamEvent, Error>>,
+) -> (String, Option<Error>) {
+    let mut text = String::new();
+    while let Some(item) = s.next().await {
+        match item {
+            Ok(e) if e.ty == SE_TEXT_DELTA => text.push_str(&e.text),
+            Ok(_) => {}
+            Err(e) => return (text, Some(e)),
+        }
+    }
+    (text, None)
+}
+
+/// `TestFailoverOnNoCredit`: failover to the next member on a retryable error.
+#[tokio::test]
+async fn failover_on_no_credit() {
+    let a = fail_prov("a", 402);
+    let b = ok_prov("b", "hello");
+    let p = Pool::new(
+        vec![
+            member(1, "a", 10, 0, a.clone()),
+            member(2, "b", 5, 0, b.clone()),
+        ],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+
+    let (text, err) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(err.is_none(), "expected failover to succeed, got {err:?}");
+    assert_eq!(text, "hello");
+    assert_eq!((a.calls(), b.calls()), (1, 1), "want calls a=1 b=1");
+}
+
+/// `TestHardFailureTripsBreakerImmediately`: a 402 opens the breaker so the next
+/// request skips that profile entirely.
+#[tokio::test]
+async fn hard_failure_trips_breaker_immediately() {
+    let a = fail_prov("a", 402);
+    let b = ok_prov("b", "x");
+    let reg = Arc::new(Registry::new(None, None));
+    let p = Pool::new(
+        vec![
+            member(1, "a", 10, 0, a.clone()),
+            member(2, "b", 5, 0, b.clone()),
+        ],
+        Some(reg.clone()),
+    )
+    .unwrap();
+
+    let _ = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(
+        reg.is_open(1),
+        "402 should have tripped the breaker on the first failure"
+    );
+    let _ = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert_eq!(a.calls(), 1, "tripped profile was called again");
+    assert_eq!(b.calls(), 2, "fallback should have been used twice");
+}
+
+/// `TestNoFailoverAfterEmit`: once a member emits an event, a mid-stream failure is
+/// surfaced as-is (the harness resume logic owns it); no second member is tried.
+#[tokio::test]
+async fn no_failover_after_emit() {
+    let a = FakeProv::new(
+        vec![vec![text_delta("partial")]],
+        vec![Some(Error::msg("anthropic: status 500: mid-stream drop"))],
+    );
+    let b = ok_prov("b", "full");
+    let p = Pool::new(
+        vec![member(1, "a", 10, 0, a), member(2, "b", 5, 0, b.clone())],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+
+    let (text, err) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(
+        err.is_some(),
+        "mid-stream error should surface, not be swallowed by a failover"
+    );
+    assert_eq!(text, "partial", "want the partial output");
+    assert_eq!(
+        b.calls(),
+        0,
+        "fell over after emitting output — would duplicate the turn"
+    );
+}
+
+/// `TestNoFailoverOnCancel`: cancelling a task must not burn a backup key, nor be
+/// diagnosed as an LLM fault.
+#[tokio::test]
+async fn no_failover_on_cancel() {
+    let a = FakeProv::new(vec![], vec![Some(Error::Canceled)]);
+    let b = ok_prov("b", "x");
+    let reg = Arc::new(Registry::new(None, None));
+    let p = Pool::new(
+        vec![member(1, "a", 10, 0, a), member(2, "b", 5, 0, b.clone())],
+        Some(reg.clone()),
+    )
+    .unwrap();
+
+    let ctx = Context::canceled();
+    let (_text, err) = drain(p.stream(ctx, CompletionRequest::default())).await;
+    assert!(
+        err.as_ref().is_some_and(Error::is_context_err),
+        "want context.Canceled, got {err:?}"
+    );
+    assert_eq!(b.calls(), 0, "failed over on cancellation");
+    assert_eq!(
+        reg.get(1).fails,
+        0,
+        "cancellation counted as a profile failure"
+    );
+}
+
+/// `TestSkipsMembersTooSmallForRequest`: a member whose window can't hold the
+/// request is skipped rather than sent a guaranteed-400 round-trip.
+#[tokio::test]
+async fn skips_members_too_small_for_request() {
+    let small = ok_prov("small", "s");
+    let big = ok_prov("big", "b");
+    let p = Pool::new(
+        vec![
+            member(1, "small", 10, 1000, small.clone()),
+            member(2, "big", 5, 1_000_000, big),
+        ],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+
+    let req = CompletionRequest {
+        messages: vec![artex::llm::user_text(&"x".repeat(100_000))],
+        ..Default::default()
+    };
+    let (text, err) = drain(p.stream(Context::background(), req)).await;
+    assert!(err.is_none(), "unexpected error: {err:?}");
+    assert_eq!(text, "b", "want the large-window member to serve it");
+    assert_eq!(
+        small.calls(),
+        0,
+        "sent a request to a member that can't hold it"
+    );
+}
+
+/// `TestAllTrippedStillProbesHead`: when every member is tripped, probing the head
+/// beats stalling the engine outright.
+#[tokio::test]
+async fn all_tripped_still_probes_head() {
+    let a = ok_prov("a", "a");
+    let b = ok_prov("b", "b");
+    let reg = Registry::new(None, None);
+    reg.trip(1, "402", true);
+    reg.trip(2, "402", true);
+    let p = Pool::new(
+        vec![member(1, "a", 10, 0, a.clone()), member(2, "b", 5, 0, b)],
+        Some(Arc::new(reg)),
+    )
+    .unwrap();
+
+    let (text, err) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(err.is_none(), "unexpected error: {err:?}");
+    assert_eq!(
+        (text.as_str(), a.calls()),
+        ("a", 1),
+        "want the head probed as a last resort"
+    );
+}
+
+/// `TestExhaustedChainReportsClearly`: when every member fails, the error wraps
+/// `ErrExhausted` (so `errors.Is` / `Error::is_exhausted` holds).
+#[tokio::test]
+async fn exhausted_chain_reports_clearly() {
+    let a = fail_prov("a", 402);
+    let b = fail_prov("b", 402);
+    let p = Pool::new(
+        vec![member(1, "a", 10, 0, a), member(2, "b", 5, 0, b)],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+
+    let (_text, err) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(
+        err.as_ref().is_some_and(Error::is_exhausted),
+        "err = {err:?}, want it to wrap ErrExhausted"
+    );
+}
+
+/// `TestEqualRankRotates`: equal-rank members take turns leading, so duplicate-key
+/// profiles share the load. The RankActive head fails; the two rank-5 members split.
+#[tokio::test]
+async fn equal_rank_rotates() {
+    let a = ok_prov("a", "a");
+    let b = ok_prov("b", "b");
+    let p = Pool::new(
+        vec![
+            member(
+                1,
+                "head",
+                artex::llmpool::RANK_ACTIVE,
+                0,
+                fail_prov("head", 402),
+            ),
+            member(2, "a", 5, 0, a),
+            member(3, "b", 5, 0, b),
+        ],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+
+    let mut count_a = 0;
+    let mut count_b = 0;
+    for _ in 0..4 {
+        let (txt, _) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+        match txt.as_str() {
+            "a" => count_a += 1,
+            "b" => count_b += 1,
+            other => panic!("unexpected text {other:?}"),
+        }
+    }
+    assert!(
+        count_a > 0 && count_b > 0,
+        "same-rank members did not rotate: a={count_a} b={count_b}"
+    );
+}
+
+/// `TestHeadAlwaysFirst`: the head keeps its own (active) rank and never joins a
+/// rotation group, so it is always tried first.
+#[tokio::test]
+async fn head_always_first() {
+    let head = ok_prov("head", "H");
+    let p = Pool::new(
+        vec![
+            member(1, "head", artex::llmpool::RANK_ACTIVE, 0, head),
+            member(2, "a", 5, 0, ok_prov("a", "a")),
+            member(3, "b", 5, 0, ok_prov("b", "b")),
+        ],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+    for _ in 0..5 {
+        let (txt, _) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+        assert_eq!(txt, "H", "head was not tried first");
+    }
+}
+
+/// `TestSingleMemberPassthrough`: a single-member chain behaves exactly like the
+/// bare provider.
+#[tokio::test]
+async fn single_member_passthrough() {
+    let a = ok_prov("a", "solo");
+    let p = Pool::new(
+        vec![member(1, "a", artex::llmpool::RANK_ACTIVE, 0, a)],
+        Some(Arc::new(Registry::new(None, None))),
+    )
+    .unwrap();
+    let (text, err) = drain(p.stream(Context::background(), CompletionRequest::default())).await;
+    assert!(
+        err.is_none() && text == "solo",
+        "got {text:?} / {err:?}, want solo / nil"
+    );
+}
+
+/// `TestNewEmptyChainIsNil`: an empty chain yields no Pool, so callers use the bare
+/// provider.
+#[test]
+fn new_empty_chain_is_nil() {
+    assert!(
+        Pool::new(vec![], None).is_none(),
+        "empty chain should yield no Pool"
     );
 }

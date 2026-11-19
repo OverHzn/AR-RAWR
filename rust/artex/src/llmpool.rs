@@ -1,27 +1,33 @@
 //! Rust port of the Go `llmpool/` package — LLM failover with a process-wide
 //! circuit-breaker registry.
 //!
-//! This module covers the **health/registry** half of the package plus the pure
-//! failure-classification helpers: the circuit-breaker state machine (`Registry`,
-//! `State`), the failover policy (`should_failover`), the HTTP-status extractor
-//! (`status_of`), hard-failure detection (`is_hard_failure`), log trimming
-//! (`trim_err`), and the cooldown ladder. It has no dependency on the async
-//! `Provider` runtime — every input is a plain error/context value — so it is fully
-//! deterministic and unit-testable. The failover `Pool` (which wraps
-//! `llm::Provider` with streaming) lands in a later unit on top of this.
+//! This module covers the circuit-breaker **registry** (`Registry`, `State`), the
+//! pure failure-classification helpers (`should_failover`, `status_of`,
+//! `is_hard_failure`, `trim_err`, the cooldown ladder), and the failover `Pool` —
+//! an `llm::Provider` decorator that drives an ordered chain of members, failing
+//! over on retryable errors and recording health via the registry. The registry
+//! half is fully deterministic (plain error/context inputs); the `Pool` is async
+//! (it wraps `llm::Provider` with streaming) and is exercised with scripted fake
+//! providers.
 //!
-//! Faithful to `llmpool/health.go` and the classification helpers in
-//! `llmpool/pool.go`. Go's `time.Time`/`time.Now` are modeled with
-//! `std::time::SystemTime` (wall clock, persistable); `time.Duration` with
-//! `std::time::Duration`.
+//! Faithful to `llmpool/health.go` and `llmpool/pool.go`. Go's
+//! `time.Time`/`time.Now` are modeled with `std::time::SystemTime` (wall clock,
+//! persistable); `time.Duration` with `std::time::Duration`.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
+use futures::stream::BoxStream;
+use futures::StreamExt;
 use gocompat::strings::go_trim_space;
 
-use crate::llm::{Context, Error};
+use async_trait::async_trait;
+
+use crate::llm::{
+    CompletionRequest, ContentBlock, Context, Error, Message, Provider, StreamEvent, Usage,
+};
 
 /// The default number of consecutive TRANSIENT failures (429 / 5xx / network) that
 /// trip the breaker. Deterministic failures trip on the first regardless. Mirrors
@@ -346,6 +352,298 @@ impl Registry {
     pub fn snapshot(&self) -> HashMap<i64, State> {
         let inner = self.inner.lock().unwrap();
         inner.m.clone()
+    }
+}
+
+// === Failover pool (llmpool/pool.go) ===
+
+/// `llmpool.RankActive`: the Rank the caller gives the chain head (the active
+/// profile) so it always outranks any configured priority. Mirrors
+/// `int(^uint(0)>>1) - 1`.
+pub const RANK_ACTIVE: i64 = i64::MAX - 1;
+
+/// `llmpool.ErrExhausted`: returned when every member of the chain failed. The
+/// full error is an [`Error::Exhausted`] whose text starts with this.
+pub const ERR_EXHAUSTED: &str = "LLM failover: all profiles unavailable";
+
+/// `llmpool.Member`: one LLM profile in the chain, already built into a provider.
+/// Members are immutable after construction; all mutable state lives in the shared
+/// [`Registry`].
+#[derive(Clone)]
+pub struct Member {
+    /// `llm_profiles.id`.
+    pub id: i64,
+    /// Profile name, for logs / UI.
+    pub name: String,
+    pub model: String,
+    /// "anthropic" | "openai".
+    pub format: String,
+    /// The profile's configured priority (display only).
+    pub priority: i64,
+    /// `is_default` (display only).
+    pub active: bool,
+    /// The ordering key: higher goes first; members sharing a Rank take turns
+    /// leading. The caller encodes "active profile heads the chain" as
+    /// [`RANK_ACTIVE`], above every user-settable priority.
+    pub rank: i64,
+    /// The profile's context window in tokens. A member whose window can't hold the
+    /// request is skipped rather than made to fail on it.
+    pub window_tokens: i64,
+    pub prov: Arc<dyn Provider>,
+}
+
+/// `llmpool.Pool`: an [`Provider`] that fails over across an ordered chain of
+/// members. Safe for concurrent use: members are immutable after construction and
+/// all mutable state lives in the shared [`Registry`].
+pub struct Pool {
+    members: Vec<Member>,
+    health: Arc<Registry>,
+    /// Rotates the starting point within an equal-priority group.
+    rr: AtomicU64,
+}
+
+impl Pool {
+    /// `llmpool.New`: build a Pool over `members` (already in chain order). Returns
+    /// `None` when the chain is empty (callers then use the bare provider). A
+    /// single-member chain is still a valid Pool.
+    pub fn new(members: Vec<Member>, health: Option<Arc<Registry>>) -> Option<Pool> {
+        if members.is_empty() {
+            return None;
+        }
+        let health = health.unwrap_or_else(|| Arc::new(Registry::new(None, None)));
+        Some(Pool {
+            members,
+            health,
+            rr: AtomicU64::new(0),
+        })
+    }
+
+    /// `Pool.Members`: the chain in order (read-only).
+    pub fn members(&self) -> &[Member] {
+        &self.members
+    }
+
+    /// `Pool.Head`: the first member of the chain.
+    pub fn head(&self) -> &Member {
+        &self.members[0]
+    }
+
+    /// `Pool.order`: pick the members to try, in order — skip those in a
+    /// cooling-off window and those whose context window can't hold this request,
+    /// then rotate within each equal-priority group. Never empty: if everything is
+    /// filtered out, the head is tried anyway (stalling the engine is worse than one
+    /// more failed request).
+    ///
+    /// Exposed so callers (and tests) can introspect the chain the pool would drive.
+    pub fn order(&self, req: &CompletionRequest) -> Vec<Member> {
+        let est = estimate_tokens(req) as i64;
+        let mut open: Vec<Member> = Vec::new();
+        for m in &self.members {
+            if self.health.is_open(m.id) {
+                continue;
+            }
+            if m.window_tokens > 0 && est > m.window_tokens {
+                continue; // would 400 on length — not a useful failover target
+            }
+            open.push(m.clone());
+        }
+        if open.is_empty() {
+            return self.members[..1].to_vec(); // last resort: probe the head
+        }
+        // Go: rotateGroups(open, p.rr.Add(1)-1); fetch_add returns the pre-add value,
+        // which equals Go's Add(1)-1.
+        rotate_groups(open, self.rr.fetch_add(1, Ordering::SeqCst))
+    }
+}
+
+/// The chain-exhaustion error: `fmt.Errorf("%w: %v", ErrExhausted, last)`.
+fn exhausted_error(last_err: Option<Error>) -> Error {
+    let last = last_err
+        .map(|e| e.message())
+        .unwrap_or_else(|| ERR_EXHAUSTED.to_string());
+    Error::Exhausted(format!("{ERR_EXHAUSTED}: {last}"))
+}
+
+/// `rotateGroups`: rotate each run of equal-ranked members by `n`, so profiles
+/// sharing a priority take turns going first. The chain head has its own Rank and
+/// always stays at the front.
+fn rotate_groups(inp: Vec<Member>, n: u64) -> Vec<Member> {
+    let mut out: Vec<Member> = Vec::with_capacity(inp.len());
+    let mut i = 0;
+    while i < inp.len() {
+        let mut j = i + 1;
+        while j < inp.len() && inp[j].rank == inp[i].rank {
+            j += 1;
+        }
+        let g = &inp[i..j];
+        if g.len() > 1 {
+            let off = (n % g.len() as u64) as usize;
+            for k in 0..g.len() {
+                out.push(g[(k + off) % g.len()].clone());
+            }
+        } else {
+            out.push(g[0].clone());
+        }
+        i = j;
+    }
+    out
+}
+
+/// `estimateTokens`: roughly size a request so members whose context window clearly
+/// can't hold it are skipped. Deliberately crude (~3.5 chars/token), biased to
+/// over-estimate slightly; it only needs to tell "fits" from "nowhere near".
+fn estimate_tokens(req: &CompletionRequest) -> usize {
+    let mut n: usize = 0;
+    for s in &req.system {
+        n += s.len();
+    }
+    for m in &req.messages {
+        n += blocks_len(&m.content);
+    }
+    for t in &req.tools {
+        // InputSchema is a decoded map; charge a flat ~120 chars per top-level
+        // property, plus the name/description length.
+        n += t.name.len() + t.description.len() + t.input_schema_len() * 120;
+    }
+    n * 2 / 7 // ≈ len/3.5
+}
+
+fn blocks_len(bs: &[ContentBlock]) -> usize {
+    let mut n = 0;
+    for b in bs {
+        // Go `len(b.Input)` is the raw JSON byte length; the model keeps a decoded
+        // `Value`, so use its compact serialization length as the closest estimate.
+        let input_len = b.input.as_ref().map_or(0, |v| v.to_string().len());
+        n += b.text.len() + b.thinking.len() + input_len + b.name.len();
+        if !b.content.is_empty() {
+            n += blocks_len(&b.content);
+        }
+    }
+    n
+}
+
+#[async_trait]
+impl Provider for Pool {
+    async fn complete(
+        &self,
+        ctx: Context,
+        req: CompletionRequest,
+    ) -> Result<(Message, String, Usage), Error> {
+        let order = self.order(&req);
+        let n = order.len();
+        let mut last_err: Option<Error> = None;
+        for (i, m) in order.iter().enumerate() {
+            match m.prov.complete(ctx.clone(), req.clone()).await {
+                Ok((msg, sr, usage)) => {
+                    self.health.record_call(&ctx, m.id, false, false, None); // Pass
+                    return Ok((msg, sr, usage));
+                }
+                Err(e) => {
+                    if !should_failover(&ctx, Some(&e)) {
+                        // Non-failover error (cancel, deterministic 4xx): surface as-is
+                        // without failing over. RecordCall clears state on atomic calls.
+                        self.health.record_call(&ctx, m.id, false, false, Some(&e));
+                        return Err(e);
+                    }
+                    let (tripped, _msg) =
+                        self.health.record_call(&ctx, m.id, false, false, Some(&e));
+                    if tripped {
+                        eprintln!(
+                            "[llmpool] profile {:?}({}) breaker tripped",
+                            m.name, m.model
+                        );
+                    }
+                    last_err = Some(e);
+                    if i + 1 < n {
+                        let nx = &order[i + 1];
+                        eprintln!(
+                            "[llmpool] LLM failover: {:?}({}) -> {:?}({}), reason: {}",
+                            m.name,
+                            m.model,
+                            nx.name,
+                            nx.model,
+                            trim_err(last_err.as_ref().unwrap())
+                        );
+                    }
+                }
+            }
+        }
+        Err(exhausted_error(last_err))
+    }
+
+    fn stream(
+        &self,
+        ctx: Context,
+        req: CompletionRequest,
+    ) -> BoxStream<'static, Result<StreamEvent, Error>> {
+        let order = self.order(&req);
+        let health = self.health.clone();
+        Box::pin(async_stream::stream! {
+            // The one hard rule: a member may only be abandoned BEFORE it has
+            // yielded any event. Once text or a tool_use reached the caller, a
+            // mid-stream failure is surfaced as-is (the harness resume logic owns it).
+            let mut last_err: Option<Error> = None;
+            let n = order.len();
+            for (i, m) in order.iter().enumerate() {
+                let mut emitted = false;
+                let mut failed: Option<Error> = None;
+                {
+                    let mut s = m.prov.stream(ctx.clone(), req.clone());
+                    while let Some(item) = s.next().await {
+                        match item {
+                            // Safe window: nothing reached the caller yet.
+                            Err(e) if !emitted && should_failover(&ctx, Some(&e)) => {
+                                failed = Some(e);
+                                break;
+                            }
+                            Ok(ev) => {
+                                emitted = true;
+                                yield Ok(ev);
+                            }
+                            Err(e) => {
+                                // Terminal error (mid-stream, or non-failover): hand it
+                                // to the caller and stop.
+                                yield Err(e);
+                                return;
+                            }
+                        }
+                    }
+                }
+                match failed {
+                    None => {
+                        // Completed (or delivered a non-failover terminal error): Pass.
+                        health.record_call(&ctx, m.id, true, false, None);
+                        return;
+                    }
+                    Some(e) => {
+                        let (tripped, _msg) =
+                            health.record_call(&ctx, m.id, true, false, Some(&e));
+                        if tripped {
+                            eprintln!(
+                                "[llmpool] profile {:?}({}) breaker tripped",
+                                m.name, m.model
+                            );
+                        }
+                        last_err = Some(e);
+                        if i + 1 < n {
+                            let nx = &order[i + 1];
+                            eprintln!(
+                                "[llmpool] LLM failover: {:?}({}) -> {:?}({}), reason: {}",
+                                m.name,
+                                m.model,
+                                nx.name,
+                                nx.model,
+                                trim_err(last_err.as_ref().unwrap())
+                            );
+                        }
+                    }
+                }
+            }
+            let last = last_err
+                .map(|e| e.message())
+                .unwrap_or_else(|| ERR_EXHAUSTED.to_string());
+            yield Err(Error::Exhausted(format!("{ERR_EXHAUSTED}: {last}")));
+        })
     }
 }
 
