@@ -1,6 +1,6 @@
 {
   "schema": "rust-anything/bridge@1",
-  "root": "/workspaces/AR-RAWR/ARTEX",
+  "root": "/workspaces/AR-RAWR",
   "unit": "intercept/",
   "language": "go",
   "kind": "ffi",

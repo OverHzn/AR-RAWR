@@ -1,9 +1,9 @@
-{"args": [], "fn": "BaseDir", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/.rust-anything/go-rust"}
-{"args": [], "fn": "KeyDir", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/.rust-anything/go-rust"}
-{"args": [], "fn": "Path", "ok": "/workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir"}
-{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "Load"}
-{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "SkillDir"}
-{"args": [], "error": "read config file /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/ARTEX/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "PostgresDSN"}
+{"args": [], "fn": "BaseDir", "ok": "/workspaces/AR-RAWR/rust/config-rs/.rust-anything/go-rust"}
+{"args": [], "fn": "KeyDir", "ok": "/workspaces/AR-RAWR/rust/config-rs/.rust-anything/go-rust"}
+{"args": [], "fn": "Path", "ok": "/workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "Load"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "SkillDir"}
+{"args": [], "error": "read config file /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: read /workspaces/AR-RAWR/rust/config-rs/fixtures/cfgdir: is a directory", "fn": "PostgresDSN"}
 {"args": [""], "fn": "Redact", "ok": ""}
 {"args": ["\u0130stanbul"], "fn": "Redact", "ok": "%C4%B0stanbul"}
 {"args": ["\ud83d\ude00"], "fn": "Redact", "ok": "%F0%9F%98%80"}
