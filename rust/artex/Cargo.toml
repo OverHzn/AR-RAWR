@@ -8,6 +8,7 @@ description = "ARTEX rewritten in Rust — full-application port (server, db, ag
 [dependencies]
 gocompat = { path = "../gocompat" }
 llm-rs = { path = "../llm-rs" }
+sidequestion-rs = { path = "../sidequestion-rs" }
 notify-rs = { path = "../notify-rs" }
 notifyx-rs = { path = "../notifyx-rs" }
 serde = { version = "1", features = ["derive"] }
