@@ -287,3 +287,35 @@ pub fn same_config_value(a: &serde_json::Value, b: &serde_json::Value) -> bool {
     }
     a == b
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9af: small pure leaves in `notify/` (SMTP reply-code parse, Feishu
+// severity → template colour).
+// ---------------------------------------------------------------------------
+
+/// `smtpReplyCode` (`notify/...`): the 3-digit SMTP reply code at the start of
+/// `text`, or 0 when `text` is shorter than 3 bytes or the leading three bytes
+/// are not an integer (matching `strconv.Atoi(text[:3])`).
+pub fn smtp_reply_code(text: &str) -> i64 {
+    let b = text.as_bytes();
+    if b.len() < 3 {
+        return 0;
+    }
+    std::str::from_utf8(&b[..3])
+        .ok()
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or_default()
+}
+
+/// `feishuSeverityTemplate` (`notify/...`): the Feishu card template colour for a
+/// severity (`red`/`orange`/`yellow`/`blue`, default `grey`).
+pub fn feishu_severity_template(severity: &str) -> String {
+    match severity {
+        "critical" => "red",
+        "high" => "orange",
+        "medium" => "yellow",
+        "low" => "blue",
+        _ => "grey",
+    }
+    .to_string()
+}

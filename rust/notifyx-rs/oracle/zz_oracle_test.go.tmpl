@@ -232,3 +232,20 @@ func strings_Repeat(s string, n int) string {
 	return out
 }
 
+
+func TestZZOracle9af(t *testing.T) {
+	// smtpReplyCode(text)
+	smtpInputs := []string{
+		"", "1", "12", "123", "250 OK", "550 rejected", "000", "999",
+		"+20 reply", "-10 err", " 21 lead-space", "2x0 letters", "12 ", "1234567",
+		"世界trailing", "é12 rest", "２５０ fullwidth",
+	}
+	for _, s := range smtpInputs {
+		rec(t, "smtpReplyCode", []any{s}, smtpReplyCode(s))
+	}
+
+	// feishuSeverityTemplate(severity)
+	for _, sev := range []string{"critical", "high", "medium", "low", "", "CRITICAL", "info", "HIGH", "informational", " info"} {
+		rec(t, "feishuSeverityTemplate", []any{sev}, feishuSeverityTemplate(sev))
+	}
+}

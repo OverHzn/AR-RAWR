@@ -76,6 +76,8 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "snippet" => json!(snippet(&arg_str(args, 0))),
         "isBlankConfigValue" => json!(is_blank_config_value(&args[0])),
         "sameConfigValue" => json!(same_config_value(&args[0], &args[1])),
+        "smtpReplyCode" => json!(smtp_reply_code(&arg_str(args, 0))),
+        "feishuSeverityTemplate" => json!(feishu_severity_template(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

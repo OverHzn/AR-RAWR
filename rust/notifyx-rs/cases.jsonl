@@ -37,6 +37,8 @@
 {"args":["  a  b  c  ",5],"fn":"OneLine","ok":"a b c"}
 {"args":["  a  b  c  ",5],"fn":"TruncateRunes","ok":"  a …"}
 {"args":["  a  b  c  ",5],"fn":"markdownText","ok":"a b c"}
+{"args":[" 21 lead-space"],"fn":"smtpReplyCode","ok":0}
+{"args":[" info"],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":[" x "],"fn":"isBlankConfigValue","ok":false}
 {"args":["!img"],"fn":"byteSize","ok":4}
 {"args":["!img"],"fn":"htmlEscape","ok":"!img"}
@@ -67,12 +69,14 @@
 {"args":["",["a"]],"fn":"containsAnyFold","ok":false}
 {"args":[""],"fn":"ValidKind","ok":false}
 {"args":[""],"fn":"byteSize","ok":0}
+{"args":[""],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":[""],"fn":"htmlEscape","ok":""}
 {"args":[""],"fn":"htmlEscapeAttr","ok":""}
 {"args":[""],"fn":"htmlSeverityColor","ok":"#8c8c8c"}
 {"args":[""],"fn":"isBlankConfigValue","ok":true}
 {"args":[""],"fn":"markdownEscape","ok":""}
 {"args":[""],"fn":"runeSize","ok":0}
+{"args":[""],"fn":"smtpReplyCode","ok":0}
 {"args":[""],"fn":"snippet","ok":""}
 {"args":[""],"fn":"telegramEscape","ok":""}
 {"args":[""],"fn":"telegramEscapeAttr","ok":""}
@@ -83,8 +87,22 @@
 {"args":["#head \u003e quote | ~ | table"],"fn":"runeSize","ok":25}
 {"args":["#head \u003e quote | ~ | table"],"fn":"telegramEscape","ok":"#head \u0026gt; quote | ~ | table"}
 {"args":["#head \u003e quote | ~ | table"],"fn":"telegramEscapeAttr","ok":"#head \u0026gt; quote | ~ | table"}
+{"args":["+20 reply"],"fn":"smtpReplyCode","ok":20}
+{"args":["-10 err"],"fn":"smtpReplyCode","ok":-10}
+{"args":["000"],"fn":"smtpReplyCode","ok":0}
+{"args":["1"],"fn":"smtpReplyCode","ok":0}
+{"args":["12 "],"fn":"smtpReplyCode","ok":0}
+{"args":["12"],"fn":"smtpReplyCode","ok":0}
+{"args":["123"],"fn":"smtpReplyCode","ok":123}
+{"args":["1234567"],"fn":"smtpReplyCode","ok":123}
+{"args":["250 OK"],"fn":"smtpReplyCode","ok":250}
+{"args":["2x0 letters"],"fn":"smtpReplyCode","ok":0}
+{"args":["550 rejected"],"fn":"smtpReplyCode","ok":550}
+{"args":["999"],"fn":"smtpReplyCode","ok":999}
+{"args":["CRITICAL"],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":["CRITICAL"],"fn":"htmlSeverityColor","ok":"#8c8c8c"}
 {"args":["DingTalk"],"fn":"ValidKind","ok":false}
+{"args":["HIGH"],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":["Hello WORLD",["world","xyz"]],"fn":"containsAnyFold","ok":true}
 {"args":["High"],"fn":"htmlSeverityColor","ok":"#8c8c8c"}
 {"args":["The QUICK brown fox",["quick"]],"fn":"containsAnyFold","ok":true}
@@ -173,6 +191,7 @@
 {"args":["back\\slash"],"fn":"runeSize","ok":10}
 {"args":["back\\slash"],"fn":"telegramEscape","ok":"back\\slash"}
 {"args":["back\\slash"],"fn":"telegramEscapeAttr","ok":"back\\slash"}
+{"args":["critical"],"fn":"feishuSeverityTemplate","ok":"red"}
 {"args":["critical"],"fn":"htmlSeverityColor","ok":"#d32029"}
 {"args":["dingtalk"],"fn":"ValidKind","ok":true}
 {"args":["email"],"fn":"ValidKind","ok":true}
@@ -203,6 +222,7 @@
 {"args":["hello world",5],"fn":"OneLine","ok":"hell…"}
 {"args":["hello world",5],"fn":"TruncateRunes","ok":"hell…"}
 {"args":["hello world",5],"fn":"markdownText","ok":"hell…"}
+{"args":["high"],"fn":"feishuSeverityTemplate","ok":"orange"}
 {"args":["high"],"fn":"htmlSeverityColor","ok":"#e8830c"}
 {"args":["héllo wörld",-1],"fn":"OneLine","ok":"héllo wörld"}
 {"args":["héllo wörld",-1],"fn":"TruncateRunes","ok":"héllo wörld"}
@@ -222,7 +242,9 @@
 {"args":["héllo wörld",5],"fn":"OneLine","ok":"héll…"}
 {"args":["héllo wörld",5],"fn":"TruncateRunes","ok":"héll…"}
 {"args":["héllo wörld",5],"fn":"markdownText","ok":"héll…"}
+{"args":["info"],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":["info"],"fn":"htmlSeverityColor","ok":"#8c8c8c"}
+{"args":["informational"],"fn":"feishuSeverityTemplate","ok":"grey"}
 {"args":["line1\nline2\r\nline3"],"fn":"snippet","ok":"line1 line2 line3"}
 {"args":["line1\nline2\ttab",-1],"fn":"OneLine","ok":"line1 line2 tab"}
 {"args":["line1\nline2\ttab",-1],"fn":"TruncateRunes","ok":"line1\nline2\ttab"}
@@ -250,7 +272,9 @@
 {"args":["line1\nline2\ttab"],"fn":"telegramEscape","ok":"line1\nline2\ttab"}
 {"args":["line1\nline2\ttab"],"fn":"telegramEscapeAttr","ok":"line1\nline2\ttab"}
 {"args":["long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long "],"fn":"snippet","ok":"long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long…"}
+{"args":["low"],"fn":"feishuSeverityTemplate","ok":"blue"}
 {"args":["low"],"fn":"htmlSeverityColor","ok":"#1677ff"}
+{"args":["medium"],"fn":"feishuSeverityTemplate","ok":"yellow"}
 {"args":["medium"],"fn":"htmlSeverityColor","ok":"#d4b106"}
 {"args":["mixed CASE",["case"]],"fn":"containsAnyFold","ok":true}
 {"args":["multiple",["zzz","multi","qqq"]],"fn":"containsAnyFold","ok":true}
@@ -286,6 +310,8 @@
 {"args":["~tilde|pipe\u003e"],"fn":"runeSize","ok":12}
 {"args":["~tilde|pipe\u003e"],"fn":"telegramEscape","ok":"~tilde|pipe\u0026gt;"}
 {"args":["~tilde|pipe\u003e"],"fn":"telegramEscapeAttr","ok":"~tilde|pipe\u0026gt;"}
+{"args":["é12 rest"],"fn":"smtpReplyCode","ok":0}
+{"args":["世界trailing"],"fn":"smtpReplyCode","ok":0}
 {"args":["日本語*テスト"],"fn":"byteSize","ok":19}
 {"args":["日本語*テスト"],"fn":"htmlEscape","ok":"日本語*テスト"}
 {"args":["日本語*テスト"],"fn":"htmlEscapeAttr","ok":"日本語*テスト"}
@@ -312,6 +338,7 @@
 {"args":["日本語テキストです",5],"fn":"OneLine","ok":"日本語テ…"}
 {"args":["日本語テキストです",5],"fn":"TruncateRunes","ok":"日本語テ…"}
 {"args":["日本語テキストです",5],"fn":"markdownText","ok":"日本語テ…"}
+{"args":["２５０ fullwidth"],"fn":"smtpReplyCode","ok":0}
 {"args":[0],"fn":"isBlankConfigValue","ok":false}
 {"args":[3.14,3.14],"fn":"sameConfigValue","ok":true}
 {"args":[3.14,3.15],"fn":"sameConfigValue","ok":false}
