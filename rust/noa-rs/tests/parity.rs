@@ -10,6 +10,7 @@ use noa_rs::nudgetext::{
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
 use noa_rs::protection::{is_message_protected, is_never_preserve_recent_tool, match_tool_pattern};
+use noa_rs::ranges::{ProtectedRange, format_ranges};
 use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
 use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
 use noa_rs::schema::compress_tool_schema;
@@ -273,6 +274,11 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             };
             serde_json::to_value(render_summary_message(&b)).expect("serialize message")
         }
+        "FormatRanges" => {
+            let comp = decode_ranges(&args[0]);
+            let prot = decode_protected(&args[1]);
+            serde_json::to_value(format_ranges(&comp, &prot)).expect("serialize string")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -284,6 +290,31 @@ fn decode_ranges(v: &Value) -> Vec<RangeInfo> {
         return Vec::new();
     }
     serde_json::from_value(v.clone()).expect("ranges decode")
+}
+
+/// Decode a recorded `[]ProtectedRange` (nil -> empty) into `Vec<ProtectedRange>`.
+fn decode_protected(v: &Value) -> Vec<ProtectedRange> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    v.as_array()
+        .expect("protected array")
+        .iter()
+        .map(|p| ProtectedRange {
+            start_ref: p["StartRef"].as_str().unwrap_or("").to_string(),
+            end_ref: p["EndRef"].as_str().unwrap_or("").to_string(),
+            count: p["Count"].as_i64().unwrap_or(0),
+            tokens: p["Tokens"].as_i64().unwrap_or(0),
+            tools: p["Tools"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
+        })
+        .collect()
 }
 
 #[test]

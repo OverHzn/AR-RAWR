@@ -780,3 +780,72 @@ func TestZZOracle9i(t *testing.T) {
 		rec(t, "RenderSummaryMessage", []any{c}, noa.RenderSummaryMessage(cb))
 	}
 }
+
+func TestZZOracle9j(t *testing.T) {
+	type rg struct {
+		start, end                 string
+		count, tokens, userMsgs    int
+		toolPct, textPct           int
+		dangerous                  bool
+	}
+	type pr struct {
+		start, end        string
+		count, tokens     int
+		tools             []string
+	}
+	mkR := func(r rg) noa.RangeInfo {
+		return noa.RangeInfo{StartRef: r.start, EndRef: r.end, Count: r.count, Tokens: r.tokens,
+			UserMsgs: r.userMsgs, ToolPct: r.toolPct, TextPct: r.textPct, Dangerous: r.dangerous}
+	}
+	mkP := func(p pr) noa.ProtectedRange {
+		return noa.ProtectedRange{StartRef: p.start, EndRef: p.end, Count: p.count, Tokens: p.tokens, Tools: p.tools}
+	}
+	type fc struct {
+		comp []rg
+		prot []pr
+	}
+	cases := []fc{
+		// empty both
+		{nil, nil},
+		// single compressible
+		{[]rg{{"m00001", "m00010", 10, 4000, 0, 60, 40, false}}, nil},
+		// single protected
+		{nil, []pr{{"m00001", "m00005", 5, 2000, []string{"Write", "Edit"}}}},
+		// pure protected, multiple tools
+		{[]rg{}, []pr{{"m00020", "m00030", 11, 5000, []string{"Bash", "Read"}}}},
+		// mixed overlapping (compressible + protected same span -> merge)
+		{[]rg{{"m00001", "m00010", 10, 4000, 0, 60, 40, false}},
+			[]pr{{"m00001", "m00010", 10, 2000, []string{"Write"}}}},
+		// dangerous compressible
+		{[]rg{{"m00001", "m00008", 8, 3000, 2, 30, 70, true}}, nil},
+		// dangerous but no compressible tokens (protected) -> no suffix
+		{nil, []pr{{"m00001", "m00005", 5, 2000, []string{"Write"}}}},
+		// adjacent merge (endNum+1) -> two compressible merge
+		{[]rg{{"m00001", "m00005", 5, 1000, 0, 60, 40, false}, {"m00006", "m00010", 5, 1500, 1, 30, 70, false}}, nil},
+		// gap (no merge)
+		{[]rg{{"m00001", "m00005", 5, 1000, 0, 60, 40, false}, {"m00010", "m00015", 6, 2000, 3, 30, 70, false}}, nil},
+		// compressible + adjacent protected -> merge into mixed
+		{[]rg{{"m00001", "m00005", 5, 1000, 1, 60, 40, false}},
+			[]pr{{"m00006", "m00010", 5, 1500, []string{"Bash"}}}},
+		// unsorted input (sort by startNum) - protected first then compressible
+		{[]rg{{"m00010", "m00020", 10, 3000, 0, 50, 50, false}},
+			[]pr{{"m00001", "m00005", 5, 1000, []string{"Read"}}}},
+		// user_msgs plural note
+		{[]rg{{"m00001", "m00020", 20, 6000, 3, 40, 60, false}}, nil},
+		// three-way merge
+		{[]rg{{"m00001", "m00004", 4, 800, 0, 60, 40, false},
+			{"m00005", "m00008", 4, 900, 0, 30, 70, false},
+			{"m00009", "m00012", 4, 1000, 1, 50, 50, false}}, nil},
+	}
+	for _, c := range cases {
+		var comp []noa.RangeInfo
+		for _, r := range c.comp {
+			comp = append(comp, mkR(r))
+		}
+		var prot []noa.ProtectedRange
+		for _, p := range c.prot {
+			prot = append(prot, mkP(p))
+		}
+		rec(t, "FormatRanges", []any{comp, prot}, noa.FormatRanges(comp, prot))
+	}
+}
