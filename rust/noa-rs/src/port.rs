@@ -13,6 +13,8 @@
 
 #![forbid(unsafe_code)]
 
+use serde::{Deserialize, Serialize};
+
 // `noa` ref / block-id constants (const.go).
 /// Zero-padded width of a message ref: `m00001` .. `m99999`.
 pub const REF_WIDTH: usize = 5;
@@ -175,4 +177,241 @@ fn ceil_div(n: i64, d: i64) -> i64 {
         return 0;
     }
     (n + d - 1) / d
+}
+
+// ---------------------------------------------------------------------------
+// Batch 9b: archive + panel + config helpers.
+// ---------------------------------------------------------------------------
+
+/// `noa.ArchiveFileName` — `<blockID>_<startRef>-<endRef>.md`.
+pub fn archive_file_name(block_id: &str, start_ref: &str, end_ref: &str) -> String {
+    format!("{block_id}_{start_ref}-{end_ref}.md")
+}
+
+/// `noa.ArchiveTierDir` — the subdirectory a tier's archives live in: `tier<N>`.
+pub fn archive_tier_dir(tier: i64) -> String {
+    format!("tier{tier}")
+}
+
+/// `noa.PanelBlockCount` — count the `\bb\d+\(T\d+\)=` occurrences in a rendered
+/// panel. The Go pattern's `\b` word boundary, case-sensitivity, and exact spacing
+/// (no space before `(` or before `=`) are reproduced by hand: a block line is a
+/// lowercase `b` at a word boundary, digits, `(T`, digits, `)=`.
+pub fn panel_block_count(panel: &str) -> i64 {
+    let b = panel.as_bytes();
+    let mut count = 0i64;
+    let mut i = 0usize;
+    while i < b.len() {
+        // A match starts at a 'b' that begins a word (previous byte is not a
+        // word char, or it is the start of the string).
+        if b[i] == b'b' && (i == 0 || !is_word_byte(b[i - 1])) {
+            let mut j = i + 1;
+            // \d+ (at least one digit)
+            let digits_start = j;
+            while j < b.len() && b[j].is_ascii_digit() {
+                j += 1;
+            }
+            if j > digits_start && j + 1 < b.len() && b[j] == b'(' && b[j + 1] == b'T' {
+                let mut k = j + 2;
+                let t_digits = k;
+                while k < b.len() && b[k].is_ascii_digit() {
+                    k += 1;
+                }
+                if k > t_digits && k + 1 < b.len() && b[k] == b')' && b[k + 1] == b'=' {
+                    count += 1;
+                    i = k + 2;
+                    continue;
+                }
+            }
+        }
+        i += 1;
+    }
+    count
+}
+
+/// A byte is a "word" byte for the regex `\b` boundary (`[0-9A-Za-z_]`).
+fn is_word_byte(c: u8) -> bool {
+    c.is_ascii_alphanumeric() || c == b'_'
+}
+
+/// `noa.TierConfig`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct TierConfig {
+    pub enabled: bool,
+    pub max_tier: i64,
+    pub tier2_trigger: i64,
+    pub tier3_trigger: i64,
+}
+
+/// `noa.NudgeConfig`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct NudgeConfig {
+    pub max_context_limit_pct: f64,
+    pub min_context_limit_pct: f64,
+    pub emergency_threshold_pct: f64,
+    pub growth_ratio: f64,
+    pub growth_floor: i64,
+    pub growth_cap: i64,
+    pub min_growth_floor: i64,
+    pub min_growth_ratio: f64,
+    pub tier2_growth_multiplier: f64,
+    pub min_pressure_benefit_tokens: Option<i64>,
+}
+
+/// `noa.TruncateConfig`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct TruncateConfig {
+    pub threshold: f64,
+}
+
+/// `noa.CompressConfig`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CompressConfig {
+    pub min_compress_range: i64,
+    pub min_summary_length: i64,
+    pub max_summary_length: i64,
+}
+
+/// `noa.Config` — value-typed fields only. The Go struct also carries
+/// `IsToolProtected func(string) bool`, which is not value-typed and is never read
+/// by `ValidateConfig`, so it is omitted here (default: no host predicate).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Config {
+    pub model_context_limit: i64,
+    pub tiers: TierConfig,
+    pub nudge: NudgeConfig,
+    pub truncate: TruncateConfig,
+    pub compress: CompressConfig,
+    pub protected_tools: Option<Vec<String>>,
+    pub preserve_recent_messages: i64,
+    pub preserve_recent_tokens: i64,
+    pub max_compress_attempts: i64,
+}
+
+/// `noa.DefaultConfig` — the tuned defaults for a given context window.
+pub fn default_config(model_context_limit: i64) -> Config {
+    Config {
+        model_context_limit,
+        tiers: TierConfig {
+            enabled: true,
+            max_tier: 3,
+            tier2_trigger: 5,
+            tier3_trigger: 10,
+        },
+        nudge: NudgeConfig {
+            max_context_limit_pct: 0.75,
+            min_context_limit_pct: 0.45,
+            emergency_threshold_pct: 0.95,
+            growth_ratio: 0.05,
+            growth_floor: 50_000,
+            growth_cap: 50_000,
+            min_growth_floor: 20_000,
+            min_growth_ratio: 0.45,
+            tier2_growth_multiplier: 1.5,
+            min_pressure_benefit_tokens: None,
+        },
+        truncate: TruncateConfig { threshold: 0.95 },
+        compress: CompressConfig {
+            min_compress_range: 5_000,
+            min_summary_length: 50,
+            max_summary_length: 20_000,
+        },
+        protected_tools: None,
+        preserve_recent_messages: 5,
+        preserve_recent_tokens: 5_000,
+        max_compress_attempts: 3,
+    }
+}
+
+/// Format an `f64` the way Go's `%g` verb does for the values `ValidateConfig`
+/// prints (shortest round-tripping representation). For the integral-valued floats
+/// in the corpus (`0.0`, `2.0`) it yields `0` / `2`; otherwise the minimal decimal.
+fn format_g(v: f64) -> String {
+    // Go's %g uses the shortest representation that round-trips. Rust's `{}` on f64
+    // also produces the shortest round-tripping form, but it never drops a trailing
+    // `.0` for integral values the way Go's %g does. Mirror Go: drop a bare `.0`.
+    let s = format!("{v}");
+    if let Some(stripped) = s.strip_suffix(".0") {
+        // Only strip when the fractional part is exactly ".0" (e.g. "2.0" -> "2",
+        // "0.0" -> "0"), leaving "0.95" and "1.5" untouched.
+        stripped.to_string()
+    } else {
+        s
+    }
+}
+
+/// `noa.ValidateConfig` — return warnings (never errors) for a questionable knob.
+pub fn validate_config(c: &Config) -> Vec<String> {
+    let mut w: Vec<String> = Vec::new();
+
+    if c.model_context_limit <= 0 {
+        w.push(format!(
+            "ModelContextLimit must be positive, got {}",
+            c.model_context_limit
+        ));
+    }
+    if c.nudge.min_context_limit_pct > c.nudge.max_context_limit_pct {
+        w.push(format!(
+            "Nudge.MinContextLimitPct ({}) must not exceed MaxContextLimitPct ({})",
+            format_g(c.nudge.min_context_limit_pct),
+            format_g(c.nudge.max_context_limit_pct)
+        ));
+    }
+    if c.nudge.max_context_limit_pct > c.nudge.emergency_threshold_pct {
+        w.push(format!(
+            "Nudge.MaxContextLimitPct ({}) must not exceed EmergencyThresholdPct ({})",
+            format_g(c.nudge.max_context_limit_pct),
+            format_g(c.nudge.emergency_threshold_pct)
+        ));
+    }
+    if c.truncate.threshold <= 0.0 || c.truncate.threshold > 1.0 {
+        w.push(format!(
+            "Truncate.Threshold must be in (0, 1], got {}",
+            format_g(c.truncate.threshold)
+        ));
+    }
+    if c.tiers.tier2_trigger < 1 {
+        w.push(format!(
+            "Tiers.Tier2Trigger must be >= 1, got {}",
+            c.tiers.tier2_trigger
+        ));
+    }
+    if c.tiers.tier3_trigger <= c.tiers.tier2_trigger {
+        w.push(format!(
+            "Tiers.Tier3Trigger ({}) must exceed Tier2Trigger ({})",
+            c.tiers.tier3_trigger, c.tiers.tier2_trigger
+        ));
+    }
+    if c.tiers.max_tier != 2 && c.tiers.max_tier != 3 {
+        w.push(format!(
+            "Tiers.MaxTier must be 2 or 3, got {} — the tier rule prompts only cover up to 3",
+            c.tiers.max_tier
+        ));
+    }
+    if c.compress.min_summary_length >= c.compress.max_summary_length {
+        w.push(format!(
+            "Compress.MinSummaryLength ({}) must be below MaxSummaryLength ({})",
+            c.compress.min_summary_length, c.compress.max_summary_length
+        ));
+    }
+    if let Some(v) = c.nudge.min_pressure_benefit_tokens
+        && v < 0
+    {
+        w.push(format!(
+            "Nudge.MinPressureBenefitTokens must be >= 0, got {}",
+            v
+        ));
+    }
+    if c.max_compress_attempts < 1 {
+        w.push(format!(
+            "MaxCompressAttempts must be >= 1, got {}",
+            c.max_compress_attempts
+        ));
+    }
+    w
 }

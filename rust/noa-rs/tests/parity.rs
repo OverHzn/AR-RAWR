@@ -55,6 +55,35 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let s = args[0].as_str().expect("string arg");
             serde_json::to_value(estimate_tokens_fast(s)).expect("serialize int")
         }
+        "ArchiveFileName" => {
+            let block = args[0].as_str().expect("block arg");
+            let start = args[1].as_str().expect("start arg");
+            let end = args[2].as_str().expect("end arg");
+            serde_json::to_value(archive_file_name(block, start, end)).expect("serialize string")
+        }
+        "ArchiveTierDir" => {
+            let t = args[0].as_i64().expect("int arg");
+            serde_json::to_value(archive_tier_dir(t)).expect("serialize string")
+        }
+        "PanelBlockCount" => {
+            let p = args[0].as_str().expect("string arg");
+            serde_json::to_value(panel_block_count(p)).expect("serialize int")
+        }
+        "DefaultConfig" => {
+            let lim = args[0].as_i64().expect("int arg");
+            serde_json::to_value(default_config(lim)).expect("serialize config")
+        }
+        "ValidateConfig" => {
+            let cfg: Config = serde_json::from_value(args[0].clone()).expect("config arg decode");
+            let warnings = validate_config(&cfg);
+            // Go declares `var w []string` and appends; with no warnings it stays
+            // nil and json.Marshal renders `null`, not `[]`. Mirror that.
+            if warnings.is_empty() {
+                Value::Null
+            } else {
+                serde_json::to_value(warnings).expect("serialize warnings")
+            }
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
