@@ -414,13 +414,24 @@ resume without re-deriving state.
     IS fresh. The literal `0` in CreateTaskCategory's SELECT is `::bigint`-cast in Rust so
     it scans as i64 like `count()` (tokio-postgres is strict on int4 vs int8; Go's pgx
     converts silently).
-- **D-1q exploration store skeleton (this commit):** `src/db/exploration.rs` —
+- **D-1q exploration store skeleton (commit 3600211):** `src/db/exploration.rs` —
   `ExplorationStore { db: DB (Arc pool, Clone), exp_id }` handle + `DB::{create_exploration,
   exploration(id)}` + `ExplorationStore::{id, root (description NULL->"")}`. First store
   handle; establishes the pattern (store owns a cheap-cloneable DB + id). Node/edge
   methods grow here as the exploration group is ported. Spec: `tests/db_exploration_test.rs`
   (1) — create + root round-trip + NULL-description->"" + missing-id error. artex **239
   tests** green, clippy clean, fmt clean, gate 30/30. (Next: Node/Edge types + AddNode.)
+- **D-1r exploration nodes (this commit):** `src/db/exploration.rs` extended — `Node`
+  (scanNode core cols + finding-aware fields default 0/empty/false) + `ExplorationStore::
+  {add_node (tx: fact anchors validated via FOR KEY SHARE, then node + exploration_anchors),
+  add_intent (open intent, origin""->planner), add_goal (open goal), origin_fact_id (fact/
+  origin or 0), anchor (idempotent, non-positive no-op), link (edge ON CONFLICT DO NOTHING),
+  set_node_state (bumps content_version), get_node (exp-scoped, Option)}`. `payload` is a
+  serde_json::Value (JSONB). Specs: `tests/db_exploration_nodes_test.rs` (2) — full node
+  CRUD + anchor/link/state + origin-fact + cross-exploration scoping + fact-anchor
+  validation rollback (missing asset -> error, tx rolls back, no node left). artex **241
+  tests** green, clippy clean, fmt clean, gate 30/30. (Note: exploration_anchors.asset_id
+  FKs assets(id) so anchors always need real assets, for any kind — not just fact.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
