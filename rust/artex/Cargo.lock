@@ -13,8 +13,11 @@ dependencies = [
  "gocompat",
  "hmac",
  "llm-rs",
+ "mcphttp-rs",
+ "mcphttpx-rs",
  "notify-rs",
  "notifyx-rs",
+ "permission-rs",
  "reqwest",
  "rustls",
  "serde",
@@ -23,6 +26,7 @@ dependencies = [
  "sidequestion-rs",
  "tokio",
  "tokio-rustls",
+ "tool-rs",
  "webpki-roots",
 ]
 
@@ -628,6 +632,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 
 [[package]]
+name = "mcphttp-rs"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mcphttpx-rs"
+version = "0.1.0"
+dependencies = [
+ "gocompat",
+ "serde_json",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +714,14 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "permission-rs"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "pin-project-lite"
@@ -1177,6 +1205,15 @@ checksum = "c9cc2678c2cdd569ef8215e2afd7954ada2ae20b4fdd2c5fe6139a3b02d105db"
 dependencies = [
  "rustls",
  "tokio",
+]
+
+[[package]]
+name = "tool-rs"
+version = "0.1.0"
+dependencies = [
+ "llm-rs",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

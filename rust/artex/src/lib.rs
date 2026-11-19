@@ -10,4 +10,6 @@ pub mod harness;
 pub mod llm;
 pub mod llmpool;
 pub mod notify;
+pub mod permission;
 pub mod sidequestion;
+pub mod tool;
