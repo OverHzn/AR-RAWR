@@ -8,3 +8,4 @@
 pub mod config;
 pub mod llm;
 pub mod llmpool;
+pub mod notify;

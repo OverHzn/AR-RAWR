@@ -11,6 +11,8 @@ dependencies = [
  "futures",
  "gocompat",
  "llm-rs",
+ "notify-rs",
+ "notifyx-rs",
  "serde",
  "serde_json",
  "tokio",
@@ -216,6 +218,22 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys",
+]
+
+[[package]]
+name = "notify-rs"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "notifyx-rs"
+version = "0.1.0"
+dependencies = [
+ "gocompat",
+ "serde_json",
 ]
 
 [[package]]
