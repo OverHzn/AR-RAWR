@@ -36,6 +36,10 @@ fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
     }
 }
 
+fn arg_bool(args: &[Value], i: usize) -> bool {
+    args[i].as_bool().expect("bool arg")
+}
+
 fn arg_usize(args: &[Value], i: usize) -> usize {
     let n = arg_i64(args, i);
     assert!(n >= 0, "expected non-negative count arg, got {n}");
@@ -64,6 +68,15 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         "bbotQuote" => Ok(json!(bbot_quote(&arg_str(args, 0), &arg_str(args, 1)))),
         "clipBody" => Ok(json!(clip_body(&arg_str(args, 0)))),
         "nmapWebScheme" => Ok(json!(nmap_web_scheme(&arg_str(args, 0), &arg_str(args, 1)))),
+        // (string) — batch 9ac
+        "workerTrafficBlock" => Ok(json!(worker_traffic_block(arg_bool(args, 0)))),
+        "untrustedContentTail" => Ok(json!(untrusted_content_tail(&arg_str(args, 0)))),
+        "normalizeOllamaBaseURL" => Ok(json!(normalize_ollama_base_url(&arg_str(args, 0)))),
+        "stripUserinfo" => Ok(json!(strip_userinfo(&arg_str(args, 0)))),
+        "bbotToken" => Ok(json!(bbot_token(&arg_str(args, 0)))),
+        "artifactSpec" => Ok(json!(artifact_spec(&arg_str(args, 0)))),
+        "workerArtifactSpec" => Ok(json!(worker_artifact_spec(&arg_str(args, 0)))),
+        "chatWorkDirSpec" => Ok(json!(chat_work_dir_spec(&arg_str(args, 0)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

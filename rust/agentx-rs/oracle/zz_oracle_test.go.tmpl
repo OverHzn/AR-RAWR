@@ -196,3 +196,94 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "nmapWebScheme", []any{p[0], p[1]}, nmapWebScheme(p[0], p[1]))
 	}
 }
+
+func TestZZOracle9ac(t *testing.T) {
+	// workerTrafficBlock(recording)
+	rec(t, "workerTrafficBlock", []any{true}, workerTrafficBlock(true))
+	rec(t, "workerTrafficBlock", []any{false}, workerTrafficBlock(false))
+
+	// untrustedContentTail(body)
+	tailBodies := []string{
+		"",
+		"plain body",
+		"body\n" + untrustedContentRules,
+		untrustedContentRules,
+		"prefix " + untrustedContentRules + " suffix",
+	}
+	for _, b := range tailBodies {
+		rec(t, "untrustedContentTail", []any{b}, untrustedContentTail(b))
+	}
+
+	// normalizeOllamaBaseURL(raw)
+	urlInputs := []string{
+		"",
+		"   ",
+		"http://127.0.0.1:11434",
+		"http://127.0.0.1:11434/",
+		"http://127.0.0.1:11434/v1",
+		"http://127.0.0.1:11434/v1/",
+		"http://host:1234/chat/completions",
+		"http://host:1234/v1/chat/completions",
+		"  http://host:9/v1  ",
+		"http://host:9///",
+		"https://api.example.com",
+	}
+	for _, u := range urlInputs {
+		rec(t, "normalizeOllamaBaseURL", []any{u}, normalizeOllamaBaseURL(u))
+	}
+
+	// stripUserinfo(raw)
+	uiInputs := []string{
+		"",
+		"example.com",
+		"example.com/path",
+		"user@example.com",
+		"user:pass@example.com",
+		"http://user:pass@example.com/x",
+		"http://example.com/x",
+		"https://user@example.com",
+		"//user:pass@host/p",
+		"scheme://user@host",
+		"user@host/path@ignored",
+		"/just/a/path",
+		"a/b@c",
+		"http://a@b@c.com",
+		"no-at-sign.example.com",
+		"ftp://u:p@h:21/file",
+		"?query@x",
+	}
+	for _, u := range uiInputs {
+		rec(t, "stripUserinfo", []any{u}, stripUserinfo(u))
+	}
+
+	// bbotToken(s)
+	tokInputs := []string{
+		"",
+		"a",
+		"abc123",
+		"ABC.DEF-ghi_jkl>mno",
+		"has space",
+		"has/slash",
+		"under_score",
+		"dot.dot",
+		"gt>lt",
+		"dash-ok",
+		"plus+no",
+		"unicode-日本語",
+		"tab\tno",
+		func() string { s := ""; for i := 0; i < 128; i++ { s += "a" }; return s }(),
+		func() string { s := ""; for i := 0; i < 129; i++ { s += "a" }; return s }(),
+		".-",
+		">>>",
+	}
+	for _, s := range tokInputs {
+		rec(t, "bbotToken", []any{s}, bbotToken(s))
+	}
+
+	// artifactSpec / workerArtifactSpec / chatWorkDirSpec
+	for _, d := range []string{"", "/work/task-1", "relative/dir", "/abs/path/"} {
+		rec(t, "artifactSpec", []any{d}, artifactSpec(d))
+		rec(t, "workerArtifactSpec", []any{d}, workerArtifactSpec(d))
+		rec(t, "chatWorkDirSpec", []any{d}, chatWorkDirSpec(d))
+	}
+}
