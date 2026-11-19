@@ -371,7 +371,7 @@ resume without re-deriving state.
   (6 scenarios) + kind-label + Reason format; Go oracle green. (`TestAssetInterceptCandidates`
   deferred to the assets group — needs the `Asset` type.) artex **231 tests** green, clippy
   clean, fmt clean, gate 30/30.
-- **D-1n chat mentions (this commit):** `src/db/chat_mentions.rs` — `ChatMention`/
+- **D-1n chat mentions (commit 9ad665f):** `src/db/chat_mentions.rs` — `ChatMention`/
   `ChatMentionPage` + `valid_chat_mention_kind` (pure) + `DB::{search_chat_mentions,
   search_chat_mentions_page}` (port of `db/chat_mentions.go`; one verbatim UNION-ALL
   SQL over findings/companies/assets, `%`/`_`/`\` escaped literal, `QueryContext`
@@ -382,6 +382,18 @@ resume without re-deriving state.
   sentinel. Specs: `tests/db_chat_mentions_test.rs` (3) — kind/query search + pagination
   round-trip (25 findings -> 20 + cursor + 5, no overlap, cursor-binding + garbage
   reject) + valid-kind; Go oracle n/a (no `_test.go`). artex **234 tests** green, clippy
+  clean, fmt clean, gate 30/30.
+- **D-1o task outcome card (this commit):** `src/db/task_outcome.rs` —
+  `TaskOutcome`/`TaskOutcomeFindings`/`TaskOutcomeRetests`/`TaskOutcomeTokens` (plain
+  data) + `DB::task_outcome` (port of `db/task_outcome.go`; one verbatim LATERAL-join
+  aggregate SELECT; COALESCE defaults, confirmed-only severity split, retest verdict
+  split, activity result-row token sum, tool_usage call count, skill_usage NOT-found
+  count, wall_seconds from completed_at/first_run_at; `QueryContext` ctx-cancellation
+  via biased select; `sql.ErrNoRows` -> "no rows in result set" msg). Specs:
+  `tests/db_task_outcome_test.rs` (2) — full aggregate check (6 findings with confirmed/
+  open/fp/dup split + confirmed-only severity, 1 retest each of reproduced/fixed/
+  inconclusive, 100/40/10/5 tokens, 3 tool calls, 1 skill miss; missing + soft-deleted
+  task error) + cancelled-context; Go oracle n/a. artex **236 tests** green, clippy
   clean, fmt clean, gate 30/30.
 
 ## Next
