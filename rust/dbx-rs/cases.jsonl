@@ -28,6 +28,7 @@
 {"args":["  collapse   these   spaces  ",100],"fn":"lessonText","ok":"collapse these spaces"}
 {"args":["  collapse   these   spaces  ",3],"fn":"lessonText","ok":"col"}
 {"args":["  collapse   these   spaces  ",5],"fn":"lessonText","ok":"colla"}
+{"args":["  leading",0],"fn":"readToken","ok":["",0]}
 {"args":["  padded  ",0],"fn":"truncateRunes","ok":"…"}
 {"args":["  padded  ",100],"fn":"truncateRunes","ok":"padded"}
 {"args":["  padded  ",1],"fn":"truncateRunes","ok":"p…"}
@@ -40,6 +41,7 @@
 {"args":["",""],"fn":"normalizeTaskAssetSource","ok":[["system",""],null]}
 {"args":["",-1],"fn":"lessonText","ok":""}
 {"args":["",0],"fn":"lessonText","ok":""}
+{"args":["",0],"fn":"readToken","ok":["",0]}
 {"args":["",0],"fn":"truncateRunes","ok":""}
 {"args":["",100],"fn":"lessonText","ok":""}
 {"args":["",100],"fn":"truncateRunes","ok":""}
@@ -65,7 +67,9 @@
 {"args":[""],"fn":"taskTemplateNKey","ok":""}
 {"args":[""],"fn":"taskTemplateName","ok":""}
 {"args":[""],"fn":"truncateNotifyError","ok":""}
+{"args":["(paren",0],"fn":"readToken","ok":["",0]}
 {"args":[".1.2.3"],"fn":"isIPLiteral","ok":false}
+{"args":["//4="],"fn":"utf8Clean","ok":"77+9"}
 {"args":["1..2"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["1.2.3"],"fn":"isIPLiteral","ok":false}
 {"args":["1.2.3"],"fn":"looksLikeIPAddress","ok":true}
@@ -83,18 +87,26 @@
 {"args":["1:2:3"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["2001:db8::1"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["2001:db8::zz"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["4oI="],"fn":"utf8Clean","ok":"77+9"}
+{"args":["4oKs"],"fn":"utf8Clean","ok":"4oKs"}
+{"args":["7aCA"],"fn":"utf8Clean","ok":"77+9"}
+{"args":["8J+YgA=="],"fn":"utf8Clean","ok":"8J+YgA=="}
 {"args":["999.999.999.999"],"fn":"isIPLiteral","ok":true}
 {"args":["999.999.999.999"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["9JCAgA=="],"fn":"utf8Clean","ok":"77+9"}
 {"args":["::"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["::1"],"fn":"isIPLiteral","ok":true}
 {"args":["::1"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["ALLOW"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["AP8A"],"fn":"utf8Clean","ok":"77+9"}
 {"args":["Allow"],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["Bundle_Id"],"fn":"isKnownField","ok":true}
 {"args":["CAFE::1"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["DOMAIN"],"fn":"isKnownField","ok":true}
 {"args":["DONE"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["ENC:V1:"],"fn":"isEncrypted","ok":false}
+{"args":["Ilx1MDAwMFx1MDAwMCI="],"fn":"jsonbClean","ok":"IiI="}
+{"args":["Ilx1MDAwMHhcdTAwMDAi"],"fn":"jsonbClean","ok":"Ingi"}
 {"args":["MixedCASE  Value"],"fn":"NormalizeCoverageField","ok":"MixedCASE Value"}
 {"args":["MixedCASE  Value"],"fn":"companyNKey","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"normRiskArea","ok":"mixedcase value"}
@@ -106,6 +118,10 @@
 {"args":["UPPER"],"fn":"normalizeTaskCategoryName","ok":[["UPPER","upper"],null]}
 {"args":["USER","  hi  "],"fn":"normalizeTaskAssetSource","ok":[["user","hi"],null]}
 {"args":["Url"],"fn":"isKnownField","ok":true}
+{"args":["XHUwMDAw"],"fn":"jsonbClean","ok":""}
+{"args":["Y2Fmw6kg/w=="],"fn":"utf8Clean","ok":"Y2Fmw6kg77+9"}
+{"args":["Yf/+Yg=="],"fn":"utf8Clean","ok":"Ye+/vWI="}
+{"args":["Yf9i"],"fn":"utf8Clean","ok":"Ye+/vWI="}
 {"args":["[1,2]"],"fn":"sealedJSON","ok":["",false]}
 {"args":["[MODEL] x"],"fn":"isModelReason","ok":true}
 {"args":["[model"],"fn":"isModelReason","ok":false}
@@ -114,11 +130,18 @@
 {"args":["[模型] bar"],"fn":"isModelReason","ok":true}
 {"args":["[模型]"],"fn":"isModelReason","ok":true}
 {"args":["\"a string\""],"fn":"sealedJSON","ok":["",false]}
+{"args":["\"quoted\" rest",0],"fn":"readToken","ok":["quoted",8]}
+{"args":["\"unterminated",0],"fn":"readToken","ok":["unterminated",13]}
 {"args":["\t"],"fn":"nullIfEmpty","ok":"\t"}
 {"args":["\tTab\t"," clean "],"fn":"normalizeTaskAssetSource","ok":[["tab","clean"],null]}
+{"args":["a(b)c",0],"fn":"readToken","ok":["a",1]}
 {"args":["a.b.c.d"],"fn":"isIPLiteral","ok":false}
 {"args":["a.b.c.d"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["a2VlcCDigqwgdGFpbA=="],"fn":"utf8Clean","ok":"a2VlcCDigqwgdGFpbA=="}
 {"args":["a:b"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["aGUAbGxv"],"fn":"utf8Clean","ok":"aGVsbG8="}
+{"args":["aGVsbG8="],"fn":"utf8Clean","ok":"aGVsbG8="}
+{"args":["a\tb",0],"fn":"readToken","ok":["a",1]}
 {"args":["a\tb\nc",0],"fn":"truncateRunes","ok":"…"}
 {"args":["a\tb\nc",100],"fn":"truncateRunes","ok":"a\tb\nc"}
 {"args":["a\tb\nc",1],"fn":"truncateRunes","ok":"a…"}
@@ -128,6 +151,7 @@
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"normalizeTaskCategoryName","ok":[["",""],"invalid task category: name exceeds 80 characters"]}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…"}
+{"args":["abc",2],"fn":"readToken","ok":["c",3]}
 {"args":["allow "],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["allow"],"fn":"normalizeRuleAction","ok":"allow"}
 {"args":["app","","","","  ","com.x"],"fn":"assetDisplayName","ok":"com.x"}
@@ -135,12 +159,14 @@
 {"args":["app","","","","MyApp","com.x"],"fn":"assetDisplayName","ok":"MyApp"}
 {"args":["block"],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["blocked"],"fn":"inheritedIntentTerminal","ok":true}
+{"args":["bm8gbWFya2VyIGhlcmU="],"fn":"jsonbClean","ok":"bm8gbWFya2VyIGhlcmU="}
 {"args":["c1�� bytes"],"fn":"NormalizeCoverageField","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"companyNKey","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"normRiskArea","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"normalizeKeyword","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateNKey","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateName","ok":"c1�� bytes"}
+{"args":["cHJlXHUwMDAwcG9zdA=="],"fn":"jsonbClean","ok":"cHJlcG9zdA=="}
 {"args":["cafe:cafe"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["company_id"],"fn":"isKnownField","ok":true}
 {"args":["ctrl\u0000\u001fdel",-1],"fn":"lessonText","ok":"ctrl del"}
@@ -164,11 +190,15 @@
 {"args":["endpoint","","9.9.9.9","","",""],"fn":"assetDisplayName","ok":"9.9.9.9"}
 {"args":["example.com"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["exhausted"],"fn":"inheritedIntentTerminal","ok":true}
+{"args":["eyJhIjoiXFx1MDAwMCJ9"],"fn":"jsonbClean","ok":"eyJhIjoiXFx1MDAwMCJ9"}
+{"args":["eyJhIjoiXHUwMDAwIn0="],"fn":"jsonbClean","ok":"eyJhIjoiIn0="}
+{"args":["eyJhIjoxfQ=="],"fn":"jsonbClean","ok":"eyJhIjoxfQ=="}
 {"args":["failed"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["fe80::1"],"fn":"isIPLiteral","ok":true}
 {"args":["fe80::1"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["gggg::1"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["has space"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["hello world",0],"fn":"readToken","ok":["hello",5]}
 {"args":["hello",0],"fn":"truncateRunes","ok":"…"}
 {"args":["hello",100],"fn":"truncateRunes","ok":"hello"}
 {"args":["hello",1],"fn":"truncateRunes","ok":"h…"}
@@ -220,6 +250,7 @@
 {"args":["pending"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["plain"],"fn":"isEncrypted","ok":false}
 {"args":["port"],"fn":"isKnownField","ok":true}
+{"args":["pos\u003elen",100],"fn":"readToken","ok":["",100]}
 {"args":["prefix[model]"],"fn":"isModelReason","ok":false}
 {"args":["root_domain","example.com","","","",""],"fn":"assetDisplayName","ok":"example.com"}
 {"args":["running"],"fn":"inheritedIntentTerminal","ok":false}
@@ -256,9 +287,12 @@
 {"args":["tech"],"fn":"isKnownField","ok":true}
 {"args":["technology"],"fn":"isKnownField","ok":true}
 {"args":["title"],"fn":"isKnownField","ok":true}
+{"args":["token)",0],"fn":"readToken","ok":["token",5]}
 {"args":["trail "],"fn":"normalizeTaskCategoryName","ok":[["trail","trail"],null]}
+{"args":["trailing ",0],"fn":"readToken","ok":["trailing",8]}
 {"args":["unknown","","","","",""],"fn":"assetDisplayName","ok":""}
 {"args":["unknown"],"fn":"isKnownField","ok":false}
+{"args":["wIA="],"fn":"utf8Clean","ok":"77+9"}
 {"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],null]}
 {"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["",""],"invalid task asset association: source summary exceeds 500 characters"]}
 {"args":["x"],"fn":"nullIfEmpty","ok":"x"}
@@ -271,6 +305,7 @@
 {"args":["{\"other\":1}"],"fn":"sealedJSON","ok":["",false]}
 {"args":["{bad"],"fn":"sealedJSON","ok":["",false]}
 {"args":["世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世"],"fn":"truncateNotifyError","ok":"世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世…"}
+{"args":["日本(x)",0],"fn":"readToken","ok":["日本",6]}
 {"args":["日本語  テスト"],"fn":"NormalizeCoverageField","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"companyNKey","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"normRiskArea","ok":"日本語 テスト"}

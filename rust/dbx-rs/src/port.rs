@@ -543,3 +543,157 @@ pub fn normalize_task_asset_source(
     }
     Ok((source, summary))
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9al: byte-level text cleaners + a tiny token reader in `db/`. `utf8Clean`
+// reproduces Go `strings.ToValidUTF8(s, "\uFFFD")` (each maximal run of invalid
+// bytes collapses to a single replacement), `jsonbClean` strips JSON `\u0000`
+// escapes (respecting backslash parity), and `readToken` is the byte-wise scanner.
+// ---------------------------------------------------------------------------
+
+/// Width of the valid UTF-8 rune starting at `b[i]`, or `None` if the bytes there
+/// are not a valid encoding. Mirrors Go `utf8.DecodeRuneInString` acceptance
+/// (rejects overlong forms, surrogates and > U+10FFFF, returning width 1 invalid).
+fn rune_width(b: &[u8], i: usize) -> Option<usize> {
+    let b0 = b[i];
+    if b0 < 0x80 {
+        return Some(1);
+    }
+    let cont = |x: u8| (0x80..=0xBF).contains(&x);
+    match b0 {
+        0xC2..=0xDF => (i + 1 < b.len() && cont(b[i + 1])).then_some(2),
+        0xE0 => {
+            (i + 2 < b.len() && (0xA0..=0xBF).contains(&b[i + 1]) && cont(b[i + 2])).then_some(3)
+        }
+        0xE1..=0xEC | 0xEE..=0xEF => {
+            (i + 2 < b.len() && cont(b[i + 1]) && cont(b[i + 2])).then_some(3)
+        }
+        0xED => {
+            (i + 2 < b.len() && (0x80..=0x9F).contains(&b[i + 1]) && cont(b[i + 2])).then_some(3)
+        }
+        0xF0 => (i + 3 < b.len()
+            && (0x90..=0xBF).contains(&b[i + 1])
+            && cont(b[i + 2])
+            && cont(b[i + 3]))
+        .then_some(4),
+        0xF1..=0xF3 => {
+            (i + 3 < b.len() && cont(b[i + 1]) && cont(b[i + 2]) && cont(b[i + 3])).then_some(4)
+        }
+        0xF4 => (i + 3 < b.len()
+            && (0x80..=0x8F).contains(&b[i + 1])
+            && cont(b[i + 2])
+            && cont(b[i + 3]))
+        .then_some(4),
+        _ => None,
+    }
+}
+
+/// Go `strings.ToValidUTF8(b, "\uFFFD")` over bytes: replace each maximal run of
+/// invalid UTF-8 bytes with a single U+FFFD.
+fn to_valid_utf8(b: &[u8], replacement: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(b.len());
+    let mut invalid = false;
+    let mut i = 0;
+    while i < b.len() {
+        let c = b[i];
+        if c < 0x80 {
+            out.push(c);
+            invalid = false;
+            i += 1;
+            continue;
+        }
+        match rune_width(b, i) {
+            Some(w) => {
+                out.extend_from_slice(&b[i..i + w]);
+                invalid = false;
+                i += w;
+            }
+            None => {
+                i += 1;
+                if !invalid {
+                    invalid = true;
+                    out.extend_from_slice(replacement);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// `utf8Clean` (`db/...`): drop NUL bytes, then make the result valid UTF-8 by
+/// replacing each run of invalid bytes with U+FFFD.
+pub fn utf8_clean(s: &[u8]) -> Vec<u8> {
+    let cleaned: Vec<u8> = if s.contains(&0) {
+        s.iter().copied().filter(|&b| b != 0).collect()
+    } else {
+        s.to_vec()
+    };
+    to_valid_utf8(&cleaned, "\u{FFFD}".as_bytes())
+}
+
+/// `jsonbClean` (`db/...`): strip JSON `\u0000` escape sequences from `b`,
+/// tracking backslash parity so an escaped backslash (`\\u0000`) is left intact.
+pub fn jsonb_clean(b: &[u8]) -> Vec<u8> {
+    let needle = |i: usize| {
+        i + 5 < b.len()
+            && b[i] == b'\\'
+            && b[i + 1] == b'u'
+            && b[i + 2] == b'0'
+            && b[i + 3] == b'0'
+            && b[i + 4] == b'0'
+            && b[i + 5] == b'0'
+    };
+    if !b.windows(6).any(|w| w == b"\\u0000") {
+        return b.to_vec();
+    }
+    let mut out = Vec::with_capacity(b.len());
+    let mut bs = 0u32;
+    let mut i = 0;
+    while i < b.len() {
+        if bs.is_multiple_of(2) && needle(i) {
+            i += 6;
+            bs = 0;
+            continue;
+        }
+        if b[i] == b'\\' {
+            bs += 1;
+        } else {
+            bs = 0;
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    out
+}
+
+/// Go `unicode.IsSpace(rune(c))` for a single byte `c` (Latin-1 range): the
+/// ASCII whitespace plus NEL (0x85) and NBSP (0xA0).
+fn go_is_space_byte(c: u8) -> bool {
+    matches!(c, 0x09..=0x0D | 0x20 | 0x85 | 0xA0)
+}
+
+/// `readToken` (`db/...`): read one token from `s` starting at byte `pos` — a
+/// `"..."`-quoted run, or a run up to the next whitespace / `(` / `)` — returning
+/// `(token, next_pos)`.
+pub fn read_token(s: &str, pos: usize) -> (String, usize) {
+    let b = s.as_bytes();
+    if pos >= b.len() {
+        return (String::new(), pos);
+    }
+    if b[pos] == b'"' {
+        let mut i = pos + 1;
+        while i < b.len() && b[i] != b'"' {
+            i += 1;
+        }
+        let val = String::from_utf8_lossy(&b[pos + 1..i]).into_owned();
+        if i < b.len() {
+            i += 1;
+        }
+        return (val, i);
+    }
+    let mut i = pos;
+    while i < b.len() && !go_is_space_byte(b[i]) && b[i] != b'(' && b[i] != b')' {
+        i += 1;
+    }
+    (String::from_utf8_lossy(&b[pos..i]).into_owned(), i)
+}

@@ -48,6 +48,18 @@ fn arg_opt_i64(args: &[Value], i: usize) -> Option<i64> {
     args[i].as_i64()
 }
 
+fn arg_bytes(args: &[Value], i: usize) -> Vec<u8> {
+    match &args[i] {
+        Value::Null => Vec::new(),
+        Value::String(s) => gocompat::encoding::base64_std_decode(s).expect("valid base64"),
+        other => panic!("expected base64 string or null, got {other}"),
+    }
+}
+
+fn b64(b: &[u8]) -> String {
+    gocompat::encoding::base64_std_encode(b)
+}
+
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "nullIfEmpty" => json!(null_if_empty(&arg_str(args, 0))),
@@ -130,6 +142,13 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 Ok((a, b)) => json!([[a, b], Value::Null]),
                 Err(e) => json!([["", ""], e]),
             }
+        }
+        // batch 9al
+        "utf8Clean" => json!(b64(&utf8_clean(&arg_bytes(args, 0)))),
+        "jsonbClean" => json!(b64(&jsonb_clean(&arg_bytes(args, 0)))),
+        "readToken" => {
+            let (tok, np) = read_token(&arg_str(args, 0), arg_i64(args, 1) as usize);
+            json!([tok, np])
         }
         other => panic!("no dispatcher arm for {other}"),
     }

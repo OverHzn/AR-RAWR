@@ -388,3 +388,44 @@ func TestZZOracle9ak(t *testing.T) {
 		rec(t, "normalizeTaskAssetSource", []any{c.source, c.summary}, []any{[]any{src, sum}, ej})
 	}
 }
+
+func TestZZOracle9al(t *testing.T) {
+	// utf8Clean(s) -> []byte in, []byte out (base64 in JSON)
+	u8 := [][]byte{
+		[]byte("hello"), []byte("he\x00llo"), []byte("\xff\xfe"),
+		[]byte("\xe2\x82"), []byte("\xe2\x82\xac"), []byte("a\xffb"),
+		[]byte("a\xff\xfeb"), []byte("\xc0\x80"), []byte("\xed\xa0\x80"),
+		[]byte("caf\xc3\xa9 \xff"), []byte("\xf0\x9f\x98\x80"), []byte("\x00\xff\x00"),
+		[]byte("\xf4\x90\x80\x80"), []byte("keep \xe2\x82\xac tail"),
+	}
+	for _, in := range u8 {
+		rec(t, "utf8Clean", []any{in}, []byte(utf8Clean(string(in))))
+	}
+
+	// jsonbClean(b) -> []byte in, []byte out
+	jb := [][]byte{
+		[]byte(`{"a":1}`), []byte(`{"a":"` + `\u0000` + `"}`),
+		[]byte(`{"a":"\\u0000"}`), []byte(`"` + `\u0000\u0000` + `"`),
+		[]byte(`"` + `\u0000x\u0000` + `"`), []byte(`no marker here`),
+		[]byte(`\u0000`), []byte(`pre` + `\u0000` + `post`),
+	}
+	for _, in := range jb {
+		rec(t, "jsonbClean", []any{in}, jsonbClean(in))
+	}
+
+	// readToken(s, pos) -> [token, next_pos]
+	type rt struct {
+		s   string
+		pos int
+	}
+	rtCases := []rt{
+		{"hello world", 0}, {`"quoted" rest`, 0}, {"a(b)c", 0},
+		{"  leading", 0}, {"token)", 0}, {"pos>len", 100}, {"abc", 2},
+		{`"unterminated`, 0}, {"日本(x)", 0}, {"", 0}, {"(paren", 0},
+		{"trailing ", 0}, {"a\tb", 0},
+	}
+	for _, c := range rtCases {
+		tok, np := readToken(c.s, c.pos)
+		rec(t, "readToken", []any{c.s, c.pos}, []any{tok, np})
+	}
+}
