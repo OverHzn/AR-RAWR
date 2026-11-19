@@ -267,6 +267,24 @@ resume without re-deriving state.
   raw-SQL fixtures, differential vs `artex-pg`, skip when DSN unreachable. artex **203 tests**
   green, clippy `-D warnings` clean, gate 30/30, Go `TestOpenSeed|TestRewriteStockNpxBrowserMCP
   |TestRewriteBrowserMCPRow|TestSeedAndMigrateBrowserMCP|TestTargetGateExemptionSeed` green.
+- **D-1e task_templates resource group (this commit):** `src/db/task_templates.rs` — port of
+  `db/task_templates.go`. `TaskTemplate`/`TaskTemplateInput`/`TaskTemplatePatch` structs +
+  `TaskInterceptRuleInput` (JSONB rule element; `#[serde(default)]` mirrors Go's lenient
+  unmarshal; its `*AssetStore` task-rule methods are ported with the assets group).
+  `DB::{create,list,get,update,patch,delete}_task_template` use `DB::{execute,query,query_opt}`.
+  Pure name helpers `taskTemplateName`/`taskTemplateNKey` **reused from `dbx_rs::port`** (gate-
+  pinned); whitespace/trim via `gocompat::strings`. `intercept_rules` JSONB bound as
+  `serde_json::Value` (with-serde_json-1), `timestamptz` read as `SystemTime` (postgres-types
+  native codec — no chrono/time). **Error model extended:** `db::Error` now carries an optional
+  sentinel identity (`Error::sentinel`/`Error::is`, Go `errors.Is` analogue) + Postgres SQLSTATE
+  (`Error::sqlstate`/`Error::is_unique_violation`, captured in `From<tokio_postgres::Error>`);
+  sentinel keys `ERR_TASK_TEMPLATE_{INVALID,NAME_CONFLICT,NOT_FOUND}`. `Patch` is a single
+  CASE-based `UPDATE` (disjoint patches compose; unique-violation→name-conflict, no-row→not-found).
+  Specs: `tests/db_task_templates_test.rs` (2) ported from `task_templates_test.go`
+  (`TestTaskTemplateCRUDAndNormalizedUniqueness`, `TestTaskTemplateDisjointPatchesCompose`) —
+  shared DSN + async lock + unique-name fixtures, differential vs `artex-pg`, skip when DSN
+  unreachable. artex **205 tests** green, clippy `-D warnings` clean, fmt clean, gate 30/30, Go
+  `TestTaskTemplateCRUDAndNormalizedUniqueness|TestTaskTemplateDisjointPatchesCompose` green.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

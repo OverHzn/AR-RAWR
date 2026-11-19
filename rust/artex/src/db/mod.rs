@@ -22,6 +22,7 @@ pub mod migrate;
 pub mod secrets;
 pub mod seed;
 pub mod settings;
+pub mod task_templates;
 
 pub use error::{Error, Result};
 pub use migrate::{
