@@ -28,6 +28,22 @@ pub struct AssetInterceptRule {
     pub updated_at: SystemTime,
 }
 
+impl Default for AssetInterceptRule {
+    fn default() -> Self {
+        AssetInterceptRule {
+            id: 0,
+            enabled: false,
+            kind: String::new(),
+            pattern: String::new(),
+            note: String::new(),
+            builtin: false,
+            action: String::new(),
+            created_at: SystemTime::UNIX_EPOCH,
+            updated_at: SystemTime::UNIX_EPOCH,
+        }
+    }
+}
+
 /// `assetInterceptRuleCols`: the shared read column list.
 const ASSET_INTERCEPT_RULE_COLS: &str =
     "id, enabled, kind, pattern, note, builtin, created_at, updated_at";

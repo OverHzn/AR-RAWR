@@ -350,7 +350,7 @@ resume without re-deriving state.
   No Go `_test.go` for the CRUD (only the matching logic has one) -> fresh differential
   test `tests/db_asset_intercept_test.rs` (1): CRUD round-trip + ordering + missing-id
   update error. artex **225 tests** green, clippy clean, fmt clean, gate 30/30.
-- **D-1l task credentials (this commit):** `src/db/task_credentials.rs` —
+- **D-1l task credentials (commit 9dd2e85):** `src/db/task_credentials.rs` —
   `TaskCredential`/`TaskCredentialInput` (normalize: trim, source default user,
   empty-password only for user) + `DB::{upsert (ON CONFLICT overwrite, sealed via
   COL_CRED_PASS, returns plaintext), list (decrypt on read), delete (taskID-scoped,
@@ -359,6 +359,18 @@ resume without re-deriving state.
   CRUD test -> fresh differential `tests/db_task_credentials_test.rs` (2): upsert-
   in-place + sealed-at-rest (is_sealed) + decrypt round-trip + delete, and normalize
   validation. artex **227 tests** green, clippy clean, fmt clean, gate 30/30.
+- **D-1m asset intercept matching (this commit):** `src/db/asset_intercept_match.rs`
+  — pure half of `db/asset_intercept_match.go`: `AssetInterceptRule::reason`, `match_one`,
+  `match_asset_intercept_rules`, `has_enabled_rule`, `evaluate_asset_gate` + `AssetGateDecision`
+  (intercept-first then allow; empty/all-disabled allow = inert). `AssetInterceptKindLabel`
+  reused from `db-rs::port` (gate-pinned) — added `db-rs` as an artex path dep (links fine
+  under the `--allow_multiple-definition` flag). CIDR matching via `std::net` (`parse_cidr` +
+  `cidr_contains`, no external crate). `AssetInterceptRule` gained a manual `Default`
+  (SystemTime has no Default -> UNIX_EPOCH). Specs: `tests/db_asset_intercept_match_test.rs`
+  (4) — port of Go `TestMatchAssetInterceptRules` (13 cases) + `TestEvaluateAssetGate`
+  (6 scenarios) + kind-label + Reason format; Go oracle green. (`TestAssetInterceptCandidates`
+  deferred to the assets group — needs the `Asset` type.) artex **231 tests** green, clippy
+  clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
