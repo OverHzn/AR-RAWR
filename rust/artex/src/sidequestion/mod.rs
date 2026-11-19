@@ -27,6 +27,11 @@ pub use sidequestion_rs::port::{
     estimate_input_tokens, is_context_overflow, message_groups, snapshot_summary_messages, Parent,
 };
 
+// === Submodules ===
+
+mod service;
+pub use service::SideQuestionService;
+
 // === Constants (sidequestion/request.go) ===
 
 /// The fixed instruction appended to every side-question request.
