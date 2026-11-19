@@ -128,3 +128,33 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "detailedReportLimit", []any{c.body, c.heading, c.limit}, detailedReportLimit(c.body, c.heading, c.limit))
 	}
 }
+
+func TestZZOracle9v(t *testing.T) {
+	// qualityBullets(q, alwaysProof) + qualityNarrative(q)
+	qs := []Quality{
+		// unavailable lookup
+		{Unavailable: true},
+		// missing finding row
+		{Missing: true},
+		// plain verified finding with record + proof
+		{PoE: 2, Verification: "verified", RecordID: 42, TrafficCount: 3},
+		// unverified, no traffic, no record
+		{PoE: 1, Verification: ""},
+		// with note (multi-space to exercise oneLine)
+		{PoE: 3, Verification: "blocked", RecordID: 7, TrafficCount: 0, VerificationNote: "  see   the  notes  "},
+		// alwaysProof=false with traffic bound (Proof bullet suppressed)
+		{PoE: 2, Verification: "false_positive", RecordID: 1, TrafficCount: 5},
+		// with rationale + counterevidence (narrative)
+		{PoE: 2, Verification: "verified", ConfidenceRationale: "  strong signals  ", Counterevidence: "no contrary data"},
+		// empty rationale/counterevidence (narrative empty)
+		{PoE: 0, Verification: "not_assessed"},
+		// rationale whitespace-only (narrative should omit)
+		{ConfidenceRationale: "   ", Counterevidence: ""},
+	}
+	for _, q := range qs {
+		for _, ap := range []bool{true, false} {
+			rec(t, "qualityBullets", []any{q, ap}, qualityBullets(q, ap))
+		}
+		rec(t, "qualityNarrative", []any{q}, qualityNarrative(q))
+	}
+}

@@ -95,3 +95,86 @@ pub fn detailed_report_limit(body: &str, heading: &str, limit: i64) -> String {
     }
     format!("{heading}\n\n{s}\n\n")
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9v: pure render helpers over the value-typed `Quality` record
+// (`report/quality.go`). `qualityBullets` / `qualityNarrative` format a finding's
+// quality fields into the report Markdown. They depend on `one_line` and
+// `verification_label` (already ported above).
+// ---------------------------------------------------------------------------
+
+/// `report.Quality`: the value-typed quality record a finding node carries. The
+/// `Missing` / `Unavailable` flags are three distinct states (see the Go source).
+pub struct Quality {
+    pub poe: i64,
+    pub verification: String,
+    pub verification_note: String,
+    pub confidence_rationale: String,
+    pub counterevidence: String,
+    pub traffic_count: i64,
+    pub record_id: i64,
+    pub missing: bool,
+    pub unavailable: bool,
+}
+
+/// `qualityBullets` (`report/quality.go`): render the quality bullets for a
+/// finding. `always_proof` is true for the task report (no traffic section of its
+/// own); the findings export passes false so a bound count is not repeated.
+pub fn quality_bullets(q: &Quality, always_proof: bool) -> String {
+    let mut b = String::new();
+    // A failed lookup is not an absence: say the fields could not be read.
+    if q.unavailable {
+        b.push_str(
+            "- **Verification**: unknown (quality lookup failed — proof strength unavailable)\n\n",
+        );
+        return b;
+    }
+    if q.missing {
+        b.push_str(
+            "- **Verification**: not assessed (no finding record — quality fields unavailable)\n\n",
+        );
+        return b;
+    }
+    if q.record_id > 0 {
+        b.push_str(&format!("- **Finding record**: #{}\n", q.record_id));
+    }
+    b.push_str(&format!("- **PoE level**: {}\n", q.poe));
+    b.push_str(&format!(
+        "- **Verification**: {}\n",
+        verification_label(&q.verification)
+    ));
+    if always_proof || q.traffic_count == 0 {
+        if q.traffic_count > 0 {
+            b.push_str(&format!(
+                "- **Proof**: {} bound traffic exchange(s)\n",
+                q.traffic_count
+            ));
+        } else {
+            b.push_str("- **Proof**: no bound traffic evidence\n");
+        }
+    }
+    let note = one_line(&q.verification_note);
+    if !note.is_empty() {
+        b.push_str(&format!("- **Verification note**: {}\n", note));
+    }
+    b.push('\n');
+    b
+}
+
+/// `qualityNarrative` (`report/quality.go`): render the confidence rationale and
+/// counterevidence blocks (empty for a missing/unavailable record).
+pub fn quality_narrative(q: &Quality) -> String {
+    if q.missing || q.unavailable {
+        return String::new();
+    }
+    let mut b = String::new();
+    let s = strings::go_trim_space(&q.confidence_rationale);
+    if !s.is_empty() {
+        b.push_str(&format!("**Confidence rationale**:\n\n{}\n\n", s));
+    }
+    let s = strings::go_trim_space(&q.counterevidence);
+    if !s.is_empty() {
+        b.push_str(&format!("**Counterevidence**:\n\n{}\n\n", s));
+    }
+    b
+}

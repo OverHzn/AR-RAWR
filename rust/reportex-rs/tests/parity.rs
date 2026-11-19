@@ -25,6 +25,25 @@ fn arg_bool(args: &[Value], i: usize) -> bool {
     args[i].as_bool().expect("bool arg")
 }
 
+/// Decode a recorded `report.Quality` (PascalCase) into the Rust model. Absent
+/// fields default to zero/false, matching Go's zero-value struct.
+fn decode_quality(v: &Value) -> reportex_rs::port::Quality {
+    let s = |k: &str| v[k].as_str().unwrap_or("").to_string();
+    let i = |k: &str| v[k].as_i64().unwrap_or(0);
+    let b = |k: &str| v[k].as_bool().unwrap_or(false);
+    reportex_rs::port::Quality {
+        poe: i("PoE"),
+        verification: s("Verification"),
+        verification_note: s("VerificationNote"),
+        confidence_rationale: s("ConfidenceRationale"),
+        counterevidence: s("Counterevidence"),
+        traffic_count: i("TrafficCount"),
+        record_id: i("RecordID"),
+        missing: b("Missing"),
+        unavailable: b("Unavailable"),
+    }
+}
+
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "nz" => json!(nz(&arg_str(args, 0), &arg_str(args, 1))),
@@ -42,6 +61,14 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             &arg_str(args, 1),
             arg_i64(args, 2),
         )),
+        "qualityBullets" => {
+            let q = decode_quality(&args[0]);
+            json!(quality_bullets(&q, arg_bool(args, 1)))
+        }
+        "qualityNarrative" => {
+            let q = decode_quality(&args[0]);
+            json!(quality_narrative(&q))
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
