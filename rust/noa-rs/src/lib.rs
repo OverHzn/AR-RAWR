@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 pub mod blocks;
+pub mod breakdown;
 pub mod buildranges;
 pub mod nudgetext;
 pub mod panel;

@@ -1435,3 +1435,77 @@ func TestZZOracle9o(t *testing.T) {
 			[]any{ranges, protected})
 	}
 }
+
+func TestZZOracle9p(t *testing.T) {
+	cm := func(role, ct, text string) noa.CoreMessage {
+		return noa.CoreMessage{Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text}
+	}
+	type sc struct {
+		name string
+		msgs []noa.CoreMessage
+	}
+	cases := []sc{
+		{name: "empty", msgs: nil},
+		{
+			name: "all-text",
+			msgs: []noa.CoreMessage{
+				cm("user", "text", "hello world"),
+				cm("assistant", "text", "general kenobi"),
+			},
+		},
+		{
+			name: "tool-call-and-result",
+			msgs: []noa.CoreMessage{
+				cm("assistant", "tool-call", "invoke bash"),
+				cm("tool", "tool-result", "file contents here"),
+			},
+		},
+		{
+			name: "code-fence",
+			msgs: []noa.CoreMessage{
+				cm("assistant", "text", "here is code:\n```go\nfmt.Println()\n```"),
+			},
+		},
+		{
+			name: "summary-header",
+			msgs: []noa.CoreMessage{
+				cm("user", "text", noa.SummaryHeader+" earlier work"),
+			},
+		},
+		{
+			// summary header takes precedence over tool content-type
+			name: "summary-over-tool",
+			msgs: []noa.CoreMessage{
+				cm("user", "tool-result", noa.SummaryHeader+" x"),
+			},
+		},
+		{
+			// tool content-type takes precedence over code fence in text
+			name: "tool-over-code",
+			msgs: []noa.CoreMessage{
+				cm("tool", "tool-result", "output ```code``` here"),
+			},
+		},
+		{
+			name: "mixed-all",
+			msgs: []noa.CoreMessage{
+				cm("user", "text", "plain text"),
+				cm("assistant", "text", "```py\nx=1\n```"),
+				cm("assistant", "tool-call", "call"),
+				cm("tool", "tool-result", "result"),
+				cm("user", "text", noa.SummaryHeader+" done"),
+			},
+		},
+		{
+			// empty text contributes 0 tokens but still classified as text
+			name: "empty-text",
+			msgs: []noa.CoreMessage{
+				cm("user", "text", ""),
+			},
+		},
+	}
+	for _, c := range cases {
+		got := noa.ComputeContextBreakdown(c.msgs, nil)
+		rec(t, "ComputeContextBreakdown", []any{c.msgs}, got)
+	}
+}

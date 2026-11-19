@@ -4,6 +4,7 @@
 use serde_json::Value;
 
 use noa_rs::blocks::{CompressionBlock, render_summary_message};
+use noa_rs::breakdown::compute_context_breakdown;
 use noa_rs::buildranges::build_compressible_ranges;
 use noa_rs::nudgetext::{
     BlockSpan, TierTargetBlock, format_block_map, format_breakdown, format_tier_target_blocks,
@@ -456,6 +457,11 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 serde_json::to_value(&protected).expect("serialize protected")
             };
             serde_json::json!([ranges_v, protected_v])
+        }
+        "ComputeContextBreakdown" => {
+            let msgs = decode_core_messages(&args[0]);
+            let map = compute_context_breakdown(&msgs, noa_rs::port::default_count_tokens);
+            serde_json::to_value(map).expect("serialize breakdown")
         }
         other => panic!("no dispatcher arm for {other}"),
     }
