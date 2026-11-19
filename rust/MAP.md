@@ -22,7 +22,8 @@ frozen Go source snapshot under `<crate>/go/` or `<crate>/oracle/`. `artex`
 | llmpoolx-rs | llmpool/ | llmpool.rs | VERIFIED (gate) |
 | notify-rs | notify/ (pure leaves) | notify/mod.rs | VERIFIED (gate) |
 | notifyx-rs | notify/ (pure config/escape) | notify/mod.rs, notify/mask.rs | VERIFIED (gate) |
-| egress-rs, db-rs, intercept-rs, mcphttp-rs, report-rs, agent-rs, … | their Go oracles | (future units) | built (gate), not yet wired |
+| mcphttp-rs / mcphttpx-rs | mcphttp pure helpers | mcphttp.rs | VERIFIED (gate), wired |
+| egress-rs, db-rs, intercept-rs, report-rs, agent-rs, … | their Go oracles | (future units) | built (gate), not yet wired |
 
 ## Go source packages → `rust/artex` modules
 
@@ -36,7 +37,7 @@ frozen Go source snapshot under `<crate>/go/` or `<crate>/oracle/`. `artex`
 | notify (markdown/html render) | — | `src/notify/{markdown,html}.rs` | VERIFIED | `tests/notify_pack_test.rs` | Unit 7 |
 | notify (sign+http+channels) | — | `src/notify/{sign,http}.rs` + adapters | IN_PROGRESS | `tests/notify_sign_test.rs` (sign+ssrf+redact) | Unit 8: sign+SSRF+redact substrate VERIFIED; channel adapters next |
 | sidequestion | 761 | `src/sidequestion.rs` | NOT_STARTED | — | leaf (←llmpool) |
-| mcphttp | 619 | `src/mcphttp.rs` | NOT_STARTED | — | leaf |
+| mcphttp | 619 | `src/mcphttp.rs` | DONE (`72ccc22`) | `tests/mcphttp_test.rs` (4) | leaf; Streamable + legacy SSE |
 | db | 23639 | `src/db/` | NOT_STARTED | — | differential vs Postgres |
 | intercept | 4328 | `src/intercept.rs` | NOT_STARTED | — | ←db,enrich |
 | egress | 616 | `src/egress.rs` | NOT_STARTED | — | ←intercept |
