@@ -3,14 +3,18 @@
 Mandatory per PHASE-1 §9. Update at the end of every unit so a fresh session can
 resume without re-deriving state.
 
-## Current state (last updated: Unit 9a complete; Unit 9b next)
+## Current state (last updated: SQ-3 complete; SQ-4 next)
 
 - Branch: `main`. origin=OverHzn/AR-RAWR, upstream=BaaRai/ARTEX.
-- HEAD at Unit 8 (`5bfdc46`, pushed). **Unit 9a ready to commit** (notify doJSON/httpClient IO shell).
+- HEAD at SQ-2 (`23eb131`, pushed). **SQ-3 ready to commit** (contextBuilder + Respond).
 - Pure-helper layer fully ported; `rust/gate-all.sh` = **PASS 30 / FAIL 0**.
-- `rust/artex/gate.sh` (fmt + clippy -D warnings + test) green; **artex tests = 90**
-  (lib 11 + config 2 + llmpool 18 + notify_http 10 + notify_mask 16 + notify_pack 12 + notify_render 9 + notify_sign 12).
-- Go baselines for ported packages re-run green (`config`, `llmpool`, `notify` pure specs incl. sign/ssrf/redact + the Unit-9a `http_test.go` doJSON/dial-guard specs).
+- `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 174** (lib 51 + the
+  per-crate integration suites: config 2, llmpool 18, notify_http 10, notify_mask 16,
+  notify_pack 12, notify_render 9, notify_sign 12, notify_channels 12, notify_webhook 10,
+  notify_registry 2, notify_email 7, notify_redact 10, sidequestion_request 2,
+  sidequestion_service 3, **sidequestion_context 8**, + misc 12).
+- Go baselines for ported packages re-run green (config, llmpool, notify pure specs,
+  sidequestion incl. context_test.go).
 
 ### Environment
 - Go go1.27.3; rustc/cargo 1.100.0. `export PATH="$HOME/.cargo/bin:/usr/local/go/bin:$PATH"`.
@@ -38,7 +42,7 @@ resume without re-deriving state.
    redact_transport_error/TransportError, redact_urls_in_text). Specs in
    `tests/notify_sign_test.rs` (12). Crypto deps: hmac 0.12, sha2 0.10, base64 0.22.
 
-## Active: Unit 9 — notify channel adapters + doJSON/httpClient
+## Unit 9 — notify channel adapters + doJSON/httpClient (complete, all pushed through e60077a)
 - **9a DONE (ready to commit):** the IO shell in `src/notify/http.rs` —
   `do_json(ctx, method, url, headers, payload)` + lazy process-wide `http_client()`
   (reqwest/rustls): 15s timeout, `respBodyLimit=8<<10`, status classification
@@ -111,6 +115,26 @@ resume without re-deriving state.
   message/AUTH-without-account/classify-5xx-vs-4xx/validate-missing/config-string-tolerance/dial-guard
   reject-loopback/opt-in). artex 140 tests; Go baseline green; gate-all 30/30.
 
+## Active: sidequestion package (after Unit 9b complete)
+- **Prereqs DONE & pushed:** `4e965b1` (llm::Accumulator + Context value bag),
+  `04f0b66` (Context runtime cancellation: `with_cancel`/`CancelHandle`/`cancelled`/`err`).
+- **SQ-1 (`0abe589`, pushed):** data model (`Model`/`Snapshot`/`Exchange`/`Memory`/`ContextInfo`/
+  `Answer` + `GoTime` RFC3339) + `clone_request`/`exchange_messages`/`assemble`/`build_request`.
+  Spec: `tests/sidequestion_request_test.rs`.
+- **SQ-2 (`23eb131`, pushed):** `SideQuestionService::Answer` (`src/sidequestion/service.rs`) —
+  stream/atomic accumulation, tool-use refusal, usage-on-failure. Specs:
+  `tests/sidequestion_service_test.rs`.
+- **SQ-3 (ready to commit):** `contextBuilder` + `SideQuestionService::Respond`
+  (`src/sidequestion/context.rs`): bounded context prep (history fold/load, snapshot compaction
+  with sha256-keyed summary cache, summary call cap 12, UTF-8-safe chunking) + at most one
+  overflow recovery that counts the failed attempt's usage. Added `Provider::complete_full`
+  (usage observable on error; default projects `complete`) and switched service.rs atomic path
+  to it. Added serde to `sidequestion-rs` `Parent` + `GoTime`/`Model`/`Snapshot` for the
+  `json.Marshal(snapshot)` cache key. Spec: `tests/sidequestion_context_test.rs` (8 specs, all
+  ported from `context_test.go`).
+
 ## Next
-- Unit 9b complete (9a/9b-1/9b-2/9b-3 done). Next: sidequestion → mcphttp → db (differential) →
-  intercept → egress → traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).
+- SQ-3 commit + push. Next: SQ-4 (harness.QueryDeps + Capture/Attach/Finish/Bind/boundProvider
+  using Accumulator + Context value bag for attemptKey/captureKey/publisherKey; port capture
+  tests from `sidequestion_test.go`) → mcphttp → db (differential) → intercept → egress →
+  traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).

@@ -97,6 +97,7 @@ version = "0.1.0"
 dependencies = [
  "compaction-rs",
  "llm-rs",
+ "serde",
  "serde_json",
 ]
 

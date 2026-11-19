@@ -87,13 +87,15 @@ impl SideQuestionService {
                 ));
             }
         } else {
-            match self.provider.complete(ctx.clone(), req).await {
-                Ok((msg, _stop, usage)) => {
-                    out.usage = usage;
-                    out.text = msg.text();
-                    out.tool_use = !msg.tool_uses().is_empty();
-                }
-                Err(e) => err = Some(e),
+            // Go `msg, _, out.Usage, err = s.Provider.Complete(ctx, req)`: the usage
+            // is retained even on error (complete_full), so a failed call's tokens
+            // still count toward the overflow-recovery accounting.
+            let (msg, _stop, usage, eopt) = self.provider.complete_full(ctx.clone(), req).await;
+            out.usage = usage;
+            out.text = msg.text();
+            out.tool_use = !msg.tool_uses().is_empty();
+            if let Some(e) = eopt {
+                err = Some(e);
             }
         }
 

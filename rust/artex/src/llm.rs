@@ -316,6 +316,32 @@ pub trait Provider: Send + Sync {
         ctx: Context,
         req: CompletionRequest,
     ) -> futures::stream::BoxStream<'static, Result<StreamEvent, Error>>;
+
+    /// Go `Provider.Complete(ctx, req) (llm.Message, string, llm.Usage, error)`: the
+    /// same completion as [`complete`](Provider::complete), but with the usage
+    /// observable *even when the call fails*. Go returns the partial usage alongside
+    /// a non-nil error; the sidequestion overflow-recovery accounting relies on it
+    /// (a failed completion's tokens still count). The default projects
+    /// [`complete`](Provider::complete) and reports a zero `Usage` on error, so a
+    /// provider that cannot surface partial usage needs no change.
+    async fn complete_full(
+        &self,
+        ctx: Context,
+        req: CompletionRequest,
+    ) -> (Message, String, Usage, Option<Error>) {
+        match self.complete(ctx, req).await {
+            Ok((msg, stop, usage)) => (msg, stop, usage, None),
+            Err(e) => (
+                Message {
+                    role: String::new(),
+                    content: Vec::new(),
+                },
+                String::new(),
+                Usage::default(),
+                Some(e),
+            ),
+        }
+    }
 }
 
 // === Stream accumulation (norma/llm accumulate.go) ===

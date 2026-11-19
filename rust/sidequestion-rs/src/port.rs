@@ -20,12 +20,26 @@ use compaction_rs::port::estimate_tokens;
 use llm_rs::port::{BLOCK_TOOL_RESULT, BLOCK_TOOL_USE, CompletionRequest, Message};
 
 /// Port of Go `sidequestion.Parent` (sidequestion/capture.go).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+///
+/// Carries serde derives so the app crate can (de)serialize the `Snapshot` /
+/// `Exchange` structs that embed it (the sidequestion context builder hashes a
+/// serialized `Snapshot` for its compaction-summary cache key; the db layer
+/// persists these as JSONB). The wire tags mirror Go's `omitempty` JSON; parity
+/// cases never exercise serialization, so the derives don't affect the gate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Parent {
+    #[serde(default, skip_serializing_if = "is_zero_i64")]
     pub conversation_id: i64,
+    #[serde(default, skip_serializing_if = "is_zero_i64")]
     pub task_id: i64,
+    #[serde(default, skip_serializing_if = "is_zero_i64")]
     pub exploration_id: i64,
+    #[serde(default, skip_serializing_if = "is_zero_i64")]
     pub intent_id: i64,
+}
+
+fn is_zero_i64(v: &i64) -> bool {
+    *v == 0
 }
 
 impl Parent {
