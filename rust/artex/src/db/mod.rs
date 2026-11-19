@@ -16,9 +16,11 @@
 //! from the Go tree with `include_str!` so the recorded checksums stay
 //! byte-identical to the Go binary and cannot drift.
 
+pub mod browser_mcp;
 pub mod error;
 pub mod migrate;
 pub mod secrets;
+pub mod seed;
 pub mod settings;
 
 pub use error::{Error, Result};
@@ -109,6 +111,50 @@ impl DB {
         exec_embedded_migration(self, "0002_llm_usage.sql")
             .await
             .map(|_| ())
+    }
+
+    /// Convenience: check out a pooled connection and run one statement (mirrors
+    /// Go's `(*sql.DB).Exec`, which borrows a conn per call).
+    pub async fn execute(
+        &self,
+        sql: &str,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<u64> {
+        let conn = self.pool.get().await?;
+        Ok(conn.execute(sql, params).await?)
+    }
+
+    /// Convenience: check out a pooled connection and run a query returning any
+    /// number of rows (mirrors Go's `(*sql.DB).Query`).
+    pub async fn query(
+        &self,
+        sql: &str,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Vec<tokio_postgres::Row>> {
+        let conn = self.pool.get().await?;
+        Ok(conn.query(sql, params).await?)
+    }
+
+    /// Convenience: check out a pooled connection and run a query expected to
+    /// return zero or one row (mirrors Go's `(*sql.DB).QueryRow` + `ErrNoRows`).
+    pub async fn query_opt(
+        &self,
+        sql: &str,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Option<tokio_postgres::Row>> {
+        let conn = self.pool.get().await?;
+        Ok(conn.query_opt(sql, params).await?)
+    }
+
+    /// Convenience: check out a pooled connection and run a query expected to
+    /// return exactly one row (mirrors Go's `(*sql.DB).QueryRow`).
+    pub async fn query_one(
+        &self,
+        sql: &str,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<tokio_postgres::Row> {
+        let conn = self.pool.get().await?;
+        Ok(conn.query_one(sql, params).await?)
     }
 }
 
@@ -233,13 +279,13 @@ fn escape_conf(s: &str) -> String {
     s.replace('\\', "\\\\").replace('\'', "\\'")
 }
 
-/// `seedBuiltins`: one-time seeding of built-in agents, MCP servers, intercept
-/// rules, skill visibility and target-gate exemptions, each behind a settings
-/// gate. It depends on the settings layer (D-1c) and the asset seeds (D-1d), so
-/// it is a no-op until those land; the tests below prove the boot path without
-/// it.
-async fn seed_builtins(_pool: &Pool) -> Result<()> {
-    Ok(())
+/// `seedBuiltins`: seed the built-in agents + default rows via a temporary `DB`
+/// handle over the shared pool (mirrors Go, where the seed runs through the pool
+/// while the boot holds the migration lock on one connection). Each default-row
+/// seed is behind its own settings gate so a user's later edits are preserved.
+async fn seed_builtins(pool: &Pool) -> Result<()> {
+    let db = DB { pool: pool.clone() };
+    seed::seed_builtins(&db).await
 }
 
 /// `SuffixTestDatabase`: clone a DSN, changing only the database name by

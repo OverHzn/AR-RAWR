@@ -40,7 +40,10 @@ webpki-roots = "1"
 #   aes-gcm: AES-256-GCM at-rest encryption for the secret columns (secrets.go).
 #   rand: CSPRNG nonces + new secret keys (crypto/rand).
 #   url: DSN parsing/rewriting (SuffixTestDatabase, ensureDatabase).
-tokio-postgres = "0.7"
+#   tokio-postgres: the async driver; `with-serde_json-1` adds ToSql/FromSql for
+#   serde_json::Value so JSONB columns (args/env/config/exec/matchers/…) bind and
+#   read without manual string casts throughout the db layer.
+tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
 deadpool-postgres = "0.14"
 aes-gcm = "0.10"
 rand = "0.8"

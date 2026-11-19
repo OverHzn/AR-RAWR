@@ -183,7 +183,7 @@ resume without re-deriving state.
   discover+call (custom long-lived `GET /sse` + `POST /message` server sharing a per-session
   mpsc channel).
 
-## Unit D-1 — db boot path (D-1a crypto + D-1b connection/schema/migrate + D-1c settings/secrets, done)
+## Unit D-1 — db boot path (D-1a crypto + D-1b connection/schema/migrate + D-1c settings/secrets + D-1d seed, done)
 - **D-1a `db::secrets` crypto (`9377c5a`, pushed):** `src/db/secrets.rs` — `SecretColumn`
   model (`aad`/`row_filter`/`id_col`/`value_expr`, the 10 `COL_*` columns + 5
   `SECRET_SETTING_KEYS`), `SecretBox` AES-256-GCM (seal/open, `enc:v1:`+base64(nonce12‖ct‖tag),
@@ -238,10 +238,39 @@ resume without re-deriving state.
   vs the `artex-pg` Postgres. `[dev-dependencies]` tokio-postgres gains `with-serde_json-1`
   (jsonb fixture binds). artex **196 + 4 = 200 tests** green, clippy clean, gate 30/30, Go
   `TestSecret|TestInsertSetting|TestRotatePassword` green.
+- **D-1d real seedBuiltins (this commit):** `src/db/seed.rs` — `builtinAgents` (6 agents
+  goals/planner/mainagent/worker/auto/pentest with their `promptVar` catalogs; pentest
+  interactive_shell=true run_seconds=0, rest nil→COALESCE 1200), `seed_builtins` orchestrator
+  (upsert agents `ON CONFLICT(key) DO UPDATE name+description RETURNING id` + per-var
+  agent_prompt_vars upsert → DELETE renamed vars EngagementTitle/CoverageGaps/Now →
+  default-on interactive_shell for planner/worker/mainagent/auto gated
+  `interactive_shell_default_v1` → seed browser MCP + migrate → seed_builtin_skill_visibility
+  (`api-recon`→auto/pentest/worker) → seed_default_intercept_rules v1/v2/v3 → asset rules →
+  target-gate exemptions), all default-row seeds gated by settings flags
+  (`intercept_default_rules_v{1,2,3}`, `asset_intercept_default_rules_v1`,
+  `target_gate_exempt_seed_v1`). v1 = 17 rules (9 prio-100 system-destructive, 4 prio-90
+  DB-destructive, 4 prio-80 HTTP-DELETE) with verbatim Go regex; v2 = 2 rules (destructive
+  enabled, exfil-pipe disabled); v3 = delete-endpoint path rule (`DELETE_ENDPOINT_PATH_PATTERN`,
+  INSERT…SELECT…WHERE NOT EXISTS). `seed_target_gate_exemptions` marshals `[{host,port,note}]`
+  via `insert_setting_if_absent(SettingTargetExemptHosts)`. `src/db/browser_mcp.rs` — pure
+  `rewrite_stock_npx_browser_mcp`/`rewrite_browser_mcp_row`/`playwright_mcp_package_index`/
+  `has_cli_flag` (npx meta flags -y/--yes/--/-q/--quiet; `@playwright/mcp[@ver]` → `playwright-mcp`
+  + fill `--headless`/`--browser chromium`, never mutate input) + `DB::migrate_stock_browser_mcp`
+  (one-time npx→binary row rewrite gated `browser_mcp_direct_bin_v1`, always marks flag done).
+  `mod.rs`: `seed_builtins` STUB → real `seed::seed_builtins` via temp `DB{pool}`; `pub mod
+  browser_mcp; pub mod seed;`; `DB::{execute,query,query_opt,query_one}` made `pub` (parity
+  with Go's embedded `*sql.DB`, used by tests + the resource-group layer ahead). `Cargo.toml`
+  main `tokio-postgres` gains `with-serde_json-1` (jsonb args/env binds, no string casts).
+  Specs: 3 in-module `db::browser_mcp::tests` (13-case rewrite table + row-rewrite + no-alias)
+  + `tests/db_seed_test.rs` (3) ported from `db_test.go` `TestOpenSeed`, `browser_mcp_test.go`
+  `TestSeedAndMigrateBrowserMCP` (5 subtests), `target_pins_test.go`
+  `TestTargetGateExemptionSeedAndLog` (seed portion) — scratch DBs + shared async lock +
+  raw-SQL fixtures, differential vs `artex-pg`, skip when DSN unreachable. artex **200 + 6 = 206
+  tests** green, clippy `-D warnings` clean, gate 30/30, Go `TestOpenSeed|TestRewriteStockNpxBrowserMCP
+  |TestRewriteBrowserMCPRow|TestSeedAndMigrateBrowserMCP|TestTargetGateExemptionSeed` green.
 
 ## Next
-- db D-1d (real seedBuiltins — intercept rules v1/v2/v3, asset rules, skill visibility,
-  browser_mcp_direct_bin, target-gate exemptions — gated by settings) → db resource groups
-  (tasks/assets/findings/…) → intercept → egress → traffic → evidence/guard/enrich/report/llmrec
-  → agent → server (see MAP.md). The full `harness.Query`/`QueryInput` machinery lands with the
-  agent/server layer.
+- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
+  exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
+  evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
+  `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
