@@ -40,6 +40,8 @@ pub use notifyx_rs::port::{
     telegram_escape_attr,
 };
 
+pub mod mask;
+
 use async_trait::async_trait;
 use serde_json::Value;
 
@@ -59,6 +61,11 @@ pub const EVENT_FINDING_STATUS_CHANGED: &str = "finding_status_changed";
 
 /// `InitKind` (`notify.go:38`): the fallback kind for an empty config kind.
 pub const INIT_KIND: &str = KIND_DINGTALK;
+
+/// `MaskedPrefix` (`mask.go:17`): the marker prefix of a masked value. When the API
+/// echoes a credential it replaces the real content with a value carrying this
+/// prefix; on update, a value carrying it means "keep the stored original".
+pub const MASKED_PREFIX: &str = "__masked__";
 
 // === Render defaults (markdown.go) ===
 
@@ -278,6 +285,41 @@ impl Message {
             assets_shown: DEFAULT_MAX_ASSETS_SHOWN,
         })
     }
+}
+
+// === Per-channel metadata (SecretKeys / DestinationKeys / DefaultRatePerMin) ===
+//
+// The single source of truth for each channel's credential keys, destination keys,
+// and default rate limit — mirroring the Go channel methods of the same name. The
+// config-masking logic (`crate::notify::mask`) keys off these, and the concrete
+// [`Channel`] impls return them. An unknown kind yields `None` (Go `Get`'s ok=false).
+
+/// `(secret_keys, destination_keys, default_rate_per_min)` for a registered kind.
+pub fn channel_meta(kind: &str) -> Option<(&'static [&'static str], &'static [&'static str], i64)> {
+    match kind {
+        KIND_DINGTALK => Some((&["webhook", "secret"], &["webhook"], 20)),
+        KIND_FEISHU => Some((&["webhook", "secret"], &["webhook"], 100)),
+        KIND_WECOM => Some((&["webhook"], &["webhook"], 20)),
+        KIND_WEBHOOK => Some((&["url", "headers"], &["url"], 0)),
+        KIND_TELEGRAM => Some((&["bot_token"], &["base_url"], 20)),
+        KIND_EMAIL => Some((&["password"], &["host", "port", "tls"], 60)),
+        _ => None,
+    }
+}
+
+/// `Channel.SecretKeys` for a kind (`None` if unknown).
+pub fn secret_keys(kind: &str) -> Option<&'static [&'static str]> {
+    channel_meta(kind).map(|(s, _, _)| s)
+}
+
+/// `Channel.DestinationKeys` for a kind (`None` if unknown).
+pub fn destination_keys(kind: &str) -> Option<&'static [&'static str]> {
+    channel_meta(kind).map(|(_, d, _)| d)
+}
+
+/// `Channel.DefaultRatePerMin` for a kind (`0` if unknown).
+pub fn default_rate_per_min(kind: &str) -> i64 {
+    channel_meta(kind).map_or(0, |(_, _, r)| r)
 }
 
 // === Channel adapter (channel.go) ===

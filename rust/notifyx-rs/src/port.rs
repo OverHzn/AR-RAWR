@@ -278,14 +278,39 @@ pub fn is_blank_config_value(v: &serde_json::Value) -> bool {
     }
 }
 
-/// `sameConfigValue` (`notify/channel.go`): both blank, or the two values marshal
-/// to the same JSON (serde `Value` equality mirrors Go's `json.Marshal` string
-/// comparison for the recorded corpus).
+/// `sameConfigValue` (`notify/mask.go`): both blank, or the two values are equal
+/// the way Go's `json.Marshal`-string comparison is.
+///
+/// Go decodes JSON into `map[string]any` with **every number as `float64`**, so
+/// `json.Marshal(float64(587))` and `json.Marshal(int(587))` both yield `"587"`.
+/// serde_json instead preserves int vs float, and a plain `Value` equality would
+/// judge `587 != 587.0`. To reproduce Go we compare numbers by numeric value
+/// (recursively, so a nested `{"port":587}` == `{"port":587.0}`), and everything
+/// else structurally (serde_json's `Map` is key-sorted, matching Go's marshal).
 pub fn same_config_value(a: &serde_json::Value, b: &serde_json::Value) -> bool {
     if is_blank_config_value(a) && is_blank_config_value(b) {
         return true;
     }
-    a == b
+    go_json_eq(a, b)
+}
+
+/// Deep equality matching Go's `json.Marshal`-string comparison: numbers compare by
+/// `f64` value (so int/float of the same value match), arrays element-wise, objects
+/// key-wise, everything else with serde `Value` equality.
+fn go_json_eq(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    use serde_json::Value;
+    match (a, b) {
+        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
+        (Value::Array(x), Value::Array(y)) => {
+            x.len() == y.len() && x.iter().zip(y).all(|(p, q)| go_json_eq(p, q))
+        }
+        (Value::Object(x), Value::Object(y)) => {
+            x.len() == y.len()
+                && x.iter()
+                    .all(|(k, v)| y.get(k).is_some_and(|w| go_json_eq(v, w)))
+        }
+        _ => a == b,
+    }
 }
 
 // ---------------------------------------------------------------------------
