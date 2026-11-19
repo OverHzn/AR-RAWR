@@ -22,7 +22,7 @@ use crate::state::{StateBlock, covered_message_ids};
 
 /// `noa.isRenderedSummaryMessage` — a synthetic summary message the model should not
 /// treat as live conversation.
-fn is_rendered_summary_message(m: &CoreMessage) -> bool {
+pub(crate) fn is_rendered_summary_message(m: &CoreMessage) -> bool {
     m.id.starts_with(SUMMARY_ID_PREFIX)
         && m.role == ROLE_USER
         && m.content_type == CT_TEXT

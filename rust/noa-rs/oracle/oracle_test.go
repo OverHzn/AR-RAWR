@@ -1260,3 +1260,178 @@ func TestZZOracle9n(t *testing.T) {
 		rec(t, "ComputeProtectedRefs", []any{c.msgs, c.refs, c.blocks, arg}, keys)
 	}
 }
+
+func TestZZOracle9o(t *testing.T) {
+	cm := func(id, role, ct, text, tool, callID string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text, ToolName: tool, ToolCallID: callID}
+	}
+	mkRefs := func(byRaw map[string]string) noa.MessageRefMap {
+		byRef := map[string]string{}
+		for raw, ref := range byRaw {
+			if ref != noa.BlockedRef {
+				byRef[ref] = raw
+			}
+		}
+		return noa.MessageRefMap{ByRaw: byRaw, ByRef: byRef}
+	}
+	activeBlk := func(id string, eff []string) noa.CompressionBlock {
+		return noa.CompressionBlock{BlockID: id, Tier: 1, Active: true, EffectiveMessageIDs: eff}
+	}
+	type sc struct {
+		name       string
+		msgs       []noa.CoreMessage
+		byRaw      map[string]string
+		blocks     []noa.CompressionBlock
+		pTools     []string
+		protected  map[string]bool
+	}
+	cases := []sc{
+		{
+			// pure compressible run: 2 text + 1 tool-call, grouped into 1 range
+			name: "simple-run",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "hello world", "", ""),
+				cm("a2", "assistant", "tool-call", "call tool", "Bash", ""),
+				cm("a3", "tool", "tool-result", "output here", "", ""),
+			},
+			byRaw: map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+		},
+		{
+			// a covered message interrupts the run -> gapBefore on the next
+			name: "gap-covered",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "first", "", ""),
+				cm("a2", "assistant", "text", "covered one", "", ""),
+				cm("a3", "user", "text", "third", "", ""),
+			},
+			byRaw:  map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			blocks: []noa.CompressionBlock{activeBlk("b1", []string{"a2"})},
+		},
+		{
+			// protected tool message forms a ProtectedRange, breaking the run
+			name: "protected-write",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "do it", "", ""),
+				cm("a2", "assistant", "tool-call", "write call", "Write", "call1"),
+				cm("a3", "user", "text", "after", "", ""),
+			},
+			byRaw:  map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			pTools: []string{"Write"},
+		},
+		{
+			// tool-result paired with a protected tool-call is also protected
+			name: "pairing-result",
+			msgs: []noa.CoreMessage{
+				cm("a1", "assistant", "tool-call", "write call", "Write", "call1"),
+				cm("a2", "tool", "tool-result", "write result", "", "call1"),
+				cm("a3", "user", "text", "tail text", "", ""),
+			},
+			byRaw:  map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			pTools: []string{"Write"},
+		},
+		{
+			// protectedRefs gap
+			name: "protected-ref-gap",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "aa", "", ""),
+				cm("a2", "assistant", "text", "bb", "", ""),
+				cm("a3", "user", "text", "cc", "", ""),
+			},
+			byRaw:     map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			protected: map[string]bool{"m00002": true},
+		},
+		{
+			// consecutive protected tools accumulate into one ProtectedRange with tool list
+			name: "multi-protected",
+			msgs: []noa.CoreMessage{
+				cm("a1", "assistant", "tool-call", "w", "Write", "c1"),
+				cm("a2", "assistant", "tool-call", "e", "Edit", "c2"),
+				cm("a3", "user", "text", "tail", "", ""),
+			},
+			byRaw:  map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			pTools: []string{"Write", "Edit"},
+		},
+		{
+			// user message breaks run at count>=3
+			name: "user-break",
+			msgs: []noa.CoreMessage{
+				cm("a1", "assistant", "text", "1", "", ""),
+				cm("a2", "assistant", "text", "2", "", ""),
+				cm("a3", "assistant", "text", "3", "", ""),
+				cm("a4", "user", "text", "interrupt", "", ""),
+				cm("a5", "assistant", "text", "5", "", ""),
+			},
+			byRaw: map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003", "a4": "m00004", "a5": "m00005"},
+		},
+		{
+			// unaddressable messages (empty id / no ref / blocked) interrupt nothing
+			name: "skip-unaddressable",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "keep1", "", ""),
+				cm("", "user", "text", "ghost", "", ""),
+				cm("a2", "user", "text", "blocked", "", ""),
+				cm("a3", "user", "text", "keep2", "", ""),
+			},
+			byRaw: map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+			blocks: nil,
+			// a2 has no ref assigned -> unaddressable; a3 keep. Wait a2 needs blocked:
+		},
+		{
+			// blocked ref specifically
+			name: "blocked-ref",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "keep1", "", ""),
+				cm("a2", "user", "text", "is blocked", "", ""),
+				cm("a3", "user", "text", "keep2", "", ""),
+			},
+			byRaw: map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+		},
+		{
+			// summary message text (header prefix) -> gap
+			name: "summary-gap",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "before", "", ""),
+				cm("a2", "user", "text", noa.SummaryHeader+" body", "", ""),
+				cm("a3", "user", "text", "after", "", ""),
+			},
+			byRaw: map[string]string{"a1": "m00001", "a2": "m00002", "a3": "m00003"},
+		},
+		{
+			// all unaddressable -> empty ranges (nil)
+			name: "all-empty",
+			msgs: []noa.CoreMessage{
+				cm("", "user", "text", "ghost", "", ""),
+			},
+			byRaw: map[string]string{},
+		},
+		{
+			// BlockedRef message and a message with NO ref both interrupt nothing
+			name: "blocked-and-noref",
+			msgs: []noa.CoreMessage{
+				cm("a1", "user", "text", "keep1", "", ""),
+				cm("a2", "user", "text", "is blocked", "", ""),
+				cm("a3", "user", "text", "no ref here", "", ""),
+				cm("a4", "user", "text", "keep2", "", ""),
+			},
+			// a2 -> BlockedRef (skip), a3 -> not in map at all (hasRef=false, skip)
+			byRaw: map[string]string{"a1": "m00001", "a2": noa.BlockedRef, "a4": "m00004"},
+		},
+	}
+	for _, c := range cases {
+		st := noa.CompressionState{Blocks: c.blocks, MessageRefs: mkRefs(c.byRaw)}
+		cfg := noa.Config{ProtectedTools: c.pTools}
+		if c.protected == nil {
+			c.protected = map[string]bool{}
+		}
+		ranges, protected := noa.BuildCompressibleRanges(c.msgs, st, cfg, c.protected, nil)
+		cfgArg := map[string]any{"ProtectedTools": c.pTools}
+		protectedArg := make([]string, 0, len(c.protected))
+		for k := range c.protected {
+			protectedArg = append(protectedArg, k)
+		}
+		sort.Strings(protectedArg)
+		rec(t, "BuildCompressibleRanges",
+			[]any{c.msgs, c.byRaw, c.blocks, cfgArg, protectedArg},
+			[]any{ranges, protected})
+	}
+}

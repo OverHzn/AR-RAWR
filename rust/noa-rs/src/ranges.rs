@@ -16,7 +16,8 @@ use crate::recommend::RangeInfo;
 
 /// `noa.ProtectedRange` — a span excluded from compression, reported so the model can
 /// see why a gap exists.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ProtectedRange {
     pub start_ref: String,
     pub end_ref: String,

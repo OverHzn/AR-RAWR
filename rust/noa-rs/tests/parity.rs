@@ -4,6 +4,7 @@
 use serde_json::Value;
 
 use noa_rs::blocks::{CompressionBlock, render_summary_message};
+use noa_rs::buildranges::build_compressible_ranges;
 use noa_rs::nudgetext::{
     BlockSpan, TierTargetBlock, format_block_map, format_breakdown, format_tier_target_blocks,
 };
@@ -405,6 +406,57 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let set = compute_protected_refs(&msgs, &blocks, &by_raw, p_msg, p_tok);
             serde_json::to_value(set).expect("serialize set")
         }
+        "BuildCompressibleRanges" => {
+            let msgs = decode_core_messages(&args[0]);
+            let by_raw = args[1]
+                .as_object()
+                .map(|m| {
+                    m.iter()
+                        .map(|(k, val)| (k.clone(), val.as_str().unwrap_or("").to_string()))
+                        .collect::<std::collections::HashMap<_, _>>()
+                })
+                .unwrap_or_default();
+            let blocks = args[2]
+                .as_array()
+                .map(|arr| decode_block_array(arr))
+                .unwrap_or_default();
+            let protected_tools: Vec<String> = args[3]["ProtectedTools"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let protected_refs: std::collections::BTreeSet<String> = args[4]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let (ranges, protected) = build_compressible_ranges(
+                &msgs,
+                &blocks,
+                &by_raw,
+                &protected_tools,
+                &protected_refs,
+                noa_rs::port::default_count_tokens,
+            );
+            // Go nil-slice: empty ranges/protected render as null.
+            let ranges_v = if ranges.is_empty() {
+                Value::Null
+            } else {
+                serde_json::to_value(&ranges).expect("serialize ranges")
+            };
+            let protected_v = if protected.is_empty() {
+                Value::Null
+            } else {
+                serde_json::to_value(&protected).expect("serialize protected")
+            };
+            serde_json::json!([ranges_v, protected_v])
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -496,28 +548,30 @@ fn decode_panel_state(v: &Value) -> PanelState {
 }
 
 /// Decode a recorded CompressionState's `Blocks` into `Vec<StateBlock>` (subset).
+fn decode_block_array(arr: &[Value]) -> Vec<StateBlock> {
+    arr.iter()
+        .map(|b| StateBlock {
+            block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
+            tier: b["Tier"].as_i64().unwrap_or(0),
+            start_ref: b["StartRef"].as_str().unwrap_or("").to_string(),
+            end_ref: b["EndRef"].as_str().unwrap_or("").to_string(),
+            active: b["Active"].as_bool().unwrap_or(false),
+            effective_message_ids: b["EffectiveMessageIDs"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
+        })
+        .collect()
+}
+
 fn decode_state_blocks(v: &Value) -> Vec<StateBlock> {
     v["Blocks"]
         .as_array()
-        .map(|arr| {
-            arr.iter()
-                .map(|b| StateBlock {
-                    block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
-                    tier: b["Tier"].as_i64().unwrap_or(0),
-                    start_ref: b["StartRef"].as_str().unwrap_or("").to_string(),
-                    end_ref: b["EndRef"].as_str().unwrap_or("").to_string(),
-                    active: b["Active"].as_bool().unwrap_or(false),
-                    effective_message_ids: b["EffectiveMessageIDs"]
-                        .as_array()
-                        .map(|a| {
-                            a.iter()
-                                .filter_map(|x| x.as_str().map(String::from))
-                                .collect()
-                        })
-                        .unwrap_or_default(),
-                })
-                .collect()
-        })
+        .map(|arr| decode_block_array(arr))
         .unwrap_or_default()
 }
 
