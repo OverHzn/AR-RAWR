@@ -6,6 +6,7 @@
 //! oracle-parity crates under `rust/*-rs`; this crate is the runnable application.
 
 pub mod config;
+pub mod db;
 pub mod harness;
 pub mod llm;
 pub mod llmpool;

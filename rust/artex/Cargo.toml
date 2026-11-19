@@ -31,6 +31,20 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 webpki-roots = "1"
+# db foundation (Unit D-1): PostgreSQL access + at-rest secret encryption.
+#   tokio-postgres + deadpool-postgres: the async equivalent of Go's database/sql
+#   pool over lib/pq-style connections (maxOpenConns=32 cap, per-conn advisory
+#   locks). No TLS needed for the local differential harness (sslmode=disable);
+#   production TLS lands with the server layer. Plaintext (NoTls) keeps the
+#   offline build dependency-light.
+#   aes-gcm: AES-256-GCM at-rest encryption for the secret columns (secrets.go).
+#   rand: CSPRNG nonces + new secret keys (crypto/rand).
+#   url: DSN parsing/rewriting (SuffixTestDatabase, ensureDatabase).
+tokio-postgres = "0.7"
+deadpool-postgres = "0.14"
+aes-gcm = "0.10"
+rand = "0.8"
+url = "2"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
