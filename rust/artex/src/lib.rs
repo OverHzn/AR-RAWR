@@ -9,6 +9,7 @@ pub mod config;
 pub mod harness;
 pub mod llm;
 pub mod llmpool;
+pub mod mcphttp;
 pub mod notify;
 pub mod permission;
 pub mod sidequestion;

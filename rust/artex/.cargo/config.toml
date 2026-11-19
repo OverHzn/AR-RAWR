@@ -1,0 +1,20 @@
+# artex links MANY oracle-parity crates (notify-rs, mcphttp-rs, and later
+# config-rs/db-rs/egress-rs/intercept-rs/report-rs/agent-rs) into one binary.
+# Each generated `*-rs` crate exports the same `#[no_mangle] extern "C"
+# rust_anything_call` / `rust_anything_free` oracle FFI entry points. Built
+# standalone as a cdylib (how `gate-all.sh` checks them) there is no conflict,
+# but artex genuinely uses their Rust `port::*` functions, so two+ copies of that
+# unmangled symbol end up linked into the artex binary. artex never *calls* the C
+# entry points (it calls the `port::*` functions directly), so which copy the
+# linker keeps is irrelevant — this flag just lets the final link succeed.
+#
+# Scoped to this crate only: `-C link-arg` applies solely to artex's own final
+# link, never to the per-crate gate builds (which run in their own directories).
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-Wl,--allow-multiple-definition"]
+
+# The 32G /workspaces volume fills up with build artifacts; artex's target lives on
+# /tmp (separate, larger volume) so its heavy debug build does not exhaust the repo
+# disk. The per-crate `*-rs` gate builds keep their own small target/ dirs.
+[build]
+target-dir = "/tmp/artex-target"

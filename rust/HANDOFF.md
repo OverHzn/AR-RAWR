@@ -3,16 +3,23 @@
 Mandatory per PHASE-1 §9. Update at the end of every unit so a fresh session can
 resume without re-deriving state.
 
-## Current state (last updated: SQ-4 complete; mcphttp next)
+## Current state (last updated: Unit 10b mcphttp complete; db next)
 
 - Branch: `main`. origin=OverHzn/AR-RAWR, upstream=BaaRai/ARTEX.
-- HEAD at SQ-4 (`7c47d3f`, pushed).
+- HEAD at Unit 10b mcphttp (this commit, to push). SQ-4 was `7c47d3f`; tool 10a `eda20bd`.
 - Pure-helper layer fully ported; `rust/gate-all.sh` = **PASS 30 / FAIL 0**.
-- `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 177** (lib 51 + the
+- `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 184** (lib 51 + the
   per-crate integration suites: config 2, llmpool 18, notify_http 10, notify_mask 16,
   notify_pack 12, notify_render 9, notify_sign 12, notify_channels 12, notify_webhook 10,
   notify_registry 2, notify_email 7, notify_redact 10, sidequestion_request 2,
-  sidequestion_service 3, sidequestion_context 8, **sidequestion_capture 3**, + misc 12).
+  sidequestion_service 3, sidequestion_context 8, sidequestion_capture 3,
+  **tool_capture 3, mcphttp 4**, + misc 12).
+- Link note: artex now pulls MANY `*-rs` crates (notify-rs, mcphttp-rs, ...) whose generated
+  `#[no_mangle] rust_anything_call`/`free` FFI entry points collide at the final bin link. Fixed
+  WITHOUT touching the frozen crates via `artex/.cargo/config.toml`:
+  `-C link-arg=-Wl,--allow-multiple-definition` (artex never calls the C entry points, only the
+  `port::*` fns). The same config sets `build.target-dir=/tmp/artex-target` because /workspaces
+  (32G) fills with build artifacts; per-crate gate builds keep their own small target/.
 - Go baselines for ported packages re-run green (config, llmpool, notify pure specs,
   sidequestion incl. context_test.go + sidequestion_test.go capture specs).
 
@@ -147,7 +154,36 @@ resume without re-deriving state.
   independent `with_cancel` contexts to prove main/side run concurrently and cancelling one
   leaves the other running, with the cancelled side's message_start usage preserved).
 
+## Unit 10 — norma/tool dynamic surface + mcphttp client (complete, to push)
+- **10a `tool` (`eda20bd`, pushed):** `src/tool.rs` — the dynamic `norma/tool` surface:
+  `ToolContext`(+`resolve_path`), `CoreTool` trait (async `call -> (Result, Option<String>)`),
+  `Spec`→`build`→`Arc<dyn CoreTool>` with fail-closed defaults, and the capture layer
+  (`Capture`/`CaptureOnce`, `max_output`=MaxOutputChars>0?that:30000, `truncate` with
+  rune-safe `cut_head`/`cut_tail`, `spill_output` to `abs(dir)/output-<unix>-<seq>.txt`
+  0o600). Plus `src/permission.rs` (`Context{Mode,WorkingDir,Allowed,Disallowed}` +
+  re-export of `permission_rs::port::*`; `ask_user`). Spec `tests/tool_capture_test.rs` (3).
+  Key fix: `cut_tail` aligns the byte offset to a char boundary before slicing (Rust `&str`
+  panics mid-rune where Go byte-slices); edition-2021 (no let-chains).
+- **10b `mcphttp` (this commit):** `src/mcphttp.rs` — Streamable HTTP + legacy SSE MCP client.
+  `Client::new` (streamable) / `new_sse` (legacy), `initialize` (tries
+  `[PROTOCOL_VERSION,2025-06-18]` streamable or `[LEGACY_SSE_PROTOCOL_VERSION]` legacy; falls
+  back only when `is_unsupported_version`), `tools`/`wrap`/`run_tool`/`call_tool`/`protocol`/
+  `close`. Streamable `round_trip` sets MCP-Protocol-Version only after `initialized`, captures
+  `Mcp-Session-Id`, drains notification bodies, parses `text/event-stream` via `parse_sse`
+  (8MiB cap, event-boundary flush, match `wantID`) else JSON. Legacy: `read_legacy_sse` reads
+  the `endpoint` event, `resolve_url` (reqwest `Url::join` == Go ResolveReference), dispatches
+  JSON-RPC by id to a `pending` mpsc map; `legacy_round_trip` serialised by `legacy_mu`.
+  `wrap`→Permissions `ask_user("call MCP tool {full}?")`→`call("tools/call")`→concat content
+  text→`Capture`→`single_text_block`; tool error → `errorf` (not `Err`). Reuses
+  `mcphttp_rs::port::tool_name` (`mcp__{server}__{name}`) + `mcphttpx_rs::port`
+  (`normalize_headers`/`is_unsupported_version`). Specs `tests/mcphttp_test.rs` (4) ported from
+  `client_test.go`+`client_sse_test.go`: request-timeout (1s cut / 10s ok / 0→120s default),
+  protocol-version negotiation (no header on initialize, negotiated header after), version
+  rejection forms (http 400 / json-rpc -32602 fall back; unrelated 401 does not), legacy SSE
+  discover+call (custom long-lived `GET /sse` + `POST /message` server sharing a per-session
+  mpsc channel).
+
 ## Next
-- mcphttp → db (differential) → intercept → egress →
+- db (differential) → intercept → egress →
   traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
   `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
