@@ -4,6 +4,7 @@
 //! needed here.
 
 use gocompat::strings;
+use serde_json::Value;
 
 /// `nullIfEmpty` (`db/...`): `None` (JSON `null`) for the empty string, otherwise
 /// the string itself — used to store a nullable text column.
@@ -822,4 +823,45 @@ pub fn rewrite_browser_mcp_row(command: &str, args: &[String]) -> (String, Vec<S
         ok = true;
     }
     (cmd, out, ok)
+}
+
+// ---------------------------------------------------------------------------
+// Batch 9ar: `jsonInt64` (`db/...`) — coerce a JSON-decoded `any` to int64,
+// mirroring Go's type switch. Go distinguishes `float64` (plain json.Unmarshal)
+// from `json.Number` (decoder.UseNumber); JSON alone cannot, so the harness
+// passes a tagged value: `["f",<num>]` float64, `["n","<text>"]` json.Number,
+// `["s","<text>"]` string, `["o"]` default (bool/nil/object/array -> (0,false)).
+// ---------------------------------------------------------------------------
+
+/// `jsonInt64` (`db/...`): best-effort int64 coercion of a decoded JSON value.
+/// float64 -> truncate toward zero, ok = integral; json.Number/string ->
+/// `strconv.ParseInt(s,10,64)`; anything else -> `(0,false)`. (The tagged arg
+/// preserves the Go float64-vs-json.Number distinction — see module note.)
+pub fn json_int64(tagged: &Value) -> (i64, bool) {
+    let arr = tagged.as_array().expect("jsonInt64 tagged array");
+    match arr[0].as_str().expect("jsonInt64 tag") {
+        "f" => {
+            let f = arr[1].as_f64().expect("jsonInt64 float payload");
+            let i = f as i64; // Go int64(float64): truncate toward zero (corpus in range)
+            (i, f == (i as f64))
+        }
+        "n" | "s" => {
+            let s = arr[1].as_str().expect("jsonInt64 text payload");
+            parse_int64_go(s)
+        }
+        _ => (0, false),
+    }
+}
+
+/// `strconv.ParseInt(s, 10, 64)`: success -> `(v, true)`; syntax error -> `(0,
+/// false)`; range error -> the saturated `MaxInt64`/`MinInt64` with `false` (Go
+/// returns the clamped value alongside `ErrRange`). Parsed via `i128` so any
+/// in-range-of-i128 overflow of int64 saturates correctly.
+fn parse_int64_go(s: &str) -> (i64, bool) {
+    match s.parse::<i128>() {
+        Ok(v) if v > i64::MAX as i128 => (i64::MAX, false),
+        Ok(v) if v < i64::MIN as i128 => (i64::MIN, false),
+        Ok(v) => (v as i64, true),
+        Err(_) => (0, false),
+    }
 }

@@ -496,10 +496,40 @@
 {"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\\\slash\"}"}
 {"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\\\slash\"}"}
 {"args":[["both\\and\"quote"]],"fn":"marshalStringArray","ok":"{\"both\\\\and\\\"quote\"}"}
+{"args":[["f",-1.9]],"fn":"jsonInt64","ok":[-1,false]}
+{"args":[["f",-1]],"fn":"jsonInt64","ok":[-1,true]}
+{"args":[["f",-7]],"fn":"jsonInt64","ok":[-7,true]}
+{"args":[["f",0]],"fn":"jsonInt64","ok":[0,true]}
+{"args":[["f",1.5]],"fn":"jsonInt64","ok":[1,false]}
+{"args":[["f",100]],"fn":"jsonInt64","ok":[100,true]}
+{"args":[["f",123]],"fn":"jsonInt64","ok":[123,true]}
+{"args":[["f",1]],"fn":"jsonInt64","ok":[1,true]}
 {"args":[["he said \"hi\""]],"fn":"marshalStringArray","ok":"{\"he said \\\"hi\\\"\"}"}
+{"args":[["n",""]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["n","+7"]],"fn":"jsonInt64","ok":[7,true]}
+{"args":[["n","-45"]],"fn":"jsonInt64","ok":[-45,true]}
+{"args":[["n","0"]],"fn":"jsonInt64","ok":[0,true]}
+{"args":[["n","1.5"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["n","123"]],"fn":"jsonInt64","ok":[123,true]}
+{"args":[["n","99999999999999999999"]],"fn":"jsonInt64","ok":[9223372036854775807,false]}
+{"args":[["n","abc"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["o","bool"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["o","map"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["o","nil"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["o","slice"]],"fn":"jsonInt64","ok":[0,false]}
 {"args":[["other","@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[0,false]}
 {"args":[["plain"]],"fn":"marshalStringArray","ok":"{\"plain\"}"}
 {"args":[["quote\"and,comma","tab\there"]],"fn":"marshalStringArray","ok":"{\"quote\\\"and,comma\",\"tab\there\"}"}
+{"args":[["s"," 12"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["s",""]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["s","+7"]],"fn":"jsonInt64","ok":[7,true]}
+{"args":[["s","-45"]],"fn":"jsonInt64","ok":[-45,true]}
+{"args":[["s","-99999999999999999999"]],"fn":"jsonInt64","ok":[-9223372036854775808,false]}
+{"args":[["s","0"]],"fn":"jsonInt64","ok":[0,true]}
+{"args":[["s","1.5"]],"fn":"jsonInt64","ok":[0,false]}
+{"args":[["s","123"]],"fn":"jsonInt64","ok":[123,true]}
+{"args":[["s","99999999999999999999"]],"fn":"jsonInt64","ok":[9223372036854775807,false]}
+{"args":[["s","abc"]],"fn":"jsonInt64","ok":[0,false]}
 {"args":[["with \"quote\""]],"fn":"marshalStringArray","ok":"{\"with \\\"quote\\\"\"}"}
 {"args":[["x","--browser","chromium"],"--browser"],"fn":"hasCLIFlag","ok":true}
 {"args":[["x"],null],"fn":"mergeAgentKeys","ok":["x"]}

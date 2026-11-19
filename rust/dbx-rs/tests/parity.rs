@@ -168,6 +168,11 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let (c, o, k) = rewrite_browser_mcp_row(&arg_str(args, 0), &arg_str_slice(args, 1));
             json!([c, o, k])
         }
+        // batch 9ar
+        "jsonInt64" => {
+            let (i, o) = json_int64(&args[0]);
+            json!([i, o])
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

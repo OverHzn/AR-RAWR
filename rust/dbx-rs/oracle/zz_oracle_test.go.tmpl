@@ -529,3 +529,29 @@ func TestZZOracle9aq(t *testing.T) {
 		rec(t, "rewriteBrowserMCPRow", []any{c.cmd, c.args}, []any{cmd, out, ok})
 	}
 }
+
+func TestZZOracle9ar(t *testing.T) {
+	// jsonInt64(value any) -> (int64, bool). Tagged arg preserves the Go
+	// float64-vs-json.Number distinction that JSON serialization would lose.
+	for _, v := range []float64{0, 1, -1, 123, -7, 1.5, -1.9, 100} {
+		i, ok := jsonInt64(v)
+		rec(t, "jsonInt64", []any{[]any{"f", v}}, []any{i, ok})
+	}
+	for _, s := range []string{"123", "-45", "1.5", "abc", "", "+7", "99999999999999999999", "0"} {
+		i, ok := jsonInt64(json.Number(s))
+		rec(t, "jsonInt64", []any{[]any{"n", s}}, []any{i, ok})
+	}
+	for _, s := range []string{"123", "-45", "1.5", "abc", "", "+7", " 12", "0", "99999999999999999999", "-99999999999999999999"} {
+		i, ok := jsonInt64(s)
+		rec(t, "jsonInt64", []any{[]any{"s", s}}, []any{i, ok})
+	}
+	// default branch (bool, nil, map, slice) — all (0,false).
+	i, ok := jsonInt64(true)
+	rec(t, "jsonInt64", []any{[]any{"o", "bool"}}, []any{i, ok})
+	i, ok = jsonInt64(nil)
+	rec(t, "jsonInt64", []any{[]any{"o", "nil"}}, []any{i, ok})
+	i, ok = jsonInt64(map[string]any{"a": 1})
+	rec(t, "jsonInt64", []any{[]any{"o", "map"}}, []any{i, ok})
+	i, ok = jsonInt64([]any{1, 2})
+	rec(t, "jsonInt64", []any{[]any{"o", "slice"}}, []any{i, ok})
+}
