@@ -1,7 +1,12 @@
+{"args":["   ",-1],"fn":"lessonText","ok":""}
+{"args":["   ",0],"fn":"lessonText","ok":""}
 {"args":["   ",0],"fn":"truncateRunes","ok":""}
+{"args":["   ",100],"fn":"lessonText","ok":""}
 {"args":["   ",100],"fn":"truncateRunes","ok":""}
 {"args":["   ",1],"fn":"truncateRunes","ok":""}
+{"args":["   ",3],"fn":"lessonText","ok":""}
 {"args":["   ",3],"fn":"truncateRunes","ok":""}
+{"args":["   ",5],"fn":"lessonText","ok":""}
 {"args":["   ",5],"fn":"truncateRunes","ok":""}
 {"args":["   "],"fn":"NormalizeCoverageField","ok":""}
 {"args":["   "],"fn":"companyNKey","ok":""}
@@ -15,6 +20,11 @@
 {"args":["  Leading And   Trailing  "],"fn":"normalizeKeyword","ok":"leading and trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"taskTemplateNKey","ok":"leading and trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"taskTemplateName","ok":"Leading And Trailing"}
+{"args":["  collapse   these   spaces  ",-1],"fn":"lessonText","ok":"collapse these spaces"}
+{"args":["  collapse   these   spaces  ",0],"fn":"lessonText","ok":"collapse these spaces"}
+{"args":["  collapse   these   spaces  ",100],"fn":"lessonText","ok":"collapse these spaces"}
+{"args":["  collapse   these   spaces  ",3],"fn":"lessonText","ok":"col"}
+{"args":["  collapse   these   spaces  ",5],"fn":"lessonText","ok":"colla"}
 {"args":["  padded  ",0],"fn":"truncateRunes","ok":"…"}
 {"args":["  padded  ",100],"fn":"truncateRunes","ok":"padded"}
 {"args":["  padded  ",1],"fn":"truncateRunes","ok":"p…"}
@@ -22,21 +32,42 @@
 {"args":["  padded  ",5],"fn":"truncateRunes","ok":"padde…"}
 {"args":["  spaced  "],"fn":"nullIfEmpty","ok":"  spaced  "}
 {"args":[" "],"fn":"nullIfEmpty","ok":" "}
+{"args":[" enc:v1:x"],"fn":"isEncrypted","ok":false}
+{"args":["",-1],"fn":"lessonText","ok":""}
+{"args":["",0],"fn":"lessonText","ok":""}
 {"args":["",0],"fn":"truncateRunes","ok":""}
+{"args":["",100],"fn":"lessonText","ok":""}
 {"args":["",100],"fn":"truncateRunes","ok":""}
 {"args":["",1],"fn":"truncateRunes","ok":""}
+{"args":["",3],"fn":"lessonText","ok":""}
 {"args":["",3],"fn":"truncateRunes","ok":""}
+{"args":["",5],"fn":"lessonText","ok":""}
 {"args":["",5],"fn":"truncateRunes","ok":""}
 {"args":[""],"fn":"NormalizeCoverageField","ok":""}
 {"args":[""],"fn":"companyNKey","ok":""}
+{"args":[""],"fn":"isEncrypted","ok":false}
+{"args":[""],"fn":"isIPLiteral","ok":false}
 {"args":[""],"fn":"normRiskArea","ok":""}
 {"args":[""],"fn":"normalizeKeyword","ok":""}
 {"args":[""],"fn":"normalizeRuleAction","ok":"block"}
 {"args":[""],"fn":"nullIfEmpty","ok":null}
 {"args":[""],"fn":"taskTemplateNKey","ok":""}
 {"args":[""],"fn":"taskTemplateName","ok":""}
+{"args":[""],"fn":"truncateNotifyError","ok":""}
+{"args":[".1.2.3"],"fn":"isIPLiteral","ok":false}
+{"args":["1.2.3"],"fn":"isIPLiteral","ok":false}
+{"args":["1.2.3."],"fn":"isIPLiteral","ok":false}
+{"args":["1.2.3.+4"],"fn":"isIPLiteral","ok":true}
+{"args":["1.2.3.-4"],"fn":"isIPLiteral","ok":true}
+{"args":["1.2.3.04"],"fn":"isIPLiteral","ok":true}
+{"args":["1.2.3.4"],"fn":"isIPLiteral","ok":true}
+{"args":["1.2.3.4.5"],"fn":"isIPLiteral","ok":false}
+{"args":["10.0.0.1"],"fn":"isIPLiteral","ok":true}
+{"args":["999.999.999.999"],"fn":"isIPLiteral","ok":true}
+{"args":["::1"],"fn":"isIPLiteral","ok":true}
 {"args":["ALLOW"],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["Allow"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["ENC:V1:"],"fn":"isEncrypted","ok":false}
 {"args":["MixedCASE  Value"],"fn":"NormalizeCoverageField","ok":"MixedCASE Value"}
 {"args":["MixedCASE  Value"],"fn":"companyNKey","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"normRiskArea","ok":"mixedcase value"}
@@ -44,11 +75,14 @@
 {"args":["MixedCASE  Value"],"fn":"taskTemplateNKey","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"taskTemplateName","ok":"MixedCASE Value"}
 {"args":["\t"],"fn":"nullIfEmpty","ok":"\t"}
+{"args":["a.b.c.d"],"fn":"isIPLiteral","ok":false}
 {"args":["a\tb\nc",0],"fn":"truncateRunes","ok":"…"}
 {"args":["a\tb\nc",100],"fn":"truncateRunes","ok":"a\tb\nc"}
 {"args":["a\tb\nc",1],"fn":"truncateRunes","ok":"a…"}
 {"args":["a\tb\nc",3],"fn":"truncateRunes","ok":"a\tb…"}
 {"args":["a\tb\nc",5],"fn":"truncateRunes","ok":"a\tb\nc"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…"}
 {"args":["allow "],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["allow"],"fn":"normalizeRuleAction","ok":"allow"}
 {"args":["block"],"fn":"normalizeRuleAction","ok":"block"}
@@ -58,6 +92,11 @@
 {"args":["c1�� bytes"],"fn":"normalizeKeyword","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateNKey","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateName","ok":"c1�� bytes"}
+{"args":["ctrl\u0000\u001fdel",-1],"fn":"lessonText","ok":"ctrl del"}
+{"args":["ctrl\u0000\u001fdel",0],"fn":"lessonText","ok":"ctrl del"}
+{"args":["ctrl\u0000\u001fdel",100],"fn":"lessonText","ok":"ctrl del"}
+{"args":["ctrl\u0000\u001fdel",3],"fn":"lessonText","ok":"ctr"}
+{"args":["ctrl\u0000\u001fdel",5],"fn":"lessonText","ok":"ctrl "}
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"NormalizeCoverageField","ok":"ctrl nul end del"}
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"companyNKey","ok":"ctrl\u0000nul\u001fenddel"}
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"normRiskArea","ok":"ctrl nul end del"}
@@ -65,16 +104,26 @@
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"taskTemplateNKey","ok":"ctrl\u0000nul\u001fenddel"}
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"taskTemplateName","ok":"ctrl\u0000nul\u001fenddel"}
 {"args":["deny"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["enc:v1:"],"fn":"isEncrypted","ok":true}
+{"args":["enc:v1:abc"],"fn":"isEncrypted","ok":true}
+{"args":["enc:v2:x"],"fn":"isEncrypted","ok":false}
+{"args":["fe80::1"],"fn":"isIPLiteral","ok":true}
 {"args":["hello",0],"fn":"truncateRunes","ok":"…"}
 {"args":["hello",100],"fn":"truncateRunes","ok":"hello"}
 {"args":["hello",1],"fn":"truncateRunes","ok":"h…"}
 {"args":["hello",3],"fn":"truncateRunes","ok":"hel…"}
 {"args":["hello",5],"fn":"truncateRunes","ok":"hello"}
 {"args":["hello"],"fn":"nullIfEmpty","ok":"hello"}
+{"args":["host"],"fn":"isIPLiteral","ok":false}
+{"args":["héllo wörld",-1],"fn":"lessonText","ok":"héllo wörld"}
+{"args":["héllo wörld",0],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",0],"fn":"truncateRunes","ok":"…"}
+{"args":["héllo wörld",100],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",100],"fn":"truncateRunes","ok":"héllo wörld"}
 {"args":["héllo wörld",1],"fn":"truncateRunes","ok":"h…"}
+{"args":["héllo wörld",3],"fn":"lessonText","ok":"hél"}
 {"args":["héllo wörld",3],"fn":"truncateRunes","ok":"hél…"}
+{"args":["héllo wörld",5],"fn":"lessonText","ok":"héllo"}
 {"args":["héllo wörld",5],"fn":"truncateRunes","ok":"héllo…"}
 {"args":["line\u2028sep\u2029para"],"fn":"NormalizeCoverageField","ok":"line sep para"}
 {"args":["line\u2028sep\u2029para"],"fn":"companyNKey","ok":"line sep para"}
@@ -82,6 +131,11 @@
 {"args":["line\u2028sep\u2029para"],"fn":"normalizeKeyword","ok":"line sep para"}
 {"args":["line\u2028sep\u2029para"],"fn":"taskTemplateNKey","ok":"line sep para"}
 {"args":["line\u2028sep\u2029para"],"fn":"taskTemplateName","ok":"line sep para"}
+{"args":["mixed\u0000CASE  Value",-1],"fn":"lessonText","ok":"mixed CASE Value"}
+{"args":["mixed\u0000CASE  Value",0],"fn":"lessonText","ok":"mixed CASE Value"}
+{"args":["mixed\u0000CASE  Value",100],"fn":"lessonText","ok":"mixed CASE Value"}
+{"args":["mixed\u0000CASE  Value",3],"fn":"lessonText","ok":"mix"}
+{"args":["mixed\u0000CASE  Value",5],"fn":"lessonText","ok":"mixed"}
 {"args":["multi em-space here"],"fn":"NormalizeCoverageField","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"companyNKey","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"normRiskArea","ok":"multi em-space here"}
@@ -94,12 +148,24 @@
 {"args":["nbsp only"],"fn":"normalizeKeyword","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"taskTemplateNKey","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"taskTemplateName","ok":"nbsp only"}
+{"args":["plain"],"fn":"isEncrypted","ok":false}
+{"args":["short error"],"fn":"truncateNotifyError","ok":"short error"}
+{"args":["simple text",-1],"fn":"lessonText","ok":"simple text"}
+{"args":["simple text",0],"fn":"lessonText","ok":"simple text"}
+{"args":["simple text",100],"fn":"lessonText","ok":"simple text"}
+{"args":["simple text",3],"fn":"lessonText","ok":"sim"}
+{"args":["simple text",5],"fn":"lessonText","ok":"simpl"}
 {"args":["simple"],"fn":"NormalizeCoverageField","ok":"simple"}
 {"args":["simple"],"fn":"companyNKey","ok":"simple"}
 {"args":["simple"],"fn":"normRiskArea","ok":"simple"}
 {"args":["simple"],"fn":"normalizeKeyword","ok":"simple"}
 {"args":["simple"],"fn":"taskTemplateNKey","ok":"simple"}
 {"args":["simple"],"fn":"taskTemplateName","ok":"simple"}
+{"args":["tab\there\nnewline",-1],"fn":"lessonText","ok":"tab here newline"}
+{"args":["tab\there\nnewline",0],"fn":"lessonText","ok":"tab here newline"}
+{"args":["tab\there\nnewline",100],"fn":"lessonText","ok":"tab here newline"}
+{"args":["tab\there\nnewline",3],"fn":"lessonText","ok":"tab"}
+{"args":["tab\there\nnewline",5],"fn":"lessonText","ok":"tab h"}
 {"args":["tab\there\nnewline"],"fn":"NormalizeCoverageField","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"companyNKey","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"normRiskArea","ok":"tab here newline"}
@@ -107,43 +173,82 @@
 {"args":["tab\there\nnewline"],"fn":"taskTemplateNKey","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"taskTemplateName","ok":"tab here newline"}
 {"args":["x"],"fn":"nullIfEmpty","ok":"x"}
+{"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"],"fn":"truncateNotifyError","ok":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"}
+{"args":["世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世"],"fn":"truncateNotifyError","ok":"世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世…"}
 {"args":["日本語  テスト"],"fn":"NormalizeCoverageField","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"companyNKey","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"normRiskArea","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"normalizeKeyword","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"taskTemplateNKey","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"taskTemplateName","ok":"日本語 テスト"}
+{"args":["日本語テキスト",-1],"fn":"lessonText","ok":"日本語テキスト"}
+{"args":["日本語テキスト",0],"fn":"lessonText","ok":"日本語テキスト"}
 {"args":["日本語テキスト",0],"fn":"truncateRunes","ok":"…"}
+{"args":["日本語テキスト",100],"fn":"lessonText","ok":"日本語テキスト"}
 {"args":["日本語テキスト",100],"fn":"truncateRunes","ok":"日本語テキスト"}
 {"args":["日本語テキスト",1],"fn":"truncateRunes","ok":"日…"}
+{"args":["日本語テキスト",3],"fn":"lessonText","ok":"日本語"}
 {"args":["日本語テキスト",3],"fn":"truncateRunes","ok":"日本語…"}
+{"args":["日本語テキスト",5],"fn":"lessonText","ok":"日本語テキ"}
 {"args":["日本語テキスト",5],"fn":"truncateRunes","ok":"日本語テキ…"}
 {"args":[-100],"fn":"normalizeHeartbeat","ok":600}
 {"args":[-1],"fn":"nullableInt","ok":-1}
+{"args":[-3,-3],"fn":"sameMainSegment","ok":true}
 {"args":[-3,-3],"fn":"sameOptionalInt64","ok":true}
+{"args":[-3,0],"fn":"sameMainSegment","ok":false}
 {"args":[-3,0],"fn":"sameOptionalInt64","ok":false}
+{"args":[-3,1],"fn":"sameMainSegment","ok":false}
+{"args":[-3,1],"fn":"sameMainSegment","ok":false}
 {"args":[-3,1],"fn":"sameOptionalInt64","ok":false}
 {"args":[-3,5],"fn":"sameOptionalInt64","ok":false}
 {"args":[-3,5],"fn":"sameOptionalInt64","ok":false}
+{"args":[-3,null],"fn":"sameMainSegment","ok":false}
 {"args":[-3,null],"fn":"sameOptionalInt64","ok":false}
 {"args":[-42],"fn":"nullableInt","ok":-42}
+{"args":[-5],"fn":"assetKey","ok":"a:-5"}
+{"args":[-5],"fn":"companyKey","ok":"c:-5"}
 {"args":[-999999],"fn":"nullableInt","ok":-999999}
+{"args":[0,-3],"fn":"sameMainSegment","ok":false}
 {"args":[0,-3],"fn":"sameOptionalInt64","ok":false}
+{"args":[0,0],"fn":"sameMainSegment","ok":true}
 {"args":[0,0],"fn":"sameOptionalInt64","ok":true}
+{"args":[0,1],"fn":"sameMainSegment","ok":false}
+{"args":[0,1],"fn":"sameMainSegment","ok":false}
 {"args":[0,1],"fn":"sameOptionalInt64","ok":false}
 {"args":[0,5],"fn":"sameOptionalInt64","ok":false}
 {"args":[0,5],"fn":"sameOptionalInt64","ok":false}
+{"args":[0,[-1,-2]],"fn":"placeholders","ok":["$0,$1",[-1,-2]]}
+{"args":[0,[]],"fn":"malformedIPAssetWarningText","ok":"0 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules): "}
+{"args":[0,null],"fn":"malformedIPAssetWarningText","ok":"0 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules): "}
+{"args":[0,null],"fn":"sameMainSegment","ok":true}
 {"args":[0,null],"fn":"sameOptionalInt64","ok":false}
+{"args":[0],"fn":"assetKey","ok":"a:0"}
+{"args":[0],"fn":"companyKey","ok":"c:0"}
 {"args":[0],"fn":"isIdentChar","ok":false}
 {"args":[0],"fn":"isIdentStart","ok":false}
 {"args":[0],"fn":"isUTF8Start","ok":true}
 {"args":[0],"fn":"normalizeHeartbeat","ok":600}
 {"args":[0],"fn":"nullableInt","ok":null}
+{"args":[1,-3],"fn":"sameMainSegment","ok":false}
+{"args":[1,-3],"fn":"sameMainSegment","ok":false}
 {"args":[1,-3],"fn":"sameOptionalInt64","ok":false}
+{"args":[1,0],"fn":"sameMainSegment","ok":false}
+{"args":[1,0],"fn":"sameMainSegment","ok":false}
 {"args":[1,0],"fn":"sameOptionalInt64","ok":false}
+{"args":[1,1],"fn":"sameMainSegment","ok":true}
+{"args":[1,1],"fn":"sameMainSegment","ok":true}
+{"args":[1,1],"fn":"sameMainSegment","ok":true}
+{"args":[1,1],"fn":"sameMainSegment","ok":true}
 {"args":[1,1],"fn":"sameOptionalInt64","ok":true}
 {"args":[1,5],"fn":"sameOptionalInt64","ok":false}
 {"args":[1,5],"fn":"sameOptionalInt64","ok":false}
+{"args":[1,[10,20,30]],"fn":"placeholders","ok":["$1,$2,$3",[10,20,30]]}
+{"args":[1,[10]],"fn":"placeholders","ok":["$1",[10]]}
+{"args":[1,[]],"fn":"placeholders","ok":["",[]]}
+{"args":[1,null],"fn":"malformedIPAssetWarningText","ok":"1 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules):  and 1 more"}
+{"args":[1,null],"fn":"placeholders","ok":["",[]]}
+{"args":[1,null],"fn":"sameMainSegment","ok":false}
+{"args":[1,null],"fn":"sameMainSegment","ok":false}
 {"args":[1,null],"fn":"sameOptionalInt64","ok":false}
 {"args":[1000000],"fn":"nullableInt","ok":1000000}
 {"args":[1200],"fn":"normalizeHeartbeat","ok":1200}
@@ -156,13 +261,20 @@
 {"args":[191],"fn":"isUTF8Start","ok":false}
 {"args":[192],"fn":"isUTF8Start","ok":true}
 {"args":[194],"fn":"isUTF8Start","ok":true}
+{"args":[1],"fn":"assetKey","ok":"a:1"}
+{"args":[1],"fn":"companyKey","ok":"c:1"}
 {"args":[1],"fn":"nullableInt","ok":1}
+{"args":[2,["only","two"]],"fn":"malformedIPAssetWarningText","ok":"2 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules): only, two"}
 {"args":[200],"fn":"isIdentChar","ok":false}
 {"args":[200],"fn":"isIdentStart","ok":false}
 {"args":[255],"fn":"isIdentChar","ok":false}
 {"args":[255],"fn":"isIdentStart","ok":false}
 {"args":[255],"fn":"isUTF8Start","ok":true}
+{"args":[3,["1.2.3.4","bad","worse"]],"fn":"malformedIPAssetWarningText","ok":"3 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules): 1.2.3.4, bad, worse"}
+{"args":[3,[7,8]],"fn":"placeholders","ok":["$3,$4",[7,8]]}
 {"args":[3600],"fn":"normalizeHeartbeat","ok":3600}
+{"args":[42],"fn":"assetKey","ok":"a:42"}
+{"args":[42],"fn":"companyKey","ok":"c:42"}
 {"args":[42],"fn":"nullableInt","ok":42}
 {"args":[45],"fn":"isIdentChar","ok":false}
 {"args":[45],"fn":"isIdentStart","ok":false}
@@ -178,6 +290,7 @@
 {"args":[5,5],"fn":"sameOptionalInt64","ok":true}
 {"args":[5,5],"fn":"sameOptionalInt64","ok":true}
 {"args":[5,5],"fn":"sameOptionalInt64","ok":true}
+{"args":[5,["a","b"]],"fn":"malformedIPAssetWarningText","ok":"5 assets have an ip field that is not a valid IP; skipped for IP/CIDR scope matching (these assets will not be attributed to a company by subnet rules): a, b and 3 more"}
 {"args":[5,null],"fn":"sameOptionalInt64","ok":false}
 {"args":[5,null],"fn":"sameOptionalInt64","ok":false}
 {"args":[57],"fn":"isIdentChar","ok":true}
@@ -196,28 +309,47 @@
 {"args":[95],"fn":"isIdentStart","ok":true}
 {"args":[97],"fn":"isIdentChar","ok":true}
 {"args":[97],"fn":"isIdentStart","ok":true}
+{"args":[9999999999],"fn":"assetKey","ok":"a:9999999999"}
+{"args":[9999999999],"fn":"companyKey","ok":"c:9999999999"}
 {"args":[9],"fn":"isIdentChar","ok":false}
 {"args":[9],"fn":"isIdentStart","ok":false}
 {"args":[["  spaced  "]],"fn":"marshalStringArray","ok":"{\"  spaced  \"}"}
 {"args":[[""]],"fn":"marshalStringArray","ok":"{\"\"}"}
+{"args":[["a",""],["a","d"]],"fn":"mergeAgentKeys","ok":["a","d"]}
+{"args":[["a","a","b"],["b","a","c"]],"fn":"mergeAgentKeys","ok":["a","b","c"]}
+{"args":[["a","b"],["b","c"]],"fn":"mergeAgentKeys","ok":["a","b","c"]}
 {"args":[["a","b"]],"fn":"marshalStringArray","ok":"{\"a\",\"b\"}"}
 {"args":[["a"]],"fn":"marshalStringArray","ok":"{\"a\"}"}
 {"args":[["a,b","c"]],"fn":"marshalStringArray","ok":"{\"a,b\",\"c\"}"}
 {"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\slash\"}"}
 {"args":[["he said \"hi\""]],"fn":"marshalStringArray","ok":"{\"he said \\\"hi\\\"\"}"}
 {"args":[["quote\"and,comma","tab\there"]],"fn":"marshalStringArray","ok":"{\"quote\\\"and,comma\",\"tab\there\"}"}
+{"args":[["x"],null],"fn":"mergeAgentKeys","ok":["x"]}
+{"args":[[-1,0,99]],"fn":"assetIDContainments","ok":["[-1]","[0]","[99]"]}
 {"args":[[-1]],"fn":"lessonExtractCompanyID","ok":-1}
 {"args":[[0]],"fn":"lessonExtractCompanyID","ok":0}
+{"args":[[1,2,3]],"fn":"assetIDContainments","ok":["[1]","[2]","[3]"]}
+{"args":[[1]],"fn":"assetIDContainments","ok":["[1]"]}
 {"args":[[42,43,44]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[7,8]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[7]],"fn":"lessonExtractCompanyID","ok":7}
+{"args":[[],[]],"fn":"mergeAgentKeys","ok":[]}
+{"args":[[]],"fn":"assetIDContainments","ok":[]}
 {"args":[[]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[]],"fn":"marshalStringArray","ok":"{}"}
+{"args":[null,-3],"fn":"sameMainSegment","ok":false}
 {"args":[null,-3],"fn":"sameOptionalInt64","ok":false}
+{"args":[null,0],"fn":"sameMainSegment","ok":true}
 {"args":[null,0],"fn":"sameOptionalInt64","ok":false}
+{"args":[null,1],"fn":"sameMainSegment","ok":false}
+{"args":[null,1],"fn":"sameMainSegment","ok":false}
 {"args":[null,1],"fn":"sameOptionalInt64","ok":false}
 {"args":[null,5],"fn":"sameOptionalInt64","ok":false}
 {"args":[null,5],"fn":"sameOptionalInt64","ok":false}
+{"args":[null,["y","z"]],"fn":"mergeAgentKeys","ok":["y","z"]}
+{"args":[null,null],"fn":"mergeAgentKeys","ok":[]}
+{"args":[null,null],"fn":"sameMainSegment","ok":true}
 {"args":[null,null],"fn":"sameOptionalInt64","ok":true}
+{"args":[null],"fn":"assetIDContainments","ok":[]}
 {"args":[null],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[null],"fn":"marshalStringArray","ok":"{}"}

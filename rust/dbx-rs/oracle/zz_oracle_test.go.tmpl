@@ -131,3 +131,124 @@ func optJSON(p *int64) any {
 	}
 	return *p
 }
+
+func TestZZOracle9z(t *testing.T) {
+	// assetKey / companyKey (id)
+	for _, id := range []int64{-5, 0, 1, 42, 9999999999} {
+		rec(t, "assetKey", []any{id}, assetKey(id))
+		rec(t, "companyKey", []any{id}, companyKey(id))
+	}
+
+	// isEncrypted(v)
+	for _, v := range []string{"", "enc:v1:", "enc:v1:abc", "plain", " enc:v1:x", "ENC:V1:", "enc:v2:x"} {
+		rec(t, "isEncrypted", []any{v}, isEncrypted(v))
+	}
+
+	// sameMainSegment(a, b *int)
+	mk := func(v int) *int { return &v }
+	optIntPtr := []*int{nil, mk(0), mk(1), mk(1), mk(-3)}
+	for _, a := range optIntPtr {
+		for _, b := range optIntPtr {
+			rec(t, "sameMainSegment", []any{optIntPtrVal(a), optIntPtrVal(b)}, sameMainSegment(a, b))
+		}
+	}
+
+	// assetIDContainments(ids)
+	for _, ids := range [][]int64{nil, {}, {1}, {1, 2, 3}, {-1, 0, 99}} {
+		rec(t, "assetIDContainments", []any{ids}, assetIDContainments(ids))
+	}
+
+	// mergeAgentKeys(current, incoming)
+	type ab struct{ a, b []string }
+	mergeCases := []ab{
+		{nil, nil},
+		{[]string{}, []string{}},
+		{[]string{"a", "b"}, []string{"b", "c"}},
+		{[]string{"a", ""}, []string{"a", "d"}},
+		{[]string{"x"}, nil},
+		{nil, []string{"y", "z"}},
+		{[]string{"a", "a", "b"}, []string{"b", "a", "c"}},
+	}
+	for _, c := range mergeCases {
+		rec(t, "mergeAgentKeys", []any{c.a, c.b}, mergeAgentKeys(c.a, c.b))
+	}
+
+	// placeholders(start, ids)
+	type ps struct {
+		start int
+		ids   []int64
+	}
+	phCases := []ps{
+		{1, nil},
+		{1, []int64{}},
+		{1, []int64{10}},
+		{1, []int64{10, 20, 30}},
+		{3, []int64{7, 8}},
+		{0, []int64{-1, -2}},
+	}
+	for _, c := range phCases {
+		ph, args := placeholders(c.start, c.ids)
+		rec(t, "placeholders", []any{c.start, c.ids}, []any{ph, args})
+	}
+
+	// lessonText(s, limit)
+	lessonInputs := []string{"", "   ", "simple text", "  collapse   these   spaces  ", "tab\there\nnewline", "ctrl\x00\x1f\x7fdel", "héllo wörld", "日本語テキスト", "mixed\x00CASE  Value"}
+	for _, s := range lessonInputs {
+		for _, lim := range []int{-1, 0, 3, 5, 100} {
+			rec(t, "lessonText", []any{s, lim}, lessonText(s, lim))
+		}
+	}
+
+	// truncateNotifyError(msg)
+	longASCII := ""
+	for len(longASCII) < 600 {
+		longASCII += "x"
+	}
+	// A >500-byte body whose byte at index 500 falls inside a multibyte rune,
+	// exercising the UTF-8-boundary backoff (世 is 3 bytes: E4 B8 96).
+	longUTF8 := ""
+	for len(longUTF8) < 510 {
+		longUTF8 += "世"
+	}
+	truncInputs := []string{
+		"",
+		"short error",
+		func() string { s := ""; for i := 0; i < 500; i++ { s += "a" }; return s }(),
+		func() string { s := ""; for i := 0; i < 501; i++ { s += "a" }; return s }(),
+		longASCII,
+		longUTF8,
+	}
+	for _, s := range truncInputs {
+		rec(t, "truncateNotifyError", []any{s}, truncateNotifyError(s))
+	}
+
+	// malformedIPAssetWarningText(total, samples)
+	type mw struct {
+		total   int
+		samples []string
+	}
+	mwCases := []mw{
+		{0, nil},
+		{0, []string{}},
+		{3, []string{"1.2.3.4", "bad", "worse"}},
+		{2, []string{"only", "two"}},
+		{5, []string{"a", "b"}},
+		{1, nil},
+	}
+	for _, c := range mwCases {
+		rec(t, "malformedIPAssetWarningText", []any{c.total, c.samples}, malformedIPAssetWarningText(c.total, c.samples))
+	}
+
+	// isIPLiteral(host)
+	for _, h := range []string{"", "1.2.3.4", "1.2.3", "1.2.3.4.5", "999.999.999.999", "a.b.c.d", "1.2.3.", ".1.2.3", "::1", "fe80::1", "host", "10.0.0.1", "1.2.3.-4", "1.2.3.+4", "1.2.3.04"} {
+		rec(t, "isIPLiteral", []any{h}, isIPLiteral(h))
+	}
+}
+
+// optIntPtrVal renders a *int as null or its numeric value, for recording.
+func optIntPtrVal(p *int) any {
+	if p == nil {
+		return nil
+	}
+	return *p
+}

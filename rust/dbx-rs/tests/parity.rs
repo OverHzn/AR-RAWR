@@ -70,6 +70,31 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "taskTemplateName" => json!(task_template_name(&arg_str(args, 0))),
         "taskTemplateNKey" => json!(task_template_n_key(&arg_str(args, 0))),
         "lessonExtractCompanyID" => json!(lesson_extract_company_id(&arg_i64_slice(args, 0))),
+        "assetKey" => json!(asset_key(arg_i64(args, 0))),
+        "companyKey" => json!(company_key(arg_i64(args, 0))),
+        "isEncrypted" => json!(is_encrypted(&arg_str(args, 0))),
+        "sameMainSegment" => json!(same_main_segment(
+            arg_opt_i64(args, 0),
+            arg_opt_i64(args, 1)
+        )),
+        "assetIDContainments" => json!(asset_id_containments(&arg_i64_slice(args, 0))),
+        "mergeAgentKeys" => json!(merge_agent_keys(
+            &arg_str_slice(args, 0),
+            &arg_str_slice(args, 1)
+        )),
+        "placeholders" => {
+            let (ph, ids) = placeholders(arg_i64(args, 0), &arg_i64_slice(args, 1));
+            json!([ph, ids])
+        }
+        "lessonText" => json!(lesson_text(&arg_str(args, 0), arg_i64(args, 1))),
+        "truncateNotifyError" => json!(truncate_notify_error(&arg_str(args, 0))),
+        "malformedIPAssetWarningText" => {
+            json!(malformed_ip_asset_warning_text(
+                arg_i64(args, 0),
+                &arg_str_slice(args, 1)
+            ))
+        }
+        "isIPLiteral" => json!(is_ip_literal(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
