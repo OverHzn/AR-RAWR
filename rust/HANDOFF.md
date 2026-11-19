@@ -383,7 +383,7 @@ resume without re-deriving state.
   round-trip (25 findings -> 20 + cursor + 5, no overlap, cursor-binding + garbage
   reject) + valid-kind; Go oracle n/a (no `_test.go`). artex **234 tests** green, clippy
   clean, fmt clean, gate 30/30.
-- **D-1o task outcome card (this commit):** `src/db/task_outcome.rs` —
+- **D-1o task outcome card (commit 845593b):** `src/db/task_outcome.rs` —
   `TaskOutcome`/`TaskOutcomeFindings`/`TaskOutcomeRetests`/`TaskOutcomeTokens` (plain
   data) + `DB::task_outcome` (port of `db/task_outcome.go`; one verbatim LATERAL-join
   aggregate SELECT; COALESCE defaults, confirmed-only severity split, retest verdict
@@ -395,6 +395,25 @@ resume without re-deriving state.
   inconclusive, 100/40/10/5 tokens, 3 tool calls, 1 skill miss; missing + soft-deleted
   task error) + cancelled-context; Go oracle n/a. artex **236 tests** green, clippy
   clean, fmt clean, gate 30/30.
+- **D-1p task categories (this commit):** `src/db/task_categories.rs` — `TaskCategory`
+  + 4 sentinels + `normalizeTaskCategoryName` (go_fields_join + rune-cap 80 + lowercased
+  nkey) + `DB::{create (ON CONFLICT DO NOTHING -> NameConflict), list, get (Option),
+  rename (23505->NameConflict, 0rows->NotFound), delete (-> bool), setTaskCategory
+  (set/clear; missing task/category distinguished), setTasksCategory (batched, one
+  transaction via deadpool client.transaction(), id=ANY($1::bigint[]))}`. First artex
+  unit to open a transaction. Specs: `tests/db_task_categories_test.rs` (2) — CRUD +
+  assignment (seeds tasks via raw SQL; verifies via fresh get_task_category task_count)
+  + batch (missing-id skip, nil-clear, missing-category atomic abort, bad-input). Go
+  oracle green (`TestTaskCategoryCRUDAndTaskAssignment|TestSetTasksCategoryBatch|
+  TestSetTasksCategoryRejectsBadInputAtomically`). artex **238 tests** green, clippy
+  clean, fmt clean, gate 30/30.
+  - **Parity note (remember):** `SetTaskCategory` (single) is one combined CTE statement,
+    so its returned `task_count` subquery sees the PRE-UPDATE snapshot (=0 right after
+    assigning) — the Go test never asserts on that return count, only on a fresh read.
+    `SetTasksCategory` (batch) re-selects in a SEPARATE query inside the tx, so its count
+    IS fresh. The literal `0` in CreateTaskCategory's SELECT is `::bigint`-cast in Rust so
+    it scans as i64 like `count()` (tokio-postgres is strict on int4 vs int8; Go's pgx
+    converts silently).
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
