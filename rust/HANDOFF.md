@@ -299,7 +299,7 @@ resume without re-deriving state.
   (no Go `_test.go` for these files): llmhealth upsert/load(expired+null excluded)/clear,
   skill_gaps aggregation + limit + cancellation, constants parity guard. artex **208 tests**
   green, clippy clean, fmt clean, gate 30/30.
-- **D-1g metering ledger cluster (this commit):** `src/db/gotime.rs` — self-contained
+- **D-1g metering ledger cluster (commit 77c173a):** `src/db/gotime.rs` — self-contained
   RFC3339 (Go `time.Time` JSON) <-> `SystemTime` codec (no chrono/time offline;
   `days_from_civil`/`civil_from_days`), + `opt_system_time_rfc3339` serde adapter; locked to
   Go via differential value (`2024-06-15T12:00:00+07:00` -> unix 1718427600). `src/db/skill_usage.rs`
@@ -313,6 +313,19 @@ resume without re-deriving state.
   — port of Go `TestSkillUsageLedger`+`TestToolUsageLedger` (unique names) + pure
   `mergeArchivedSkillStats` case; Go oracle green on same DB. artex **214 tests** green, clippy
   clean, fmt clean, gate 30/30.
+- **D-1h llm_usage ledger (this commit):** `src/db/llm_usage.rs` — `LLMUsage`/`ModelTokenStat`/
+  `ProfileUsage`/`ProfileDayUsage`/`JudgeDayUsage`/`JudgeUsage` + `DB::{ensure_llm_usage_table
+  (delegates exec_embedded_migration 0002), task_llm_spend, insert_llm_usage, token_by_model,
+  usage_by_profile, usage_daily, judge_usage_stats}` (verbatim Go SQL; NUMERIC price cols cast
+  `::float8` to scan as f64) + `parse_exp_id` (pure) + `apply_cost_eur` (pub, fresh=input-
+  cache_read-cache_write clamped>=0, first-name-wins, no-price->None). `src/db/gotime.rs` +
+  `ymd_minus_days(days)` (UsageDaily cutoff = now.UTC().AddDate(0,0,-days) YYYY-MM-DD).
+  `src/db/task_archive_aggregate.rs` extended: `token_profiles`/`token_daily` JSON fields.
+  `ModelTokenStat` defined here (only consumer is token_by_model; commands.go merely declares
+  it). Specs: `tests/db_llm_usage_test.rs` (6) — port of Go `TestTaskLLMSpendCountsJudgeNotChat`
+  + `TestCostSeparatesFreshReadAndWriteBuckets` + `TestUsageByProfileCostAggregatesRows` +
+  `TestLLMUsageTsIndex` + `TokenByModel` + `ParseExpID`; Go oracle green on same DB. artex
+  **220 tests** green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

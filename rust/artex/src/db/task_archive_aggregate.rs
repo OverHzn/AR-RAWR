@@ -27,6 +27,12 @@ pub struct TaskArchiveAggregate {
     pub missing_skill_stats: Vec<SkillStat>,
     #[serde(default)]
     pub tools: std::collections::BTreeMap<String, i64>,
+    /// `token_profiles`: per-profile token spend (consumed by `UsageByProfile`).
+    #[serde(default)]
+    pub token_profiles: Vec<crate::db::llm_usage::ProfileUsage>,
+    /// `token_daily`: per-(profile, day) buckets (consumed by `UsageDaily`).
+    #[serde(default)]
+    pub token_daily: Vec<crate::db::llm_usage::ProfileDayUsage>,
 }
 
 impl DB {

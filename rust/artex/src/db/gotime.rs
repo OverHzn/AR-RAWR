@@ -131,6 +131,19 @@ fn days_from_civil(y: i64, m: i64, d: i64) -> Option<i64> {
     Some(era * 146_097 + doe - 719_468)
 }
 
+/// The UTC calendar date `days` before now, formatted `YYYY-MM-DD` — Go's
+/// `time.Now().UTC().AddDate(0, 0, -days).Format("2006-01-02")`. Used for the
+/// `UsageDaily` archive cutoff comparison (date strings sort lexicographically).
+pub fn ymd_minus_days(days: i64) -> String {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or(Duration::ZERO)
+        .as_secs() as i64;
+    let today_days = now.div_euclid(86_400);
+    let (year, month, day) = civil_from_days(today_days - days);
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
 /// Inverse of [`days_from_civil`]: `(year, month, day)` for days since the epoch.
 fn civil_from_days(z: i64) -> (i64, i64, i64) {
     let z = z + 719_468;

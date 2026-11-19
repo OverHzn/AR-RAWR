@@ -20,6 +20,7 @@ pub mod browser_mcp;
 pub mod constants;
 pub mod error;
 pub mod gotime;
+pub mod llm_usage;
 pub mod llmhealth;
 pub mod migrate;
 pub mod secrets;
