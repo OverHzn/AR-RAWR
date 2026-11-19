@@ -13,6 +13,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/Autumn-27/norma/harness"
 )
 
 func rec(t *testing.T, fn string, args []any, out any) {
@@ -285,5 +287,40 @@ func TestZZOracle9ac(t *testing.T) {
 		rec(t, "artifactSpec", []any{d}, artifactSpec(d))
 		rec(t, "workerArtifactSpec", []any{d}, workerArtifactSpec(d))
 		rec(t, "chatWorkDirSpec", []any{d}, chatWorkDirSpec(d))
+	}
+}
+
+func TestZZOracle9ag(t *testing.T) {
+	// inheritedIntentSummaryState(state)
+	for _, s := range []string{"done", "blocked", "exhausted", "stopped", "running", "", "DONE", "pending", "failed"} {
+		rec(t, "inheritedIntentSummaryState", []any{s}, inheritedIntentSummaryState(s))
+	}
+
+	// terminalReasonLabel / terminalReasonHint(reason)
+	reasons := []string{
+		"", "completed", "max_turns", "timeout", "model_error", "blocking_limit",
+		"prompt_too_long", "image_error", "stop_hook_prevented", "hook_stopped",
+		"aborted_streaming", "aborted_tools", "unknown_reason", "COMPLETED",
+	}
+	for _, r := range reasons {
+		tr := harness.TerminalReason(r)
+		rec(t, "terminalReasonLabel", []any{r}, terminalReasonLabel(tr))
+		rec(t, "terminalReasonHint", []any{r}, terminalReasonHint(tr))
+	}
+
+	// plannerGoalAnchor(goal, constraints)
+	type pga struct{ goal, constraints string }
+	pgaCases := []pga{
+		{"do the thing", ""},
+		{"do the thing", "   "},
+		{"do the thing", "be careful"},
+		{"do the thing", "  be careful  "},
+		{"scan example.com", "stay in scope\nno brute force"},
+		{"", ""},
+		{"goal \u2014 unicode", "constraints with trailing newline\n"},
+		{"multi\nline goal", "\ttabbed constraint\t"},
+	}
+	for _, c := range pgaCases {
+		rec(t, "plannerGoalAnchor", []any{c.goal, c.constraints}, plannerGoalAnchor(c.goal, c.constraints))
 	}
 }

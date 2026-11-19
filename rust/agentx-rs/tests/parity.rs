@@ -77,6 +77,16 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         "artifactSpec" => Ok(json!(artifact_spec(&arg_str(args, 0)))),
         "workerArtifactSpec" => Ok(json!(worker_artifact_spec(&arg_str(args, 0)))),
         "chatWorkDirSpec" => Ok(json!(chat_work_dir_spec(&arg_str(args, 0)))),
+        // batch 9ag
+        "inheritedIntentSummaryState" => {
+            Ok(json!(inherited_intent_summary_state(&arg_str(args, 0))))
+        }
+        "terminalReasonLabel" => Ok(json!(terminal_reason_label(&arg_str(args, 0)))),
+        "terminalReasonHint" => Ok(json!(terminal_reason_hint(&arg_str(args, 0)))),
+        "plannerGoalAnchor" => Ok(json!(planner_goal_anchor(
+            &arg_str(args, 0),
+            &arg_str(args, 1)
+        ))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
