@@ -395,7 +395,7 @@ resume without re-deriving state.
   inconclusive, 100/40/10/5 tokens, 3 tool calls, 1 skill miss; missing + soft-deleted
   task error) + cancelled-context; Go oracle n/a. artex **236 tests** green, clippy
   clean, fmt clean, gate 30/30.
-- **D-1p task categories (this commit):** `src/db/task_categories.rs` — `TaskCategory`
+- **D-1p task categories (commit 601f457):** `src/db/task_categories.rs` — `TaskCategory`
   + 4 sentinels + `normalizeTaskCategoryName` (go_fields_join + rune-cap 80 + lowercased
   nkey) + `DB::{create (ON CONFLICT DO NOTHING -> NameConflict), list, get (Option),
   rename (23505->NameConflict, 0rows->NotFound), delete (-> bool), setTaskCategory
@@ -414,6 +414,13 @@ resume without re-deriving state.
     IS fresh. The literal `0` in CreateTaskCategory's SELECT is `::bigint`-cast in Rust so
     it scans as i64 like `count()` (tokio-postgres is strict on int4 vs int8; Go's pgx
     converts silently).
+- **D-1q exploration store skeleton (this commit):** `src/db/exploration.rs` —
+  `ExplorationStore { db: DB (Arc pool, Clone), exp_id }` handle + `DB::{create_exploration,
+  exploration(id)}` + `ExplorationStore::{id, root (description NULL->"")}`. First store
+  handle; establishes the pattern (store owns a cheap-cloneable DB + id). Node/edge
+  methods grow here as the exploration group is ported. Spec: `tests/db_exploration_test.rs`
+  (1) — create + root round-trip + NULL-description->"" + missing-id error. artex **239
+  tests** green, clippy clean, fmt clean, gate 30/30. (Next: Node/Edge types + AddNode.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

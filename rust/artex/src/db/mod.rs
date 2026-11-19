@@ -22,6 +22,7 @@ pub mod browser_mcp;
 pub mod chat_mentions;
 pub mod constants;
 pub mod error;
+pub mod exploration;
 pub mod gotime;
 pub mod llm_usage;
 pub mod llmhealth;
