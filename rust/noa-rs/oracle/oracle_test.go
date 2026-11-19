@@ -622,3 +622,129 @@ func TestZZOracle9g(t *testing.T) {
 	// ---- CompressToolSchema ----
 	rec(t, "CompressToolSchema", []any{}, noa.CompressToolSchema())
 }
+
+func TestZZOracle9h(t *testing.T) {
+	// ---- ArchiveTag ----
+	type blk struct {
+		ID, Start, End, Path string
+		Tier                 int
+	}
+	blocks := []blk{
+		{"b5", "m00001", "m00010", "/arc/b5.md", 1},
+		{"b12", "m00001", "m00050", "/arc/tier2/b12.md", 2},
+		{"b3", "m00100", "m00200", "rel/path/b3.md", 3},
+	}
+	for _, b := range blocks {
+		cb := noa.CompressionBlock{
+			BlockID: b.ID, Tier: noa.Tier(b.Tier),
+			StartRef: b.Start, EndRef: b.End, ArchivePath: b.Path,
+		}
+		rec(t, "ArchiveTag", []any{b}, noa.ArchiveTag(cb))
+	}
+
+	// ---- MessageRefMap helpers ----
+	mkmap := func(byRaw, byRef map[string]string) noa.MessageRefMap {
+		return noa.MessageRefMap{ByRaw: byRaw, ByRef: byRef}
+	}
+	maps := []struct {
+		ByRaw, ByRef map[string]string
+	}{
+		{
+			map[string]string{"h1": "m00001", "h2": "m00002", "h3": "BLOCKED"},
+			map[string]string{"m00001": "h1", "m00002": "h2", "BLOCKED": "h3"},
+		},
+		{
+			map[string]string{"h1": "m00007", "h2": "m00042", "h3": "m00003"},
+			map[string]string{"m00007": "h1", "m00042": "h2", "m00003": "h3"},
+		},
+		{
+			map[string]string{},
+			map[string]string{},
+		},
+	}
+	for _, mp := range maps {
+		m := mkmap(mp.ByRaw, mp.ByRef)
+		// HighestUsedIndex
+		rec(t, "HighestUsedIndex", []any{mp.ByRaw}, noa.HighestUsedIndex(m))
+		// RefForRaw / RawForRef for a few probes
+		probes := []string{"h1", "h2", "h3", "hX"}
+		for _, p := range probes {
+			r, ok := noa.RefForRaw(m, p)
+			rec(t, "RefForRaw", []any{mp.ByRaw, p}, map[string]any{"ref": r, "ok": ok})
+		}
+		refprobes := []string{"m00001", "m00007", "m00042", "BLOCKED", "m99999"}
+		for _, p := range refprobes {
+			r, ok := noa.RawForRef(m, p)
+			rec(t, "RawForRef", []any{mp.ByRef, p}, map[string]any{"raw": r, "ok": ok})
+		}
+	}
+
+	// ---- MatchToolPattern ----
+	patterns := [][2]string{
+		{"", "Bash"},
+		{"Bash", ""},
+		{"bash", "BASH"},
+		{"Bash", "Bash"},
+		{"Read", "Read"},
+		{"Read", "Write"},
+		{"mcp_*", "mcp__github"},
+		{"mcp_*", "mcp_x"},
+		{"mcp_*", "MCP_X"},
+		{"*", "anything"},
+		{"*", ""},
+		{"Web*", "WebFetch"},
+		{"Web*", "websearch"},
+		{"exact", "exactly"},
+		{"exact*", "exact"},
+	}
+	for _, p := range patterns {
+		rec(t, "MatchToolPattern", []any{p[0], p[1]}, noa.MatchToolPattern(p[0], p[1]))
+	}
+
+	// ---- IsNeverPreserveRecentTool ----
+	tools := []string{"", "Read", "read", "Grep", "Glob", "Bash", "LS", "ls", "Write", "Edit", "WebFetch", "Compress"}
+	for _, tn := range tools {
+		m := noa.CoreMessage{ToolName: tn}
+		rec(t, "IsNeverPreserveRecentTool", []any{tn}, noa.IsNeverPreserveRecentTool(m))
+	}
+
+	// ---- IsMessageProtected (host predicate modeled as resolved set) ----
+	type ipCase struct {
+		tool         string
+		protected    []string
+		hostProtected []string // nil => no host predicate
+	}
+	ipCases := []ipCase{
+		{"", nil, nil},
+		{"Bash", nil, nil},
+		{"Compress", nil, nil},                              // AlwaysProtectedTools
+		{"compress", nil, nil},                              // case-sensitive: not protected
+		{"Read", []string{"Read"}, nil},                     // exact via pattern
+		{"Read", []string{"read"}, nil},                     // pattern case-insensitive
+		{"mcp__x", []string{"mcp_*"}, nil},                  // wildcard
+		{"WebFetch", []string{"mcp_*"}, nil},                // no match
+		{"Write", nil, []string{"Write"}},                   // host predicate
+		{"Write", nil, []string{"Read"}},                    // host predicate miss
+		{"Custom1", []string{"Other"}, []string{"Custom1"}}, // pattern miss + host hit
+		{"Custom2", []string{"Custom*"}, nil},               // pattern hit
+	}
+	for _, c := range ipCases {
+		cfg := noa.Config{ProtectedTools: c.protected}
+		if c.hostProtected != nil {
+			set := make(map[string]bool)
+			for _, h := range c.hostProtected {
+				set[h] = true
+			}
+			cfg.IsToolProtected = func(name string) bool { return set[name] }
+		}
+		m := noa.CoreMessage{ToolName: c.tool}
+		got := noa.IsMessageProtected(m, cfg)
+		// record args as the resolved view
+		arg := map[string]any{
+			"ToolName":       c.tool,
+			"ProtectedTools": c.protected,
+			"HostProtected":  c.hostProtected,
+		}
+		rec(t, "IsMessageProtected", []any{arg}, got)
+	}
+}

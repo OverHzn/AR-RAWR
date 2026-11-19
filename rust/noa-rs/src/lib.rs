@@ -10,5 +10,7 @@
 pub mod nudgetext;
 pub mod parseargs;
 pub mod port;
+pub mod protection;
 pub mod recommend;
+pub mod refsmap;
 pub mod schema;

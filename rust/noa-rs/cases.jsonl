@@ -3,21 +3,40 @@
 {"args":["  b5(T1)=m00001–m00010 → a.md\n  b6(T2)=m00011–m00020 → b.md"],"fn":"PanelBlockCount","ok":2}
 {"args":["  b99(T12)=z  b100(T3)=w"],"fn":"PanelBlockCount","ok":2}
 {"args":["  m7  "],"fn":"RefToIndex","ok":{"ok":true,"v":7}}
+{"args":["","Bash"],"fn":"MatchToolPattern","ok":false}
 {"args":[""],"fn":"DefaultCountTokens","ok":0}
 {"args":[""],"fn":"EstimateTokensFast","ok":0}
+{"args":[""],"fn":"IsNeverPreserveRecentTool","ok":false}
 {"args":[""],"fn":"PanelBlockCount","ok":0}
 {"args":[""],"fn":"ParseBlockID","ok":{"ok":false,"v":""}}
 {"args":[""],"fn":"ParseCompressArgs","ok":{"Ranges":null,"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":false,"Kind":"empty-input","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"","Length":0,"Keys":null,"Salvaged":false,"TailRepaired":false}}}
 {"args":[""],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":[""],"fn":"SummaryMessageID","ok":"noa_summary_"}
+{"args":["*",""],"fn":"MatchToolPattern","ok":false}
+{"args":["*","anything"],"fn":"MatchToolPattern","ok":true}
 {"args":["0"],"fn":"ParseBlockID","ok":{"ok":false,"v":""}}
 {"args":["42"],"fn":"ParseCompressArgs","ok":{"Ranges":null,"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":false,"Kind":"malformed-json","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"42","Length":2,"Keys":null,"Salvaged":false,"TailRepaired":false}}}
 {"args":["5"],"fn":"ParseBlockID","ok":{"ok":true,"v":"b5"}}
 {"args":["5"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":["B5(T1)=y"],"fn":"PanelBlockCount","ok":0}
 {"args":["B7"],"fn":"ParseBlockID","ok":{"ok":true,"v":"b7"}}
+{"args":["Bash",""],"fn":"MatchToolPattern","ok":false}
+{"args":["Bash","Bash"],"fn":"MatchToolPattern","ok":true}
+{"args":["Bash"],"fn":"IsNeverPreserveRecentTool","ok":true}
+{"args":["Compress"],"fn":"IsNeverPreserveRecentTool","ok":false}
+{"args":["Edit"],"fn":"IsNeverPreserveRecentTool","ok":false}
+{"args":["Glob"],"fn":"IsNeverPreserveRecentTool","ok":true}
+{"args":["Grep"],"fn":"IsNeverPreserveRecentTool","ok":true}
+{"args":["LS"],"fn":"IsNeverPreserveRecentTool","ok":true}
 {"args":["M00012"],"fn":"RefToIndex","ok":{"ok":true,"v":12}}
 {"args":["NOA_SUMMARY_B5"],"fn":"BlockIDFromSummaryID","ok":{"ok":false,"v":""}}
+{"args":["Read","Read"],"fn":"MatchToolPattern","ok":true}
+{"args":["Read","Write"],"fn":"MatchToolPattern","ok":false}
+{"args":["Read"],"fn":"IsNeverPreserveRecentTool","ok":true}
+{"args":["Web*","WebFetch"],"fn":"MatchToolPattern","ok":true}
+{"args":["Web*","websearch"],"fn":"MatchToolPattern","ok":true}
+{"args":["WebFetch"],"fn":"IsNeverPreserveRecentTool","ok":false}
+{"args":["Write"],"fn":"IsNeverPreserveRecentTool","ok":false}
 {"args":["[1,2,3]"],"fn":"ParseCompressArgs","ok":{"Ranges":null,"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":false,"Kind":"malformed-json","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"[1,2,3]","Length":7,"Keys":null,"Salvaged":false,"TailRepaired":false}}}
 {"args":["\"just a string\""],"fn":"ParseCompressArgs","ok":{"Ranges":null,"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":false,"Kind":"malformed-json","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"\"just a string\"","Length":15,"Keys":null,"Salvaged":false,"TailRepaired":false}}}
 {"args":["\"{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]}\""],"fn":"ParseCompressArgs","ok":{"Ranges":[{"StartRef":"m1","EndRef":"m2","Summary":"s","Topic":"","SummaryMaxChars":null}],"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":true,"Kind":"truncated","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"\"{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]}\"","Length":59,"Keys":null,"Salvaged":true,"TailRepaired":false}}}
@@ -61,10 +80,14 @@
 {"args":["b5(t2)extra"],"fn":"ParseBlockID","ok":{"ok":false,"v":""}}
 {"args":["b7(t3)"],"fn":"ParseBlockID","ok":{"ok":true,"v":"b7"}}
 {"args":["b999999999"],"fn":"ParseBlockID","ok":{"ok":true,"v":"b999999999"}}
+{"args":["bash","BASH"],"fn":"MatchToolPattern","ok":true}
 {"args":["emoji😀x"],"fn":"DefaultCountTokens","ok":2}
 {"args":["emoji😀x"],"fn":"EstimateTokensFast","ok":2}
+{"args":["exact","exactly"],"fn":"MatchToolPattern","ok":false}
+{"args":["exact*","exact"],"fn":"MatchToolPattern","ok":true}
 {"args":["hello world"],"fn":"DefaultCountTokens","ok":3}
 {"args":["hello world"],"fn":"EstimateTokensFast","ok":3}
+{"args":["ls"],"fn":"IsNeverPreserveRecentTool","ok":true}
 {"args":["m"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":["m-1"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":["m0"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
@@ -77,6 +100,9 @@
 {"args":["m5"],"fn":"RefToIndex","ok":{"ok":true,"v":5}}
 {"args":["m99999"],"fn":"RefToIndex","ok":{"ok":true,"v":99999}}
 {"args":["mabc"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
+{"args":["mcp_*","MCP_X"],"fn":"MatchToolPattern","ok":true}
+{"args":["mcp_*","mcp__github"],"fn":"MatchToolPattern","ok":true}
+{"args":["mcp_*","mcp_x"],"fn":"MatchToolPattern","ok":true}
 {"args":["mm5"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":["n5"],"fn":"RefToIndex","ok":{"ok":false,"v":0}}
 {"args":["no blocks here"],"fn":"PanelBlockCount","ok":0}
@@ -88,6 +114,7 @@
 {"args":["note: b5 was inside"],"fn":"PanelBlockCount","ok":0}
 {"args":["null"],"fn":"ParseCompressArgs","ok":{"Ranges":null,"TopLevelTopic":"","SummaryMaxChars":null,"Diagnostics":{"Ok":false,"Kind":"empty-input","InvalidItems":0,"InvalidReasons":null,"RawPrefix":"null","Length":4,"Keys":null,"Salvaged":false,"TailRepaired":false}}}
 {"args":["prefix_noa_summary_b5"],"fn":"BlockIDFromSummaryID","ok":{"ok":false,"v":""}}
+{"args":["read"],"fn":"IsNeverPreserveRecentTool","ok":true}
 {"args":["t2"],"fn":"ParseBlockID","ok":{"ok":false,"v":""}}
 {"args":["weird"],"fn":"SummaryMessageID","ok":"noa_summary_weird"}
 {"args":["x"],"fn":"ParseBlockID","ok":{"ok":false,"v":""}}
@@ -210,12 +237,32 @@
 {"args":[],"fn":"CompressToolSchema","ok":{"properties":{"content":{"description":"One or more ranges to compress into separate summary blocks. Ranges must be disjoint.","items":{"properties":{"endId":{"description":"mNNNNN message ref, or bN block id, at the end of the range. Inclusive.","type":"string"},"startId":{"description":"mNNNNN message ref, or bN block id, at the start of the range.","type":"string"},"summary":{"description":"Self-contained summary that replaces the range in context.","type":"string"},"topic":{"description":"Short 3-5 word label for THIS range.","type":"string"}},"required":["startId","endId","summary"],"type":"object"}},"summaryMaxChars":{"description":"Raise the per-summary limit above the 20000-char default. Use it when the content genuinely needs more detail — do not truncate critical information just to fit.","type":"number"},"topic":{"description":"Optional short title applied to ranges that don't carry their own.","type":"string"}},"required":["content"],"type":"object"}}
 {"args":[null,500],"fn":"MergeRangesToThreshold","ok":null}
 {"args":[null],"fn":"ViableRanges","ok":[]}
+{"args":[{"BLOCKED":"h3","m00001":"h1","m00002":"h2"},"BLOCKED"],"fn":"RawForRef","ok":{"ok":true,"raw":"h3"}}
+{"args":[{"BLOCKED":"h3","m00001":"h1","m00002":"h2"},"m00001"],"fn":"RawForRef","ok":{"ok":true,"raw":"h1"}}
+{"args":[{"BLOCKED":"h3","m00001":"h1","m00002":"h2"},"m00007"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{"BLOCKED":"h3","m00001":"h1","m00002":"h2"},"m00042"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{"BLOCKED":"h3","m00001":"h1","m00002":"h2"},"m99999"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
 {"args":[{"ContextBreakdown":{"code":500,"system":1200,"text":800,"tool":3400},"Growth":0}],"fn":"FormatBreakdown","ok":"Context breakdown: 1.2K system | 3.4K tool | 500 code | 800 text"}
 {"args":[{"ContextBreakdown":{"code":999999},"Growth":12345}],"fn":"FormatBreakdown","ok":"Context breakdown: 1000K code\n+12K since last nudge"}
 {"args":[{"ContextBreakdown":{"summaries":900,"system":1200},"Growth":2500}],"fn":"FormatBreakdown","ok":"Context breakdown: 1.2K system | 900 summaries\n+2.5K since last nudge"}
 {"args":[{"ContextBreakdown":{"system":100,"unknownbucket":5000},"Growth":0}],"fn":"FormatBreakdown","ok":"Context breakdown: 100 system"}
 {"args":[{"ContextBreakdown":{"text":0,"tool":0},"Growth":100}],"fn":"FormatBreakdown","ok":""}
 {"args":[{"ContextBreakdown":{},"Growth":0}],"fn":"FormatBreakdown","ok":""}
+{"args":[{"HostProtected":["Custom1"],"ProtectedTools":["Other"],"ToolName":"Custom1"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":["Read"],"ProtectedTools":null,"ToolName":"Write"}],"fn":"IsMessageProtected","ok":false}
+{"args":[{"HostProtected":["Write"],"ProtectedTools":null,"ToolName":"Write"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":["Custom*"],"ToolName":"Custom2"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":["Read"],"ToolName":"Read"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":["mcp_*"],"ToolName":"WebFetch"}],"fn":"IsMessageProtected","ok":false}
+{"args":[{"HostProtected":null,"ProtectedTools":["mcp_*"],"ToolName":"mcp__x"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":["read"],"ToolName":"Read"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":null,"ToolName":""}],"fn":"IsMessageProtected","ok":false}
+{"args":[{"HostProtected":null,"ProtectedTools":null,"ToolName":"Bash"}],"fn":"IsMessageProtected","ok":false}
+{"args":[{"HostProtected":null,"ProtectedTools":null,"ToolName":"Compress"}],"fn":"IsMessageProtected","ok":true}
+{"args":[{"HostProtected":null,"ProtectedTools":null,"ToolName":"compress"}],"fn":"IsMessageProtected","ok":false}
+{"args":[{"ID":"b12","Start":"m00001","End":"m00050","Path":"/arc/tier2/b12.md","Tier":2}],"fn":"ArchiveTag","ok":"\u003cnoa-archive block=\"b12\" tier=\"2\" range=\"m00001-m00050\" path=\"/arc/tier2/b12.md\"/\u003e"}
+{"args":[{"ID":"b3","Start":"m00100","End":"m00200","Path":"rel/path/b3.md","Tier":3}],"fn":"ArchiveTag","ok":"\u003cnoa-archive block=\"b3\" tier=\"3\" range=\"m00100-m00200\" path=\"rel/path/b3.md\"/\u003e"}
+{"args":[{"ID":"b5","Start":"m00001","End":"m00010","Path":"/arc/b5.md","Tier":1}],"fn":"ArchiveTag","ok":"\u003cnoa-archive block=\"b5\" tier=\"1\" range=\"m00001-m00010\" path=\"/arc/b5.md\"/\u003e"}
 {"args":[{"ModelContextLimit":-1,"Tiers":{"Enabled":false,"MaxTier":5,"Tier2Trigger":0,"Tier3Trigger":0},"Nudge":{"MaxContextLimitPct":0.5,"MinContextLimitPct":0.9,"EmergencyThresholdPct":0.3,"GrowthRatio":0,"GrowthFloor":0,"GrowthCap":0,"MinGrowthFloor":0,"MinGrowthRatio":0,"Tier2GrowthMultiplier":0,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":2},"Compress":{"MinCompressRange":0,"MinSummaryLength":10,"MaxSummaryLength":5},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":0,"MaxCompressAttempts":0}],"fn":"ValidateConfig","ok":["ModelContextLimit must be positive, got -1","Nudge.MinContextLimitPct (0.9) must not exceed MaxContextLimitPct (0.5)","Nudge.MaxContextLimitPct (0.5) must not exceed EmergencyThresholdPct (0.3)","Truncate.Threshold must be in (0, 1], got 2","Tiers.Tier2Trigger must be \u003e= 1, got 0","Tiers.Tier3Trigger (0) must exceed Tier2Trigger (0)","Tiers.MaxTier must be 2 or 3, got 5 — the tier rule prompts only cover up to 3","Compress.MinSummaryLength (10) must be below MaxSummaryLength (5)","MaxCompressAttempts must be \u003e= 1, got 0"]}
 {"args":[{"ModelContextLimit":0,"Tiers":{"Enabled":true,"MaxTier":3,"Tier2Trigger":5,"Tier3Trigger":10},"Nudge":{"MaxContextLimitPct":0.75,"MinContextLimitPct":0.45,"EmergencyThresholdPct":0.95,"GrowthRatio":0.05,"GrowthFloor":50000,"GrowthCap":50000,"MinGrowthFloor":20000,"MinGrowthRatio":0.45,"Tier2GrowthMultiplier":1.5,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":0.95},"Compress":{"MinCompressRange":5000,"MinSummaryLength":50,"MaxSummaryLength":20000},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":5000,"MaxCompressAttempts":3}],"fn":"ValidateConfig","ok":["ModelContextLimit must be positive, got 0"]}
 {"args":[{"ModelContextLimit":200000,"Tiers":{"Enabled":true,"MaxTier":1,"Tier2Trigger":5,"Tier3Trigger":10},"Nudge":{"MaxContextLimitPct":0.75,"MinContextLimitPct":0.45,"EmergencyThresholdPct":0.95,"GrowthRatio":0.05,"GrowthFloor":50000,"GrowthCap":50000,"MinGrowthFloor":20000,"MinGrowthRatio":0.45,"Tier2GrowthMultiplier":1.5,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":0.95},"Compress":{"MinCompressRange":5000,"MinSummaryLength":50,"MaxSummaryLength":20000},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":5000,"MaxCompressAttempts":3}],"fn":"ValidateConfig","ok":["Tiers.MaxTier must be 2 or 3, got 1 — the tier rule prompts only cover up to 3"]}
@@ -230,3 +277,28 @@
 {"args":[{"ModelContextLimit":200000,"Tiers":{"Enabled":true,"MaxTier":3,"Tier2Trigger":5,"Tier3Trigger":10},"Nudge":{"MaxContextLimitPct":0.75,"MinContextLimitPct":0.45,"EmergencyThresholdPct":0.95,"GrowthRatio":0.05,"GrowthFloor":50000,"GrowthCap":50000,"MinGrowthFloor":20000,"MinGrowthRatio":0.45,"Tier2GrowthMultiplier":1.5,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":0},"Compress":{"MinCompressRange":5000,"MinSummaryLength":50,"MaxSummaryLength":20000},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":5000,"MaxCompressAttempts":3}],"fn":"ValidateConfig","ok":["Truncate.Threshold must be in (0, 1], got 0"]}
 {"args":[{"ModelContextLimit":200000,"Tiers":{"Enabled":true,"MaxTier":3,"Tier2Trigger":5,"Tier3Trigger":10},"Nudge":{"MaxContextLimitPct":0.75,"MinContextLimitPct":0.45,"EmergencyThresholdPct":0.95,"GrowthRatio":0.05,"GrowthFloor":50000,"GrowthCap":50000,"MinGrowthFloor":20000,"MinGrowthRatio":0.45,"Tier2GrowthMultiplier":1.5,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":1.5},"Compress":{"MinCompressRange":5000,"MinSummaryLength":50,"MaxSummaryLength":20000},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":5000,"MaxCompressAttempts":3}],"fn":"ValidateConfig","ok":["Truncate.Threshold must be in (0, 1], got 1.5"]}
 {"args":[{"ModelContextLimit":200000,"Tiers":{"Enabled":true,"MaxTier":3,"Tier2Trigger":5,"Tier3Trigger":10},"Nudge":{"MaxContextLimitPct":0.99,"MinContextLimitPct":0.45,"EmergencyThresholdPct":0.95,"GrowthRatio":0.05,"GrowthFloor":50000,"GrowthCap":50000,"MinGrowthFloor":20000,"MinGrowthRatio":0.45,"Tier2GrowthMultiplier":1.5,"MinPressureBenefitTokens":null},"Truncate":{"Threshold":0.95},"Compress":{"MinCompressRange":5000,"MinSummaryLength":50,"MaxSummaryLength":20000},"ProtectedTools":null,"PreserveRecentMessages":5,"PreserveRecentTokens":5000,"MaxCompressAttempts":3}],"fn":"ValidateConfig","ok":["Nudge.MaxContextLimitPct (0.99) must not exceed EmergencyThresholdPct (0.95)"]}
+{"args":[{"h1":"m00001","h2":"m00002","h3":"BLOCKED"},"h1"],"fn":"RefForRaw","ok":{"ok":true,"ref":"m00001"}}
+{"args":[{"h1":"m00001","h2":"m00002","h3":"BLOCKED"},"h2"],"fn":"RefForRaw","ok":{"ok":true,"ref":"m00002"}}
+{"args":[{"h1":"m00001","h2":"m00002","h3":"BLOCKED"},"h3"],"fn":"RefForRaw","ok":{"ok":true,"ref":"BLOCKED"}}
+{"args":[{"h1":"m00001","h2":"m00002","h3":"BLOCKED"},"hX"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{"h1":"m00001","h2":"m00002","h3":"BLOCKED"}],"fn":"HighestUsedIndex","ok":2}
+{"args":[{"h1":"m00007","h2":"m00042","h3":"m00003"},"h1"],"fn":"RefForRaw","ok":{"ok":true,"ref":"m00007"}}
+{"args":[{"h1":"m00007","h2":"m00042","h3":"m00003"},"h2"],"fn":"RefForRaw","ok":{"ok":true,"ref":"m00042"}}
+{"args":[{"h1":"m00007","h2":"m00042","h3":"m00003"},"h3"],"fn":"RefForRaw","ok":{"ok":true,"ref":"m00003"}}
+{"args":[{"h1":"m00007","h2":"m00042","h3":"m00003"},"hX"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{"h1":"m00007","h2":"m00042","h3":"m00003"}],"fn":"HighestUsedIndex","ok":42}
+{"args":[{"m00003":"h3","m00007":"h1","m00042":"h2"},"BLOCKED"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{"m00003":"h3","m00007":"h1","m00042":"h2"},"m00001"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{"m00003":"h3","m00007":"h1","m00042":"h2"},"m00007"],"fn":"RawForRef","ok":{"ok":true,"raw":"h1"}}
+{"args":[{"m00003":"h3","m00007":"h1","m00042":"h2"},"m00042"],"fn":"RawForRef","ok":{"ok":true,"raw":"h2"}}
+{"args":[{"m00003":"h3","m00007":"h1","m00042":"h2"},"m99999"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{},"BLOCKED"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{},"h1"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{},"h2"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{},"h3"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{},"hX"],"fn":"RefForRaw","ok":{"ok":false,"ref":""}}
+{"args":[{},"m00001"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{},"m00007"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{},"m00042"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{},"m99999"],"fn":"RawForRef","ok":{"ok":false,"raw":""}}
+{"args":[{}],"fn":"HighestUsedIndex","ok":0}

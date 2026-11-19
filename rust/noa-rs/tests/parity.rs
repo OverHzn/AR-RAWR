@@ -8,7 +8,9 @@ use noa_rs::nudgetext::{
 };
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
+use noa_rs::protection::{is_message_protected, is_never_preserve_recent_tool, match_tool_pattern};
 use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
+use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
 use noa_rs::schema::compress_tool_schema;
 
 fn cases() -> Vec<Value> {
@@ -199,6 +201,64 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             serde_json::to_value(viable_ranges(&ranges)).expect("serialize ranges")
         }
         "CompressToolSchema" => compress_tool_schema(),
+        "ArchiveTag" => {
+            let a = &args[0];
+            let b = ArchiveBlock {
+                block_id: a["ID"].as_str().unwrap_or("").to_string(),
+                tier: a["Tier"].as_i64().unwrap_or(0),
+                start_ref: a["Start"].as_str().unwrap_or("").to_string(),
+                end_ref: a["End"].as_str().unwrap_or("").to_string(),
+                archive_path: a["Path"].as_str().unwrap_or("").to_string(),
+            };
+            serde_json::to_value(archive_tag(&b)).expect("serialize string")
+        }
+        "HighestUsedIndex" => {
+            let m: std::collections::HashMap<String, String> =
+                serde_json::from_value(args[0].clone()).expect("byRaw decode");
+            serde_json::to_value(highest_used_index(&m)).expect("serialize int")
+        }
+        "RefForRaw" => {
+            let m: std::collections::HashMap<String, String> =
+                serde_json::from_value(args[0].clone()).expect("byRaw decode");
+            let id = args[1].as_str().expect("raw id");
+            let (r, ok) = ref_for_raw(&m, id);
+            serde_json::json!({ "ref": r, "ok": ok })
+        }
+        "RawForRef" => {
+            let m: std::collections::HashMap<String, String> =
+                serde_json::from_value(args[0].clone()).expect("byRef decode");
+            let r = args[1].as_str().expect("ref");
+            let (raw, ok) = raw_for_ref(&m, r);
+            serde_json::json!({ "raw": raw, "ok": ok })
+        }
+        "MatchToolPattern" => {
+            let p = args[0].as_str().expect("pattern");
+            let tn = args[1].as_str().expect("tool name");
+            serde_json::to_value(match_tool_pattern(p, tn)).expect("serialize bool")
+        }
+        "IsNeverPreserveRecentTool" => {
+            let tn = args[0].as_str().expect("tool name");
+            serde_json::to_value(is_never_preserve_recent_tool(tn)).expect("serialize bool")
+        }
+        "IsMessageProtected" => {
+            let a = &args[0];
+            let tn = a["ToolName"].as_str().unwrap_or("").to_string();
+            let protected: Vec<String> = a["ProtectedTools"]
+                .as_array()
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let host: Option<Vec<String>> = a["HostProtected"].as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|x| x.as_str().map(String::from))
+                    .collect()
+            });
+            serde_json::to_value(is_message_protected(&tn, &protected, host.as_deref()))
+                .expect("serialize bool")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
