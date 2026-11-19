@@ -1,21 +1,23 @@
-//! `sidequestion-rs` — behavioral-parity Rust port of the unexported,
-//! side-effect-free helpers in the Go `sidequestion/` package.
+//! `sidequestion-rs` — behavioral-parity Rust port of the side-effect-free helpers in
+//! the Go `sidequestion/` package.
 //!
-//! Portable so far: [`Parent::key`] (a pure method on the small value struct
-//! `Parent`), `outputBudget` / `inputBudget` (struct-param functions that each read a
-//! single scalar field), and `messageGroups` (a pure `[]llm.Message` → `[][]llm.Message`
-//! grouping, over the `norma/llm` model ported in `llm-rs`). The remaining functions
-//! are not portable: `Exchange::Running` is a method on a large IO-laden struct,
-//! `assemble`/`exchangeMessages` need `time.Time` RFC3339 formatting, and `BuildRequest`
-//! needs `llm.MessagesForAPI`/`CloneRequest`/`EstimateInputTokens`. Parity is proven
-//! against the real Go functions via `record.sh` (oracle → `cases.jsonl`) and
-//! `tests/parity.rs`.
+//! Portable so far: [`Parent::key`] (a pure method on the small value struct `Parent`),
+//! `outputBudget` / `inputBudget` (struct-param functions that each read a single scalar
+//! field), `messageGroups` (a pure `[]llm.Message` → `[][]llm.Message` grouping), and
+//! `EstimateInputTokens` (a pure `llm.CompletionRequest` → `int` estimate over the
+//! `norma/llm` model in `llm-rs` and `norma/compaction`'s estimator in `compaction-rs`).
+//! The remaining functions are not portable: `Exchange::Running` is a method on a large
+//! IO-laden struct, `assemble`/`exchangeMessages` need `time.Time` RFC3339 formatting, and
+//! `BuildRequest` (which would use `CloneRequest` + `EstimateInputTokens`) is blocked on
+//! `assemble`'s `time.Time`. Parity is proven against the real Go functions via
+//! `record.sh` (oracle → `cases.jsonl`) and `tests/parity.rs`.
 
 #![forbid(unsafe_code)]
 
 use std::collections::HashSet;
 
-use llm_rs::port::{BLOCK_TOOL_RESULT, BLOCK_TOOL_USE, Message};
+use compaction_rs::port::estimate_tokens;
+use llm_rs::port::{BLOCK_TOOL_RESULT, BLOCK_TOOL_USE, CompletionRequest, Message};
 
 /// Port of Go `sidequestion.Parent` (sidequestion/capture.go).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -96,4 +98,23 @@ pub fn message_groups(messages: &[Message]) -> Vec<Vec<Message>> {
         groups.push(messages[start..].to_vec());
     }
     groups
+}
+
+/// `EstimateInputTokens` (sidequestion/request.go): a token estimate for a request,
+/// following norma's byte-based block estimate with a 4/3 safety factor plus framing
+/// costs. `compaction.EstimateTokens(messages)*4/3 + 32 + len(messages)*8`, then per
+/// system segment `(len+2)/3 + 8` and per tool `(len(json)+2)/3 + 8`. Integer math.
+pub fn estimate_input_tokens(req: &CompletionRequest) -> i64 {
+    let mut tokens = estimate_tokens(&req.messages) * 4 / 3 + 32 + req.messages.len() as i64 * 8;
+    for text in &req.system {
+        tokens += (text.len() as i64 + 2) / 3 + 8;
+    }
+    for tool in &req.tools {
+        // Go `json.Marshal(tool)`: ToolSchema marshals name/description/input_schema with
+        // sorted map keys (serde_json's default Map is a BTreeMap). The oracle keeps tool
+        // schemas compact ASCII so the byte length matches.
+        let b = serde_json::to_string(tool).unwrap_or_default();
+        tokens += (b.len() as i64 + 2) / 3 + 8;
+    }
+    tokens
 }

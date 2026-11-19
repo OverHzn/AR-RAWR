@@ -83,4 +83,40 @@ func TestZZOracle(t *testing.T) {
 	for _, sc := range scenarios {
 		rec(t, "messageGroups", []any{oracleRaw(sc)}, oracleRaw(messageGroups(sc)))
 	}
+
+	// EstimateInputTokens(llm.CompletionRequest) int — compaction.EstimateTokens*4/3 + 32
+	// + len(messages)*8, then per system segment (len+2)/3+8 and per tool (len(json)+2)/3+8.
+	// Tool schemas are compact ASCII so the Rust re-serialized byte length matches Go's.
+	reqs := []llm.CompletionRequest{
+		{},
+		{System: []string{"be brief"}},
+		{
+			System: []string{"sys one", "a longer system segment here"},
+			Messages: []llm.Message{
+				usr(txt("hello")),
+				asst(llm.ContentBlock{Type: llm.BlockToolUse, ID: "t1", Name: "run", Input: json.RawMessage(`{"cmd":"ls"}`)}),
+			},
+		},
+		{
+			System: []string{"be brief"},
+			Tools: []llm.ToolSchema{
+				{Name: "run", Description: "run a command", InputSchema: map[string]any{"cmd": "string"}},
+				{Name: "grep", Description: "search text", InputSchema: map[string]any{"pattern": "string", "path": "string"}},
+				{Name: "noop", Description: "does nothing"}, // nil InputSchema -> "input_schema":null
+			},
+		},
+		{
+			System: []string{"s"},
+			Messages: []llm.Message{
+				usr(txt("the quick brown fox jumps over the lazy dog")),
+				asst(txt("ok")),
+			},
+			Tools: []llm.ToolSchema{
+				{Name: "t", Description: "d", InputSchema: map[string]any{"a": "b", "c": "d", "e": "f"}},
+			},
+		},
+	}
+	for _, req := range reqs {
+		rec(t, "EstimateInputTokens", []any{oracleRaw(req)}, EstimateInputTokens(req))
+	}
 }

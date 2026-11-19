@@ -50,7 +50,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `traffic-rs`      | 810  | `traffic/` | `sanitize`, `ftsQuote`, `clip`, `boolInt`, `validHeaderName`, `uniqueArchiveHosts`, `clipBytes`, `truncateUTF8`, `isBinaryBody`, `binaryTag`, `appliedRules` |
 | `enrich-rs`       | 76   | `enrich/`  | `id0`, `itoa`, `hostOf`, `uniq`, `isBlank` |
 | `guard-rs`        | 42   | `guard/`   | `capBlockReason`, `systemBlockMessage`, `TargetBlockMessage` |
-| `sidequestion-rs` | 144  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups` (`messageGroups` over the `norma/llm` model in `llm-rs`; `assemble`/`BuildRequest` need `time`/`llm.MessagesForAPI` and stay in Go) |
+| `sidequestion-rs` | 149  | `sidequestion/` | `Parent::key`, `outputBudget`, `inputBudget`, `messageGroups`, `EstimateInputTokens` (`messageGroups`/`EstimateInputTokens` over the `llm-rs` + `compaction-rs` models; `BuildRequest` needs `time.Time` via `assemble` and stays in Go) |
 | `reportex-rs`     | 62   | `report/`  | `nz`, `oneLine`, `unbalancedFence`, `staleReportNotice`, `reportStale`, `verificationLabel`, `detailedReportLimit` |
 | `notifyx-rs`      | 970  | `notify/`  | `cfgString`, `cfgInt`, `cfgBool`, `cfgStrings`, `cfgMap`, `ValidKind`, `Kinds` (composite `map[string]any` param) |
 | `dbx-rs`          | 51   | `db/`      | `nullIfEmpty`, `isIdentStart`, `isIdentChar`, `marshalStringArray`, `nullableInt` (dep-free unexported helpers) |
@@ -146,7 +146,7 @@ parameter type:
 | `traffic.appliedRules` | `[]rewrite.TraceLine` | **ported** (`traffic-rs`); reads each line's `RuleID`/`Outcome`, returns `(applied?, ordered unique non-zero ids)` — nil `[]int64` → `null` mirrored |
 | `guard.TargetBlockMessage` | `intercept.TargetResult` | **ported** (`guard-rs`); the harness passes `Code`/`Host`/`Port`/`Reason` and reuses `gocompat::neturl::join_host_port` (Go `net.JoinHostPort`) |
 | `sidequestion.outputBudget`, `inputBudget` | `llm.CompletionRequest` / `Snapshot` | **ported** (`sidequestion-rs`); each reads one field (`MaxTokens`, `Model.WindowTokens`) — the harness passes the scalar |
-| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | `messageGroups` **ported** (`sidequestion-rs`, over `llm-rs`); `EstimateInputTokens` now reachable (its `compaction.EstimateTokens` is ported in `compaction-rs`, `ToolSchema` in `llm-rs`); `BuildRequest`'s `llm.MessagesForAPI` + `CloneRequest` are pure/available too — the **only** remaining blocker is `assemble`/`exchangeMessages`, which format `time.Time` RFC3339 (no offline time crate) |
+| `sidequestion.messageGroups`/`BuildRequest`/`assemble`/… | `llm.Message`/`Snapshot`/`Exchange` | `messageGroups` + `EstimateInputTokens` **ported** (`sidequestion-rs`, over `llm-rs` + `compaction-rs`); `BuildRequest`'s `llm.MessagesForAPI` + `CloneRequest` are pure/available — the **only** remaining blocker is `assemble`/`exchangeMessages`, which format `time.Time` RFC3339 (no offline time crate) |
 | `llmpool.rotateGroups`/`blocksLen` | `[]*Member`/`[]llm.ContentBlock` | `blocksLen` (+ `estimateTokens`, over `llm-rs`'s `CompletionRequest`) **ported** (`llmpoolx-rs`); `rotateGroups` still needs `[]*Member` pointers |
 | `enrich.extractTitle` | `[]byte` | regex (`reTitle`) + `html.UnescapeString`; no offline regex crate |
 

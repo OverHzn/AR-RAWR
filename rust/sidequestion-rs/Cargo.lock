@@ -3,6 +3,14 @@
 version = 4
 
 [[package]]
+name = "compaction-rs"
+version = "0.1.0"
+dependencies = [
+ "llm-rs",
+ "serde_json",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -87,6 +95,7 @@ dependencies = [
 name = "sidequestion-rs"
 version = "0.1.0"
 dependencies = [
+ "compaction-rs",
  "llm-rs",
  "serde_json",
 ]
