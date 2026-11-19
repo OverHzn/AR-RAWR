@@ -442,3 +442,104 @@ pub fn looks_like_ip_address(value: &str) -> bool {
     }
     true
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ak: task asset/company/category input normalizers in `db/` (pure
+// de-dup / validate / normalise). Error strings reproduce the Go sentinel wraps
+// (`ErrTaskCompanyIDsInvalid`, `ErrTaskAssetInvalid`, `ErrTaskCategoryInvalid`).
+// ---------------------------------------------------------------------------
+
+const MAX_TASK_COMPANY_COUNT: usize = 32;
+const MAX_TASK_ASSET_MUTATION_COUNT: usize = 100;
+const MAX_TASK_CATEGORY_NAME_RUNES: usize = 80;
+const MAX_TASK_ASSET_SUMMARY_RUNES: usize = 500;
+const DEFAULT_TASK_ASSET_SOURCE: &str = "system";
+
+/// `NormalizeTaskCompanyIDs` (`db/tasks.go`): de-duplicate `ids` keeping
+/// first-seen order, rejecting non-positive ids and more than
+/// [`MAX_TASK_COMPANY_COUNT`] uniques. `Ok(None)` mirrors Go's `nil` slice for
+/// an empty input, so it serialises as JSON `null`, not `[]`.
+pub fn normalize_task_company_ids(ids: &[i64]) -> Result<Option<Vec<i64>>, String> {
+    if ids.is_empty() {
+        return Ok(None);
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut normalized: Vec<i64> = Vec::new();
+    for &id in ids {
+        if id <= 0 {
+            return Err("invalid task company ids: company id must be positive".to_string());
+        }
+        if !seen.insert(id) {
+            continue;
+        }
+        normalized.push(id);
+        if normalized.len() > MAX_TASK_COMPANY_COUNT {
+            return Err(format!(
+                "invalid task company ids: got more than {MAX_TASK_COMPANY_COUNT} unique companies"
+            ));
+        }
+    }
+    Ok(Some(normalized))
+}
+
+/// `normalizeTaskAssetIDs` (`db/task_assets.go`): de-duplicate `ids` keeping
+/// first-seen order, rejecting an empty input, non-positive ids and more than
+/// [`MAX_TASK_ASSET_MUTATION_COUNT`] uniques.
+pub fn normalize_task_asset_ids(ids: &[i64]) -> Result<Vec<i64>, String> {
+    if ids.is_empty() {
+        return Err("invalid task asset association: asset_ids is required".to_string());
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut normalized: Vec<i64> = Vec::new();
+    for &id in ids {
+        if id <= 0 {
+            return Err("invalid task asset association: asset id must be positive".to_string());
+        }
+        if !seen.insert(id) {
+            continue;
+        }
+        normalized.push(id);
+        if normalized.len() > MAX_TASK_ASSET_MUTATION_COUNT {
+            return Err(format!(
+                "invalid task asset association: at most {MAX_TASK_ASSET_MUTATION_COUNT} assets per request"
+            ));
+        }
+    }
+    Ok(normalized)
+}
+
+/// `normalizeTaskCategoryName` (`db/task_categories.go`): collapse whitespace in
+/// `name` and return `(name, lower(name))`, rejecting empty or over-long names.
+pub fn normalize_task_category_name(name: &str) -> Result<(String, String), String> {
+    let name = strings::go_fields_join(name);
+    if name.is_empty() {
+        return Err("invalid task category: name is required".to_string());
+    }
+    if name.chars().count() > MAX_TASK_CATEGORY_NAME_RUNES {
+        return Err(format!(
+            "invalid task category: name exceeds {MAX_TASK_CATEGORY_NAME_RUNES} characters"
+        ));
+    }
+    let lower = strings::go_to_lower(&name);
+    Ok((name, lower))
+}
+
+/// `normalizeTaskAssetSource` (`db/task_assets.go`): lower-case/trim `source`
+/// (defaulting to `"system"` when empty) and trim `summary`, rejecting an
+/// over-long summary.
+pub fn normalize_task_asset_source(
+    source: &str,
+    summary: &str,
+) -> Result<(String, String), String> {
+    let mut source = strings::go_trim_space(&strings::go_to_lower(source)).to_string();
+    if source.is_empty() {
+        source = DEFAULT_TASK_ASSET_SOURCE.to_string();
+    }
+    let summary = strings::go_trim_space(summary).to_string();
+    if summary.chars().count() > MAX_TASK_ASSET_SUMMARY_RUNES {
+        return Err(format!(
+            "invalid task asset association: source summary exceeds {MAX_TASK_ASSET_SUMMARY_RUNES} characters"
+        ));
+    }
+    Ok((source, summary))
+}

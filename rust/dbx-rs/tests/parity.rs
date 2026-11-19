@@ -111,6 +111,26 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             json!([s, ok])
         }
         "looksLikeIPAddress" => json!(looks_like_ip_address(&arg_str(args, 0))),
+        // batch 9ak
+        "NormalizeTaskCompanyIDs" => match normalize_task_company_ids(&arg_i64_slice(args, 0)) {
+            Ok(Some(v)) => json!([v, Value::Null]),
+            Ok(None) => json!([Value::Null, Value::Null]),
+            Err(e) => json!([Value::Null, e]),
+        },
+        "normalizeTaskAssetIDs" => match normalize_task_asset_ids(&arg_i64_slice(args, 0)) {
+            Ok(v) => json!([v, Value::Null]),
+            Err(e) => json!([Value::Null, e]),
+        },
+        "normalizeTaskCategoryName" => match normalize_task_category_name(&arg_str(args, 0)) {
+            Ok((a, b)) => json!([[a, b], Value::Null]),
+            Err(e) => json!([["", ""], e]),
+        },
+        "normalizeTaskAssetSource" => {
+            match normalize_task_asset_source(&arg_str(args, 0), &arg_str(args, 1)) {
+                Ok((a, b)) => json!([[a, b], Value::Null]),
+                Err(e) => json!([["", ""], e]),
+            }
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

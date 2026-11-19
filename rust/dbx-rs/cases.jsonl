@@ -12,9 +12,11 @@
 {"args":["   "],"fn":"companyNKey","ok":""}
 {"args":["   "],"fn":"normRiskArea","ok":""}
 {"args":["   "],"fn":"normalizeKeyword","ok":""}
+{"args":["   "],"fn":"normalizeTaskCategoryName","ok":[["",""],"invalid task category: name is required"]}
 {"args":["   "],"fn":"taskTemplateNKey","ok":""}
 {"args":["   "],"fn":"taskTemplateName","ok":""}
 {"args":["  "],"fn":"looksLikeIPAddress","ok":false}
+{"args":["  Foo  ",""],"fn":"normalizeTaskAssetSource","ok":[["foo",""],null]}
 {"args":["  Leading And   Trailing  "],"fn":"NormalizeCoverageField","ok":"Leading And Trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"companyNKey","ok":"leading and trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"normRiskArea","ok":"leading and trailing"}
@@ -31,9 +33,11 @@
 {"args":["  padded  ",1],"fn":"truncateRunes","ok":"p…"}
 {"args":["  padded  ",3],"fn":"truncateRunes","ok":"pad…"}
 {"args":["  padded  ",5],"fn":"truncateRunes","ok":"padde…"}
+{"args":["  spaced   out  "],"fn":"normalizeTaskCategoryName","ok":[["spaced out","spaced out"],null]}
 {"args":["  spaced  "],"fn":"nullIfEmpty","ok":"  spaced  "}
 {"args":[" "],"fn":"nullIfEmpty","ok":" "}
 {"args":[" enc:v1:x"],"fn":"isEncrypted","ok":false}
+{"args":["",""],"fn":"normalizeTaskAssetSource","ok":[["system",""],null]}
 {"args":["",-1],"fn":"lessonText","ok":""}
 {"args":["",0],"fn":"lessonText","ok":""}
 {"args":["",0],"fn":"truncateRunes","ok":""}
@@ -55,6 +59,7 @@
 {"args":[""],"fn":"normRiskArea","ok":""}
 {"args":[""],"fn":"normalizeKeyword","ok":""}
 {"args":[""],"fn":"normalizeRuleAction","ok":"block"}
+{"args":[""],"fn":"normalizeTaskCategoryName","ok":[["",""],"invalid task category: name is required"]}
 {"args":[""],"fn":"nullIfEmpty","ok":null}
 {"args":[""],"fn":"sealedJSON","ok":["",false]}
 {"args":[""],"fn":"taskTemplateNKey","ok":""}
@@ -96,6 +101,10 @@
 {"args":["MixedCASE  Value"],"fn":"normalizeKeyword","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"taskTemplateNKey","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"taskTemplateName","ok":"MixedCASE Value"}
+{"args":["My Skill"],"fn":"normalizeTaskCategoryName","ok":[["My Skill","my skill"],null]}
+{"args":["SYSTEM","ok"],"fn":"normalizeTaskAssetSource","ok":[["system","ok"],null]}
+{"args":["UPPER"],"fn":"normalizeTaskCategoryName","ok":[["UPPER","upper"],null]}
+{"args":["USER","  hi  "],"fn":"normalizeTaskAssetSource","ok":[["user","hi"],null]}
 {"args":["Url"],"fn":"isKnownField","ok":true}
 {"args":["[1,2]"],"fn":"sealedJSON","ok":["",false]}
 {"args":["[MODEL] x"],"fn":"isModelReason","ok":true}
@@ -106,6 +115,7 @@
 {"args":["[模型]"],"fn":"isModelReason","ok":true}
 {"args":["\"a string\""],"fn":"sealedJSON","ok":["",false]}
 {"args":["\t"],"fn":"nullIfEmpty","ok":"\t"}
+{"args":["\tTab\t"," clean "],"fn":"normalizeTaskAssetSource","ok":[["tab","clean"],null]}
 {"args":["a.b.c.d"],"fn":"isIPLiteral","ok":false}
 {"args":["a.b.c.d"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["a:b"],"fn":"looksLikeIPAddress","ok":false}
@@ -114,6 +124,8 @@
 {"args":["a\tb\nc",1],"fn":"truncateRunes","ok":"a…"}
 {"args":["a\tb\nc",3],"fn":"truncateRunes","ok":"a\tb…"}
 {"args":["a\tb\nc",5],"fn":"truncateRunes","ok":"a\tb\nc"}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"normalizeTaskCategoryName","ok":[["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],null]}
+{"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"normalizeTaskCategoryName","ok":[["",""],"invalid task category: name exceeds 80 characters"]}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…"}
 {"args":["allow "],"fn":"normalizeRuleAction","ok":"block"}
@@ -239,12 +251,16 @@
 {"args":["tab\there\nnewline"],"fn":"normalizeKeyword","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"taskTemplateNKey","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"taskTemplateName","ok":"tab here newline"}
+{"args":["tab\tsep"],"fn":"normalizeTaskCategoryName","ok":[["tab sep","tab sep"],null]}
 {"args":["task_id"],"fn":"isKnownField","ok":true}
 {"args":["tech"],"fn":"isKnownField","ok":true}
 {"args":["technology"],"fn":"isKnownField","ok":true}
 {"args":["title"],"fn":"isKnownField","ok":true}
+{"args":["trail "],"fn":"normalizeTaskCategoryName","ok":[["trail","trail"],null]}
 {"args":["unknown","","","","",""],"fn":"assetDisplayName","ok":""}
 {"args":["unknown"],"fn":"isKnownField","ok":false}
+{"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],null]}
+{"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["",""],"invalid task asset association: source summary exceeds 500 characters"]}
 {"args":["x"],"fn":"nullIfEmpty","ok":"x"}
 {"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"],"fn":"truncateNotifyError","ok":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"}
 {"args":["{\"__artex_enc\":123}"],"fn":"sealedJSON","ok":["",false]}
@@ -406,17 +422,38 @@
 {"args":[["quote\"and,comma","tab\there"]],"fn":"marshalStringArray","ok":"{\"quote\\\"and,comma\",\"tab\there\"}"}
 {"args":[["x"],null],"fn":"mergeAgentKeys","ok":["x"]}
 {"args":[[-1,0,99]],"fn":"assetIDContainments","ok":["[-1]","[0]","[99]"]}
+{"args":[[-1]],"fn":"NormalizeTaskCompanyIDs","ok":[null,"invalid task company ids: company id must be positive"]}
 {"args":[[-1]],"fn":"lessonExtractCompanyID","ok":-1}
+{"args":[[-5]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset id must be positive"]}
+{"args":[[0]],"fn":"NormalizeTaskCompanyIDs","ok":[null,"invalid task company ids: company id must be positive"]}
 {"args":[[0]],"fn":"lessonExtractCompanyID","ok":0}
+{"args":[[0]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset id must be positive"]}
+{"args":[[1,-1]],"fn":"NormalizeTaskCompanyIDs","ok":[null,"invalid task company ids: company id must be positive"]}
+{"args":[[1,0]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset id must be positive"]}
+{"args":[[1,1,1,2,2]],"fn":"NormalizeTaskCompanyIDs","ok":[[1,2],null]}
+{"args":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: at most 100 assets per request"]}
+{"args":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100]],"fn":"normalizeTaskAssetIDs","ok":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],null]}
+{"args":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33]],"fn":"NormalizeTaskCompanyIDs","ok":[null,"invalid task company ids: got more than 32 unique companies"]}
+{"args":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]],"fn":"NormalizeTaskCompanyIDs","ok":[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32],null]}
+{"args":[[1,2,3]],"fn":"NormalizeTaskCompanyIDs","ok":[[1,2,3],null]}
 {"args":[[1,2,3]],"fn":"assetIDContainments","ok":["[1]","[2]","[3]"]}
+{"args":[[1]],"fn":"NormalizeTaskCompanyIDs","ok":[[1],null]}
 {"args":[[1]],"fn":"assetIDContainments","ok":["[1]"]}
+{"args":[[1]],"fn":"normalizeTaskAssetIDs","ok":[[1],null]}
+{"args":[[2,3,4]],"fn":"normalizeTaskAssetIDs","ok":[[2,3,4],null]}
+{"args":[[3,1,2,1]],"fn":"NormalizeTaskCompanyIDs","ok":[[3,1,2],null]}
+{"args":[[4,2,4,2]],"fn":"normalizeTaskAssetIDs","ok":[[4,2],null]}
 {"args":[[42,43,44]],"fn":"lessonExtractCompanyID","ok":0}
+{"args":[[5,5,5]],"fn":"NormalizeTaskCompanyIDs","ok":[[5],null]}
+{"args":[[7,7,7,8]],"fn":"normalizeTaskAssetIDs","ok":[[7,8],null]}
 {"args":[[7,8]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[7]],"fn":"lessonExtractCompanyID","ok":7}
 {"args":[[],[]],"fn":"mergeAgentKeys","ok":[]}
+{"args":[[]],"fn":"NormalizeTaskCompanyIDs","ok":[null,null]}
 {"args":[[]],"fn":"assetIDContainments","ok":[]}
 {"args":[[]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[]],"fn":"marshalStringArray","ok":"{}"}
+{"args":[[]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset_ids is required"]}
 {"args":[null,-3],"fn":"sameMainSegment","ok":false}
 {"args":[null,-3],"fn":"sameOptionalInt64","ok":false}
 {"args":[null,0],"fn":"sameMainSegment","ok":true}
@@ -430,6 +467,8 @@
 {"args":[null,null],"fn":"mergeAgentKeys","ok":[]}
 {"args":[null,null],"fn":"sameMainSegment","ok":true}
 {"args":[null,null],"fn":"sameOptionalInt64","ok":true}
+{"args":[null],"fn":"NormalizeTaskCompanyIDs","ok":[null,null]}
 {"args":[null],"fn":"assetIDContainments","ok":[]}
 {"args":[null],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[null],"fn":"marshalStringArray","ok":"{}"}
+{"args":[null],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset_ids is required"]}

@@ -10,6 +10,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -316,5 +317,74 @@ func TestZZOracle9ad(t *testing.T) {
 		"1:2:3", "cafe:cafe", "CAFE::1",
 	} {
 		rec(t, "looksLikeIPAddress", []any{v}, looksLikeIPAddress(v))
+	}
+}
+
+func TestZZOracle9ak(t *testing.T) {
+	mk := func(n int) []int64 { s := make([]int64, n); for i := range s { s[i] = int64(i + 1) }; return s }
+
+	// NormalizeTaskCompanyIDs(ids) -> [ids_or_null, err_or_null]
+	companySets := [][]int64{
+		nil, {}, {1}, {1, 2, 3}, {3, 1, 2, 1}, {0}, {-1}, {1, -1},
+		{1, 1, 1, 2, 2}, {5, 5, 5}, mk(32), mk(33),
+	}
+	for _, ids := range companySets {
+		res, err := NormalizeTaskCompanyIDs(ids)
+		var rj any
+		if res != nil {
+			rj = res
+		}
+		var ej any
+		if err != nil {
+			ej = err.Error()
+		}
+		rec(t, "NormalizeTaskCompanyIDs", []any{ids}, []any{rj, ej})
+	}
+
+	// normalizeTaskAssetIDs(ids) -> [ids_or_null, err_or_null]
+	assetSets := [][]int64{
+		nil, {}, {1}, {2, 3, 4}, {4, 2, 4, 2}, {0}, {-5}, {1, 0},
+		{7, 7, 7, 8}, mk(100), mk(101),
+	}
+	for _, ids := range assetSets {
+		res, err := normalizeTaskAssetIDs(ids)
+		var rj any
+		if res != nil {
+			rj = res
+		}
+		var ej any
+		if err != nil {
+			ej = err.Error()
+		}
+		rec(t, "normalizeTaskAssetIDs", []any{ids}, []any{rj, ej})
+	}
+
+	// normalizeTaskCategoryName(name) -> [[name, lower], err_or_null]
+	catNames := []string{
+		"", "   ", "My Skill", "  spaced   out  ", "UPPER", "tab\tsep",
+		strings.Repeat("a", 80), strings.Repeat("a", 81), "trail ",
+	}
+	for _, name := range catNames {
+		n, low, err := normalizeTaskCategoryName(name)
+		var ej any
+		if err != nil {
+			ej = err.Error()
+		}
+		rec(t, "normalizeTaskCategoryName", []any{name}, []any{[]any{n, low}, ej})
+	}
+
+	// normalizeTaskAssetSource(source, summary) -> [[source, summary], err_or_null]
+	type as struct{ source, summary string }
+	asCases := []as{
+		{"", ""}, {"USER", "  hi  "}, {"  Foo  ", ""}, {"x", strings.Repeat("b", 500)},
+		{"x", strings.Repeat("b", 501)}, {"SYSTEM", "ok"}, {"\tTab\t", " clean "},
+	}
+	for _, c := range asCases {
+		src, sum, err := normalizeTaskAssetSource(c.source, c.summary)
+		var ej any
+		if err != nil {
+			ej = err.Error()
+		}
+		rec(t, "normalizeTaskAssetSource", []any{c.source, c.summary}, []any{[]any{src, sum}, ej})
 	}
 }
