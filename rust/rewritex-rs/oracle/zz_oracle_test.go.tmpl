@@ -1,0 +1,97 @@
+package rewrite
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers
+// in this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok}. record.sh sorts the lines so the
+// output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// validToken(s)
+	tokInputs := []string{
+		"", "a", "A", "0", "abc", "ABC123", "a-b_c", "content-type",
+		"has space", "has/slash", "has:colon", "tab\tno", "new\nline",
+		"specialchars!#$%&'*+-.^_`|~", "bad(paren)", "bad@at", "bad,comma",
+		"unicode-日本語", "x\x00y", "x\x7fy", "trail-",
+	}
+	for _, s := range tokInputs {
+		rec(t, "validToken", []any{s}, validToken(s))
+	}
+
+	// nulInHead(ctx, body) — the leading string is ignored; record only the body,
+	// as a []int of byte values (so the harness reconstructs the exact bytes).
+	mkBody := func(n int, nulAt int) []byte {
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = 'a'
+		}
+		if nulAt >= 0 && nulAt < n {
+			b[nulAt] = 0
+		}
+		return b
+	}
+	bodies := [][]byte{
+		{},
+		[]byte("no nul here"),
+		[]byte("has\x00nul"),
+		{0},
+		mkBody(600, -1),
+		mkBody(600, 511),
+		mkBody(600, 512),
+		mkBody(512, 511),
+		mkBody(512, -1),
+		[]byte("early\x00then a long tail of ordinary text with no further null bytes anywhere at all"),
+	}
+	for _, body := range bodies {
+		ints := make([]int, len(body))
+		for i, b := range body {
+			ints[i] = int(b)
+		}
+		rec(t, "nulInHead", []any{ints}, nulInHead("request", body))
+	}
+
+	// actionClass(typ)
+	for _, typ := range []string{
+		"set_method", "set_path_query", "replace_url", "delete_header",
+		"set_header", "replace_header", "set_body", "replace_body",
+		"", "unknown", "SET_METHOD", "set-header", "status",
+	} {
+		rec(t, "actionClass", []any{typ}, actionClass(typ))
+	}
+
+	// bodyAllowedForStatus(status)
+	for _, status := range []int{-1, 0, 99, 100, 101, 150, 199, 200, 204, 304, 301, 404, 500} {
+		rec(t, "bodyAllowedForStatus", []any{status}, bodyAllowedForStatus(status))
+	}
+
+	// headerTarget(name) — record [canonical, errString] (errString "" on success).
+	for _, name := range []string{
+		"", "x", "content-type", "Content-Type", "host", "Host",
+		"user-agent", "x-custom-header", "accept", "proxy-authorization",
+		"Proxy-Foo", "connection", "transfer-encoding", "te", "expect",
+		"upgrade", "keep-alive", "trailer", "content-length",
+		"has space", "bad/name", "x_y-z", "X-Custom-HEADER",
+		"a", "A", "0abc", "-leading-dash", "trailing-dash-", "x--y",
+	} {
+		c, err := headerTarget(name)
+		es := ""
+		if err != nil {
+			es = err.Error()
+		}
+		rec(t, "headerTarget", []any{name}, []any{c, es})
+	}
+}

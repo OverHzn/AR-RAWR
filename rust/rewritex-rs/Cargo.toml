@@ -1,0 +1,18 @@
+[package]
+name = "rewritex-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of `traffic/rewrite/` unexported pure helpers (header-name token validation + net/http CanonicalHeaderKey, NUL-in-head scan, action execution-class table, body-allowed-for-status predicate)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
