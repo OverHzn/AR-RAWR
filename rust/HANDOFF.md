@@ -359,7 +359,7 @@ resume without re-deriving state.
   CRUD test -> fresh differential `tests/db_task_credentials_test.rs` (2): upsert-
   in-place + sealed-at-rest (is_sealed) + decrypt round-trip + delete, and normalize
   validation. artex **227 tests** green, clippy clean, fmt clean, gate 30/30.
-- **D-1m asset intercept matching (this commit):** `src/db/asset_intercept_match.rs`
+- **D-1m asset intercept matching (commit 27662cb):** `src/db/asset_intercept_match.rs`
   — pure half of `db/asset_intercept_match.go`: `AssetInterceptRule::reason`, `match_one`,
   `match_asset_intercept_rules`, `has_enabled_rule`, `evaluate_asset_gate` + `AssetGateDecision`
   (intercept-first then allow; empty/all-disabled allow = inert). `AssetInterceptKindLabel`
@@ -370,6 +370,18 @@ resume without re-deriving state.
   (4) — port of Go `TestMatchAssetInterceptRules` (13 cases) + `TestEvaluateAssetGate`
   (6 scenarios) + kind-label + Reason format; Go oracle green. (`TestAssetInterceptCandidates`
   deferred to the assets group — needs the `Asset` type.) artex **231 tests** green, clippy
+  clean, fmt clean, gate 30/30.
+- **D-1n chat mentions (this commit):** `src/db/chat_mentions.rs` — `ChatMention`/
+  `ChatMentionPage` + `valid_chat_mention_kind` (pure) + `DB::{search_chat_mentions,
+  search_chat_mentions_page}` (port of `db/chat_mentions.go`; one verbatim UNION-ALL
+  SQL over findings/companies/assets, `%`/`_`/`\` escaped literal, `QueryContext`
+  ctx-cancellation via biased select). Cursor = `base64.RawURLEncoding` over JSON of
+  `{ID,Kind,Exact,Scope,Query}` — uses crate `base64` 0.22 `URL_SAFE_NO_PAD`, struct
+  serde-renamed to Go's capitalised field names (byte-identical wire format); cursor
+  validated on decode (len<=2048, kind valid, scope+query match) -> ErrInvalidChatMentionCursor
+  sentinel. Specs: `tests/db_chat_mentions_test.rs` (3) — kind/query search + pagination
+  round-trip (25 findings -> 20 + cursor + 5, no overlap, cursor-binding + garbage
+  reject) + valid-kind; Go oracle n/a (no `_test.go`). artex **234 tests** green, clippy
   clean, fmt clean, gate 30/30.
 
 ## Next
