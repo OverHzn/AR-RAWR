@@ -87,6 +87,16 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             };
             json!([rewritten, ids])
         }
+        // batch 9aj
+        "rulesIsBinary" => {
+            let ct = arg_str(args, 0);
+            let b = match &args[1] {
+                Value::Null => Vec::new(),
+                _ => arg_bytes(args, 1),
+            };
+            json!(rules_is_binary(ct.as_str(), b.as_slice()))
+        }
+        "proxyCausedErr" => json!(proxy_caused_err(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

@@ -210,3 +210,31 @@ pub fn applied_rules(lines: &[TraceLine]) -> (bool, Vec<i64>) {
     }
     (rewritten, ids)
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9aj: thin traffic helpers (binary-body rule gate, proxy-error sniff).
+// ---------------------------------------------------------------------------
+
+/// `rulesIsBinary` (`traffic/...`): the binary-body decision behind the response
+/// rules pipeline. `runTestHook("rule")` is a no-op unless a test hook is
+/// installed, so this is exactly [`is_binary_body`].
+pub fn rules_is_binary(content_type: &str, body: &[u8]) -> bool {
+    is_binary_body(content_type, body)
+}
+
+/// `proxyCausedErr` (`traffic/...`): whether a transport error (by its message)
+/// looks like it came from the egress proxy — matched case-insensitively against
+/// a fixed set of substrings.
+pub fn proxy_caused_err(msg: &str) -> bool {
+    let s = go_to_lower(msg);
+    [
+        "head request",
+        "http2",
+        "http/2",
+        "protocol error",
+        "protocol_error",
+        "malformed",
+    ]
+    .iter()
+    .any(|p| s.contains(p))
+}

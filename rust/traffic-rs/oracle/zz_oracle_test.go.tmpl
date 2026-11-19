@@ -132,3 +132,42 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "appliedRules", []any{lines}, []any{r, ids})
 	}
 }
+
+func bytesRepeatA(n int) []byte {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = 'a'
+	}
+	b[n-1] = 0 // single NUL at the very end (index n-1 >= 512 for n=600)
+	return b
+}
+
+func TestZZOracle9aj(t *testing.T) {
+	// rulesIsBinary(contentType, body)
+	type rb struct {
+		ct   string
+		body []byte
+	}
+	rbCases := []rb{
+		{"image/png", nil}, {"TEXT/PLAIN", []byte("hello")},
+		{"application/zip", []byte("PK")}, {"text/html; charset=utf-8", []byte("<p>")},
+		{"", []byte{0, 1, 2}}, {"", []byte("clean text")},
+		{"application/octet-stream", nil}, {"application/json", []byte("no nul here")},
+		{"video/mp4", []byte{}}, {"  image/jpeg  ", nil},
+		{"text/plain", bytesRepeatA(600)}, // NUL only past the 512-byte clip
+	}
+	for _, c := range rbCases {
+		rec(t, "rulesIsBinary", []any{c.ct, c.body}, rulesIsBinary(c.ct, c.body))
+	}
+
+	// proxyCausedErr(err.Error())
+	errs := []string{
+		"", "Head request failed", "unexpected HTTP2 framing",
+		"http/2: server sent GOAWAY", "PROTOCOL ERROR", "protocol_error: bad",
+		"malformed response", "Malformed header", "connection refused",
+		"all good", "HTTP/2 timeout", "nomatchhere",
+	}
+	for _, e := range errs {
+		rec(t, "proxyCausedErr", []any{e}, proxyCausedErr(fmt.Errorf("%s", e)))
+	}
+}
