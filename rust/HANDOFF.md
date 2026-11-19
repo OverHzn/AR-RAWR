@@ -326,7 +326,7 @@ resume without re-deriving state.
   + `TestCostSeparatesFreshReadAndWriteBuckets` + `TestUsageByProfileCostAggregatesRows` +
   `TestLLMUsageTsIndex` + `TokenByModel` + `ParseExpID`; Go oracle green on same DB. artex
   **220 tests** green, clippy clean, fmt clean, gate 30/30.
-- **D-1i server logs (this commit):** `src/db/logs.rs` — `DBLog` + `DB::{insert_log
+- **D-1i server logs (commit 3fa6361):** `src/db/logs.rs` — `DBLog` + `DB::{insert_log
   (RETURNING id), recent_logs, list_logs_before}` (port of `db/logs.go`; `ORDER BY id
   DESC LIMIT` then reverse -> oldest-first; `created_at` as SystemTime). No Go `_test.go`
   -> fresh differential test `tests/db_logs_test.rs` (1): insert/page oldest-first +
@@ -334,6 +334,15 @@ resume without re-deriving state.
   gate 30/30. (Deferred `db/nkey.go`: key builders re-exportable from `db-rs::port`, but
   `RootDomain` needs a publicsuffix/eTLD+1 not yet in the Rust tree -> build it with the
   assets group.)
+- **D-1j llm retry policy (this commit):** `src/db/llmretry.rs` — `RetryRule`/
+  `RetryOverride`/`LLMRetryPolicy` (all Copy+PartialEq) + pure `interval`/`or`/`clamped`
+  (attempts [-1,20], interval [0,1h]) + `DB::{llm_retry_policy (zero on missing/
+  unparseable, else Clamped), set_llm_retry_policy (clamped first)}` over the
+  `llm_retry_policy` setting. `RetryOverride` declared here (its Clamped lives here;
+  config.go will embed it as LLMProfile.Retry). Specs: `tests/db_llmretry_test.rs` (3) —
+  port of Go `TestLLMRetryPolicyRoundTrip` (round-trip + clamp + missing-key, restores
+  prior setting) + pure clamp/or/interval + override-clamp; Go oracle green. artex
+  **224 tests** green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
