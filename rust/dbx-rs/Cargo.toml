@@ -9,6 +9,7 @@ description = "Rust port of `db/` unexported pure helpers (array marshalling, id
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+gocompat = { path = "../gocompat" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [profile.release]

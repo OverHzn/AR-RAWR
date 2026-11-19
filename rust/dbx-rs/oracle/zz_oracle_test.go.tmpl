@@ -55,3 +55,79 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "nullableInt", []any{v}, nullableInt(v))
 	}
 }
+
+func TestZZOracle9y(t *testing.T) {
+	// truncateRunes(s, n)
+	truncInputs := []string{"", "   ", "hello", "  padded  ", "héllo wörld", "日本語テキスト", "a\tb\nc"}
+	for _, s := range truncInputs {
+		for _, n := range []int{0, 1, 3, 5, 100} {
+			rec(t, "truncateRunes", []any{s, n}, truncateRunes(s, n))
+		}
+	}
+
+	// normalizeKeyword / normalizeCoverageField / normRiskArea / companyNKey /
+	// taskTemplateName / taskTemplateNKey
+	covInputs := []string{
+		"",
+		"   ",
+		"simple",
+		"  Leading And   Trailing  ",
+		"tab\there\nnewline",
+		"ctrl\x00nul\x1fend\x7fdel",
+		"c1\x80\x9f bytes",
+		"line\u2028sep\u2029para",
+		"MixedCASE  Value",
+		"日本語  テスト",
+		"nbsp\u00a0only",
+		"multi\u2003em-space\u2003here",
+	}
+	for _, s := range covInputs {
+		rec(t, "normalizeKeyword", []any{s}, normalizeKeyword(s))
+		rec(t, "NormalizeCoverageField", []any{s}, NormalizeCoverageField(s))
+		rec(t, "normRiskArea", []any{s}, normRiskArea(s))
+		rec(t, "companyNKey", []any{s}, companyNKey(s))
+		rec(t, "taskTemplateName", []any{s}, taskTemplateName(s))
+		rec(t, "taskTemplateNKey", []any{s}, taskTemplateNKey(s))
+	}
+
+	// normalizeHeartbeat(sec)
+	for _, sec := range []int{-100, 0, 599, 600, 601, 1200, 3600} {
+		rec(t, "normalizeHeartbeat", []any{sec}, normalizeHeartbeat(sec))
+	}
+
+	// normalizeRuleAction(action)
+	for _, a := range []string{"allow", "block", "", "ALLOW", "Allow", "deny", "allow "} {
+		rec(t, "normalizeRuleAction", []any{a}, normalizeRuleAction(a))
+	}
+
+	// sameOptionalInt64(a, b) — model pointers as null | int
+	optVals := []*int64{nil}
+	for _, v := range []int64{0, 1, 5, 5, -3} {
+		vv := v
+		optVals = append(optVals, &vv)
+	}
+	for _, a := range optVals {
+		for _, b := range optVals {
+			rec(t, "sameOptionalInt64", []any{optJSON(a), optJSON(b)}, sameOptionalInt64(a, b))
+		}
+	}
+
+	// isUTF8Start(b) — record the byte value
+	for _, b := range []int{0x00, 0x41, 0x7f, 0x80, 0xbf, 0xc0, 0xc2, 0xff} {
+		rec(t, "isUTF8Start", []any{b}, isUTF8Start(byte(b)))
+	}
+
+	// lessonExtractCompanyID(ids)
+	idSets := [][]int64{nil, {}, {7}, {7, 8}, {0}, {-1}, {42, 43, 44}}
+	for _, ids := range idSets {
+		rec(t, "lessonExtractCompanyID", []any{ids}, lessonExtractCompanyID(ids))
+	}
+}
+
+// optJSON renders a *int64 as null or its numeric value, for recording.
+func optJSON(p *int64) any {
+	if p == nil {
+		return nil
+	}
+	return *p
+}
