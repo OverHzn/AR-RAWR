@@ -16,6 +16,7 @@ use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
 use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
 use noa_rs::schema::compress_tool_schema;
 use noa_rs::state::{StateBlock, active_block_spans, active_blocks, covered_message_ids};
+use noa_rs::tier::{decide_tier, is_terminal_rewrite};
 
 fn cases() -> Vec<Value> {
     include_str!("../cases.jsonl")
@@ -352,6 +353,41 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 .collect();
             Value::Array(out)
         }
+        "DecideTier" => {
+            let kind = args[0]["Kind"].as_str().expect("Kind");
+            let nested: Vec<String> = args[0]["NestedBlockIDs"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let max_tier = args[0]["MaxTier"].as_i64().expect("MaxTier");
+            let blocks = decode_state_blk_arg(&args[1]);
+            let d = decide_tier(kind, &nested, max_tier, &blocks);
+            // Go nil-slice vs []: empty consumed/surviving render as null.
+            let null_or_arr = |v: &Vec<String>| {
+                if v.is_empty() {
+                    Value::Null
+                } else {
+                    serde_json::to_value(v).expect("serialize ids")
+                }
+            };
+            serde_json::json!({
+                "TargetTier": d.target_tier,
+                "OutputTier": d.output_tier,
+                "ConsumedBlockIDs": null_or_arr(&d.consumed_block_ids),
+                "SurvivingBlockIDs": null_or_arr(&d.surviving_block_ids),
+            })
+        }
+        "IsTerminalRewrite" => {
+            let target_tier = args[0]["TargetTier"].as_i64().expect("TargetTier");
+            let direct_count = args[0]["DirectCount"].as_i64().expect("DirectCount");
+            let max_tier = args[0]["MaxTier"].as_i64().expect("MaxTier");
+            serde_json::to_value(is_terminal_rewrite(target_tier, direct_count, max_tier))
+                .expect("serialize bool")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -466,6 +502,26 @@ fn decode_state_blocks(v: &Value) -> Vec<StateBlock> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// Decode the recorded `[]stateBlk` arg (an array of {BlockID,Tier,Active}) into
+/// `Vec<StateBlock>`; null -> empty. Fields the tier functions do not read stay default.
+fn decode_state_blk_arg(v: &Value) -> Vec<StateBlock> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    v.as_array()
+        .expect("stateBlk array")
+        .iter()
+        .map(|b| StateBlock {
+            block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
+            tier: b["Tier"].as_i64().unwrap_or(0),
+            start_ref: String::new(),
+            end_ref: String::new(),
+            active: b["Active"].as_bool().unwrap_or(false),
+            effective_message_ids: Vec::new(),
+        })
+        .collect()
 }
 
 #[test]

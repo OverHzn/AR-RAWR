@@ -1023,3 +1023,105 @@ func TestZZOracle9l(t *testing.T) {
 		rec(t, "ActiveBlockSpans", []any{st}, noa.ActiveBlockSpans(st))
 	}
 }
+
+// stateBlk is the observable subset of CompressionBlock for DecideTier's state.
+type stateBlk struct {
+	BlockID string
+	Tier    int
+	Active  bool
+}
+
+// decOut is the observable TierDecision.
+type decOut struct {
+	TargetTier        int
+	OutputTier        int
+	ConsumedBlockIDs  []string
+	SurvivingBlockIDs []string
+}
+
+func TestZZOracle9m(t *testing.T) {
+	mkState := func(blocks []stateBlk) noa.CompressionState {
+		var out []noa.CompressionBlock
+		for _, b := range blocks {
+			out = append(out, noa.CompressionBlock{BlockID: b.BlockID, Tier: noa.Tier(b.Tier), Active: b.Active})
+		}
+		return noa.CompressionState{Blocks: out}
+	}
+	toDec := func(d noa.TierDecision) decOut {
+		return decOut{int(d.TargetTier), int(d.OutputTier), d.ConsumedBlockIDs, d.SurvivingBlockIDs}
+	}
+
+	// ---- DecideTier ----
+	type dt struct {
+		kind    noa.BoundaryKind
+		nested  []string
+		blocks  []stateBlk
+		maxTier int
+	}
+	dtCases := []dt{
+		// pure message range -> tier1/tier1
+		{noa.BoundaryMessage, nil, nil, 3},
+		{noa.BoundaryMessage, []string{"b1"}, []stateBlk{{"b1", 1, true}}, 3},
+		// block range, single tier-1 active -> target 1, output 2, consumed b1
+		{noa.BoundaryBlock, []string{"b1"}, []stateBlk{{"b1", 1, true}}, 3},
+		// block range, single tier-2 active -> target 2, output 3 (maxTier 3), consumed b2
+		{noa.BoundaryBlock, []string{"b2"}, []stateBlk{{"b2", 2, true}}, 3},
+		// block range, tier-2 with maxTier 2 -> output capped 2
+		{noa.BoundaryBlock, []string{"b2"}, []stateBlk{{"b2", 2, true}}, 2},
+		// mixed tiers 1+2 -> target 1 (lowest), consume tier1, survive tier2
+		{noa.BoundaryBlock, []string{"b1", "b2"}, []stateBlk{{"b1", 1, true}, {"b2", 2, true}}, 3},
+		// mixed tiers 2+3 -> target 2, consume tier2, survive tier3
+		{noa.BoundaryBlock, []string{"b2", "b3"}, []stateBlk{{"b2", 2, true}, {"b3", 3, true}}, 3},
+		// inactive block ignored -> lowest stays 0 -> target 1
+		{noa.BoundaryBlock, []string{"b2"}, []stateBlk{{"b2", 2, false}}, 3},
+		// missing block ignored
+		{noa.BoundaryBlock, []string{"bX"}, []stateBlk{{"b1", 1, true}}, 3},
+		// maxTier < 2 -> clamped to 3
+		{noa.BoundaryBlock, []string{"b1"}, []stateBlk{{"b1", 1, true}}, 0},
+		{noa.BoundaryBlock, []string{"b2"}, []stateBlk{{"b2", 2, true}}, 1},
+		// tier-3 block with maxTier 3 -> target 3, output 3 (min(3,4))
+		{noa.BoundaryBlock, []string{"b3"}, []stateBlk{{"b3", 3, true}}, 3},
+		// multiple same-tier -> all consumed
+		{noa.BoundaryBlock, []string{"b1", "b1b"}, []stateBlk{{"b1", 1, true}, {"b1b", 1, true}}, 3},
+	}
+	for _, c := range dtCases {
+		st := mkState(c.blocks)
+		cfg := noa.Config{}
+		cfg.Tiers.MaxTier = noa.Tier(c.maxTier)
+		r := noa.ResolvedRange{Kind: c.kind, NestedBlockIDs: c.nested}
+		arg := map[string]any{
+			"Kind":           c.kind,
+			"NestedBlockIDs": c.nested,
+			"MaxTier":        c.maxTier,
+		}
+		rec(t, "DecideTier", []any{arg, c.blocks}, toDec(noa.DecideTier(r, st, cfg)))
+	}
+
+	// ---- IsTerminalRewrite ----
+	type it struct {
+		targetTier int
+		directCnt  int
+		maxTier    int
+	}
+	itCases := []it{
+		{1, 0, 3},  // not terminal
+		{3, 0, 3},  // terminal, no new messages -> true
+		{3, 2, 3},  // terminal but has direct messages -> false
+		{2, 0, 2},  // terminal at maxTier2 -> true
+		{2, 1, 2},  // maxTier2 with direct -> false
+		{2, 0, 3},  // target 2 but maxTier 3 -> not terminal
+		{1, 0, 1},  // maxTier<2 -> clamped 3, target1 not terminal
+		{3, 0, 1},  // maxTier<2 -> clamped 3, target3 terminal -> true
+	}
+	for _, c := range itCases {
+		cfg := noa.Config{}
+		cfg.Tiers.MaxTier = noa.Tier(c.maxTier)
+		d := noa.TierDecision{TargetTier: noa.Tier(c.targetTier), OutputTier: noa.Tier(c.targetTier)}
+		arg := map[string]any{
+			"TargetTier": c.targetTier,
+			"DirectCount": c.directCnt,
+			"MaxTier":     c.maxTier,
+		}
+		rec(t, "IsTerminalRewrite", []any{arg}, noa.IsTerminalRewrite(d, c.directCnt, cfg))
+	}
+}
