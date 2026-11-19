@@ -29,8 +29,12 @@ pub use sidequestion_rs::port::{
 
 // === Submodules ===
 
+mod capture;
 mod context;
 mod service;
+pub use capture::{
+    attach, bind, finish, with_publisher, AttemptKey, Capture, CaptureKey, Publisher, PublisherKey,
+};
 pub use service::SideQuestionService;
 
 // === Constants (sidequestion/request.go) ===

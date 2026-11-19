@@ -3,18 +3,18 @@
 Mandatory per PHASE-1 §9. Update at the end of every unit so a fresh session can
 resume without re-deriving state.
 
-## Current state (last updated: SQ-3 complete; SQ-4 next)
+## Current state (last updated: SQ-4 complete; mcphttp next)
 
 - Branch: `main`. origin=OverHzn/AR-RAWR, upstream=BaaRai/ARTEX.
-- HEAD at SQ-2 (`23eb131`, pushed). **SQ-3 ready to commit** (contextBuilder + Respond).
+- HEAD at SQ-3 (`7eb3014`, pushed). **SQ-4 ready to commit** (capture layer + harness.QueryDeps).
 - Pure-helper layer fully ported; `rust/gate-all.sh` = **PASS 30 / FAIL 0**.
-- `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 174** (lib 51 + the
+- `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 177** (lib 51 + the
   per-crate integration suites: config 2, llmpool 18, notify_http 10, notify_mask 16,
   notify_pack 12, notify_render 9, notify_sign 12, notify_channels 12, notify_webhook 10,
   notify_registry 2, notify_email 7, notify_redact 10, sidequestion_request 2,
-  sidequestion_service 3, **sidequestion_context 8**, + misc 12).
+  sidequestion_service 3, sidequestion_context 8, **sidequestion_capture 3**, + misc 12).
 - Go baselines for ported packages re-run green (config, llmpool, notify pure specs,
-  sidequestion incl. context_test.go).
+  sidequestion incl. context_test.go + sidequestion_test.go capture specs).
 
 ### Environment
 - Go go1.27.3; rustc/cargo 1.100.0. `export PATH="$HOME/.cargo/bin:/usr/local/go/bin:$PATH"`.
@@ -124,7 +124,7 @@ resume without re-deriving state.
 - **SQ-2 (`23eb131`, pushed):** `SideQuestionService::Answer` (`src/sidequestion/service.rs`) —
   stream/atomic accumulation, tool-use refusal, usage-on-failure. Specs:
   `tests/sidequestion_service_test.rs`.
-- **SQ-3 (ready to commit):** `contextBuilder` + `SideQuestionService::Respond`
+- **SQ-3 (`7eb3014`, pushed):** `contextBuilder` + `SideQuestionService::Respond`
   (`src/sidequestion/context.rs`): bounded context prep (history fold/load, snapshot compaction
   with sha256-keyed summary cache, summary call cap 12, UTF-8-safe chunking) + at most one
   overflow recovery that counts the failed attempt's usage. Added `Provider::complete_full`
@@ -132,9 +132,22 @@ resume without re-deriving state.
   to it. Added serde to `sidequestion-rs` `Parent` + `GoTime`/`Model`/`Snapshot` for the
   `json.Marshal(snapshot)` cache key. Spec: `tests/sidequestion_context_test.rs` (8 specs, all
   ported from `context_test.go`).
+- **SQ-4 (ready to commit):** capture layer `src/sidequestion/capture.rs` — `Publisher`/
+  `with_publisher`, `Capture`/`attach`/`finish`, `bind`/`BoundProvider` — plus a new
+  `src/harness.rs` mirroring `norma/harness.QueryDeps` (the model-call surface: `call_model`
+  stream + `call_model_sync` → `complete_full`, `fill_from` fills nils from a Provider). `attach`
+  threads a per-attach `Capture` sink through the call surface so compaction/auxiliary calls
+  (no attempt marker) cannot replace the main checkpoint: calls from the returned `QueryDeps`
+  carry an `AttemptKey` value (distinct Context-bag slot from the `CaptureKey` `finish` reads and
+  the `PublisherKey` `attach` reads), and `bind` (placed around each concrete pool member) saves
+  the request and, on a clean non-cancelled completion, folds the response via `MessagesForAPI`.
+  Spec: `tests/sidequestion_capture_test.rs` (3 specs ported from `sidequestion_test.go`:
+  TestCheckpointDeepCopyAndBoundaries, TestSnapshotExcludesPartialStreamAndSelectsPoolMember,
+  TestMainSideConcurrencyAndIndependentCancellation — last uses a multi_thread tokio runtime +
+  independent `with_cancel` contexts to prove main/side run concurrently and cancelling one
+  leaves the other running, with the cancelled side's message_start usage preserved).
 
 ## Next
-- SQ-3 commit + push. Next: SQ-4 (harness.QueryDeps + Capture/Attach/Finish/Bind/boundProvider
-  using Accumulator + Context value bag for attemptKey/captureKey/publisherKey; port capture
-  tests from `sidequestion_test.go`) → mcphttp → db (differential) → intercept → egress →
-  traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).
+- SQ-4 commit + push. Next: mcphttp → db (differential) → intercept → egress →
+  traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
+  `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
