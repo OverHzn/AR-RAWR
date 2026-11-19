@@ -336,3 +336,77 @@ func TestZZOracle9c(t *testing.T) {
 func withdrawOut(out map[string]bool, withdrawn []string) []any {
 	return []any{out, withdrawn}
 }
+
+// pair returns a (start, end) pair as a two-element array.
+func pair(start, end int) []any { return []any{start, end} }
+
+func TestZZOracle9d(t *testing.T) {
+	// A conversation with tool exchanges and reasoning runs, used to exercise the
+	// pair-boundary adjusters. Indices are stable.
+	//
+	//  0 u1  user text
+	//  1 a1  assistant reasoning
+	//  2 a2  assistant tool-call Bash(c1)
+	//  3 t1  tool tool-result (c1)
+	//  4 u2  user text
+	//  5 a3  assistant reasoning
+	//  6 a4  assistant tool-call Read(c2)
+	//  7 t2  tool tool-result (c2)
+	//  8 a5  assistant text
+	msgs := []noa.CoreMessage{
+		msg("u1", "user", "text", "hi", "", ""),
+		msg("a1", "assistant", "reasoning", "t", "", ""),
+		msg("a2", "assistant", "tool-call", "", "Bash", "c1"),
+		msg("t1", "tool", "tool-result", "o", "", "c1"),
+		msg("u2", "user", "text", "yo", "", ""),
+		msg("a3", "assistant", "reasoning", "t", "", ""),
+		msg("a4", "assistant", "tool-call", "", "Read", "c2"),
+		msg("t2", "tool", "tool-result", "o2", "", "c2"),
+		msg("a5", "assistant", "text", "done", "", ""),
+	}
+
+	// ---- AdjustBoundariesForReasoningPairs ----
+	// tail reasoning pulls in the following assistant burst
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{5, 5, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(5, 5, msgs)))
+	// head assistant act pulls in the reasoning run before it
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{6, 6, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(6, 6, msgs)))
+	// range that already covers reasoning+act: no change
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{5, 6, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(5, 6, msgs)))
+	// invalid bounds
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{-1, 2, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(-1, 2, msgs)))
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{0, 99, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(0, 99, msgs)))
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{3, 2, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(3, 2, msgs)))
+	// range starting at plain user text: no reasoning involved
+	rec(t, "AdjustBoundariesForReasoningPairs", []any{0, 0, msgs}, pair(noa.AdjustBoundariesForReasoningPairs(0, 0, msgs)))
+
+	// ---- AdjustBoundariesForToolPairs ----
+	// take the tool-call (idx 2) without its result (idx 3) -> pulls result forward
+	rec(t, "AdjustBoundariesForToolPairs", []any{2, 2, msgs, 20}, pair(noa.AdjustBoundariesForToolPairs(2, 2, msgs, 20)))
+	// take the result (idx 3) without its call (idx 2) -> pulls call backward
+	rec(t, "AdjustBoundariesForToolPairs", []any{3, 3, msgs, 20}, pair(noa.AdjustBoundariesForToolPairs(3, 3, msgs, 20)))
+	// both call+result already in range -> no change
+	rec(t, "AdjustBoundariesForToolPairs", []any{2, 3, msgs, 20}, pair(noa.AdjustBoundariesForToolPairs(2, 3, msgs, 20)))
+	// maxScan=0 -> no scan, stays put even though pair is split
+	rec(t, "AdjustBoundariesForToolPairs", []any{2, 2, msgs, 0}, pair(noa.AdjustBoundariesForToolPairs(2, 2, msgs, 0)))
+	// scan hits a non-matching message and stops (idx 4 user, not in range)
+	rec(t, "AdjustBoundariesForToolPairs", []any{3, 3, msgs, 20}, pair(noa.AdjustBoundariesForToolPairs(3, 3, msgs, 20)))
+	// range with no tool-call ids -> early return
+	rec(t, "AdjustBoundariesForToolPairs", []any{0, 0, msgs, 20}, pair(noa.AdjustBoundariesForToolPairs(0, 0, msgs, 20)))
+	// Compress tool is excluded from dragging boundaries
+	compressMsgs := []noa.CoreMessage{
+		msg("u1", "user", "text", "hi", "", ""),
+		msg("c1", "assistant", "tool-call", "", noa.CompressToolName, "cc1"),
+		msg("cr1", "tool", "tool-result", "summary", "", "cc1"),
+	}
+	rec(t, "AdjustBoundariesForToolPairs", []any{1, 1, compressMsgs, 20}, pair(noa.AdjustBoundariesForToolPairs(1, 1, compressMsgs, 20)))
+
+	// ---- ApplyPairBoundaryAdjustments (fixed point, <=2 passes) ----
+	// reasoning at 5 + tool-call at 6 split -> both adjusters interact
+	rec(t, "ApplyPairBoundaryAdjustments", []any{5, 5, msgs}, pair(noa.ApplyPairBoundaryAdjustments(5, 5, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{6, 6, msgs}, pair(noa.ApplyPairBoundaryAdjustments(6, 6, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{2, 2, msgs}, pair(noa.ApplyPairBoundaryAdjustments(2, 2, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{3, 3, msgs}, pair(noa.ApplyPairBoundaryAdjustments(3, 3, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{0, 8, msgs}, pair(noa.ApplyPairBoundaryAdjustments(0, 8, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{0, 0, msgs}, pair(noa.ApplyPairBoundaryAdjustments(0, 0, msgs)))
+	rec(t, "ApplyPairBoundaryAdjustments", []any{-1, 99, msgs}, pair(noa.ApplyPairBoundaryAdjustments(-1, 99, msgs)))
+}

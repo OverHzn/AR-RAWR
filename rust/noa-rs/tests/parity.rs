@@ -89,6 +89,31 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 serde_json::from_value(args[0].clone()).expect("messages arg decode");
             serde_json::to_value(compute_turn_groups(&msgs)).expect("serialize groups")
         }
+        "AdjustBoundariesForToolPairs" => {
+            let start = args[0].as_i64().expect("start");
+            let end = args[1].as_i64().expect("end");
+            let msgs: Vec<CoreMessage> =
+                serde_json::from_value(args[2].clone()).expect("messages arg decode");
+            let max_scan = args[3].as_i64().expect("max_scan");
+            let (s, e) = adjust_boundaries_for_tool_pairs(start, end, &msgs, max_scan);
+            serde_json::json!([s, e])
+        }
+        "AdjustBoundariesForReasoningPairs" => {
+            let start = args[0].as_i64().expect("start");
+            let end = args[1].as_i64().expect("end");
+            let msgs: Vec<CoreMessage> =
+                serde_json::from_value(args[2].clone()).expect("messages arg decode");
+            let (s, e) = adjust_boundaries_for_reasoning_pairs(start, end, &msgs);
+            serde_json::json!([s, e])
+        }
+        "ApplyPairBoundaryAdjustments" => {
+            let start = args[0].as_i64().expect("start");
+            let end = args[1].as_i64().expect("end");
+            let msgs: Vec<CoreMessage> =
+                serde_json::from_value(args[2].clone()).expect("messages arg decode");
+            let (s, e) = apply_pair_boundary_adjustments(start, end, &msgs);
+            serde_json::json!([s, e])
+        }
         "WithdrawSplitTurns" => {
             let msgs: Vec<CoreMessage> =
                 serde_json::from_value(args[0].clone()).expect("messages arg decode");

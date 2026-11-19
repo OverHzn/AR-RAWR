@@ -585,3 +585,118 @@ pub fn validate_config(c: &Config) -> Vec<String> {
     }
     w
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9d: pair-boundary adjusters over CoreMessage.
+// ---------------------------------------------------------------------------
+
+/// `noa.CompressToolName` — the single source of truth for the tool's name.
+pub const COMPRESS_TOOL_NAME: &str = "Compress";
+/// `noa.ToolPairMaxScan` — bounds how far boundary adjustment looks for the other
+/// half of a tool exchange.
+pub const TOOL_PAIR_MAX_SCAN: i64 = 20;
+
+/// `noa.AdjustBoundariesForToolPairs` — widen `[start, end]` so no tool exchange
+/// is cut in half. The scan is bounded by `max_scan` in each direction; a gap
+/// (message whose call id is not in range) stops the walk.
+pub fn adjust_boundaries_for_tool_pairs(
+    start: i64,
+    end: i64,
+    msgs: &[CoreMessage],
+    max_scan: i64,
+) -> (i64, i64) {
+    if start < 0 || end >= msgs.len() as i64 || start > end {
+        return (start, end);
+    }
+    let mut start = start;
+    let mut end = end;
+
+    let mut in_range: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for m in &msgs[start as usize..=end as usize] {
+        if !m.tool_call_id.is_empty() && m.tool_name != COMPRESS_TOOL_NAME {
+            in_range.insert(m.tool_call_id.clone());
+        }
+    }
+    if in_range.is_empty() {
+        return (start, end);
+    }
+
+    let forward_limit = std::cmp::min(end + max_scan, msgs.len() as i64 - 1);
+    let backward_limit = std::cmp::max(start - max_scan, 0);
+
+    let mut i = end + 1;
+    while i <= forward_limit {
+        let m = &msgs[i as usize];
+        if m.tool_call_id.is_empty() || !in_range.contains(&m.tool_call_id) {
+            break;
+        }
+        end = i;
+        i += 1;
+    }
+    let mut i = start - 1;
+    while i >= backward_limit {
+        let m = &msgs[i as usize];
+        if m.tool_call_id.is_empty() || !in_range.contains(&m.tool_call_id) {
+            break;
+        }
+        start = i;
+        i -= 1;
+    }
+    (start, end)
+}
+
+/// `noa.AdjustBoundariesForReasoningPairs` — widen `[start, end]` so a reasoning
+/// run and the assistant act it belongs to stay together.
+pub fn adjust_boundaries_for_reasoning_pairs(
+    start: i64,
+    end: i64,
+    msgs: &[CoreMessage],
+) -> (i64, i64) {
+    if start < 0 || end >= msgs.len() as i64 || start > end {
+        return (start, end);
+    }
+    let mut start = start;
+    let mut end = end;
+
+    // A reasoning run at the tail pulls in the assistant burst that follows it.
+    if msgs[end as usize].content_type == CT_REASONING {
+        let mut i = end + 1;
+        while (i as usize) < msgs.len() && msgs[i as usize].content_type == CT_REASONING {
+            i += 1;
+        }
+        if (i as usize) < msgs.len() && is_assistant_act(&msgs[i as usize]) {
+            while (i as usize) < msgs.len() && is_assistant_act(&msgs[i as usize]) {
+                end = i;
+                i += 1;
+            }
+        }
+    }
+
+    // An assistant act at the head pulls in the reasoning run before it.
+    if is_assistant_act(&msgs[start as usize]) {
+        let mut i = start - 1;
+        while i >= 0 && msgs[i as usize].content_type == CT_REASONING {
+            start = i;
+            i -= 1;
+        }
+    }
+    (start, end)
+}
+
+/// `noa.ApplyPairBoundaryAdjustments` — run both widenings to a fixed point, at
+/// most twice (each widening can expose work for the other exactly once).
+pub fn apply_pair_boundary_adjustments(start: i64, end: i64, msgs: &[CoreMessage]) -> (i64, i64) {
+    let mut start = start;
+    let mut end = end;
+    for _ in 0..2 {
+        let (s0, e0) = (start, end);
+        let (s, e) = adjust_boundaries_for_reasoning_pairs(s0, e0, msgs);
+        let (s, e) = adjust_boundaries_for_tool_pairs(s, e, msgs, TOOL_PAIR_MAX_SCAN);
+        if s == start && e == end {
+            break;
+        }
+        start = s;
+        end = e;
+    }
+    (start, end)
+}
