@@ -52,3 +52,98 @@ func TestZZOracle(t *testing.T) {
 	}
 	rec(t, "Kinds", []any{}, Kinds())
 }
+
+func TestZZOracle9u(t *testing.T) {
+	// Escape helpers (html/telegram/markdown).
+	escInputs := []string{
+		"",
+		"plain text",
+		"<b>&</b>",
+		`attr="x"`,
+		"a&b<c>d\"e",
+		"a_b*c",
+		"back\\slash",
+		"nested\\\\*star",
+		"[link](url)",
+		"!img",
+		"#head > quote | ~ | table",
+		"already \\* escaped",
+		"日本語*テスト",
+		"emoji 😀 <tag> & more",
+		"<script>alert('xss')</script>",
+		"line1\nline2\ttab",
+		"&amp; already",
+		"~tilde|pipe>",
+	}
+	for _, s := range escInputs {
+		rec(t, "htmlEscape", []any{s}, htmlEscape(s))
+		rec(t, "htmlEscapeAttr", []any{s}, htmlEscapeAttr(s))
+		rec(t, "telegramEscape", []any{s}, telegramEscape(s))
+		rec(t, "telegramEscapeAttr", []any{s}, telegramEscapeAttr(s))
+		rec(t, "markdownEscape", []any{s}, markdownEscape(s))
+		rec(t, "byteSize", []any{s}, byteSize(s))
+		rec(t, "runeSize", []any{s}, runeSize(s))
+	}
+
+	// htmlSeverityColor.
+	for _, sev := range []string{"critical", "high", "medium", "low", "info", "", "CRITICAL", "High"} {
+		rec(t, "htmlSeverityColor", []any{sev}, htmlSeverityColor(sev))
+	}
+
+	// containsAnyFold.
+	cafCases := []struct {
+		s   string
+		kws []string
+	}{
+		{"Hello WORLD", []string{"world", "xyz"}},
+		{"abc", []string{"  ", ""}},
+		{"The QUICK brown fox", []string{"quick"}},
+		{"no match here", []string{"aaa", "bbb"}},
+		{"mixed CASE", []string{"case"}},
+		{"spaced", []string{"  spaced  "}},
+		{"empty", []string{}},
+		{"", []string{"a"}},
+		{"trailing space kw", []string{"space"}},
+		{"multiple", []string{"zzz", "multi", "qqq"}},
+	}
+	for _, c := range cafCases {
+		rec(t, "containsAnyFold", []any{c.s, c.kws}, containsAnyFold(c.s, c.kws))
+	}
+
+	// intersectsInt.
+	interCases := []struct {
+		a, b []int64
+	}{
+		{[]int64{1, 2, 3}, []int64{5, 3}},
+		{[]int64{1, 2}, []int64{7, 8}},
+		{[]int64{}, []int64{1}},
+		{[]int64{1}, []int64{}},
+		{[]int64{}, []int64{}},
+		{[]int64{-1, -2, -3}, []int64{-2}},
+		{[]int64{100, 200, 300}, []int64{100}},
+		{[]int64{1, 2, 3}, []int64{4, 5, 6}},
+	}
+	for _, c := range interCases {
+		rec(t, "intersectsInt", []any{c.a, c.b}, intersectsInt(c.a, c.b))
+	}
+
+	// assetLine.
+	assetCases := []struct {
+		a     []string
+		limit int
+	}{
+		{[]string{}, 3},
+		{[]string{"a", "b"}, 3},
+		{[]string{"a", "b", "c", "d", "e"}, 2},
+		{[]string{"a", "b"}, 0},
+		{[]string{"only"}, 0},
+		{[]string{"x", "y", "z"}, 3},
+		{[]string{"x", "y", "z"}, 2},
+		{[]string{"x", "y", "z"}, 1},
+		{[]string{"1.1.1.1", "2.2.2.2", "3.3.3.3", "4.4.4.4"}, -1},
+		{nil, 5},
+	}
+	for _, c := range assetCases {
+		rec(t, "assetLine", []any{c.a, c.limit}, assetLine(c.a, c.limit))
+	}
+}

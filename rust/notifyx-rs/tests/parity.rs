@@ -17,6 +17,33 @@ fn arg_str(args: &[Value], i: usize) -> String {
     args[i].as_str().expect("string arg").to_string()
 }
 
+fn arg_i64(args: &[Value], i: usize) -> i64 {
+    args[i].as_i64().expect("int arg")
+}
+
+fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
+    match &args[i] {
+        // Go nil slice records as JSON null; treat as empty.
+        Value::Null => Vec::new(),
+        Value::Array(arr) => arr
+            .iter()
+            .map(|v| v.as_str().expect("string in slice").to_string())
+            .collect(),
+        _ => panic!("string slice arg"),
+    }
+}
+
+fn arg_i64_slice(args: &[Value], i: usize) -> Vec<i64> {
+    match &args[i] {
+        Value::Null => Vec::new(),
+        Value::Array(arr) => arr
+            .iter()
+            .map(|v| v.as_i64().expect("int in slice"))
+            .collect(),
+        _ => panic!("int slice arg"),
+    }
+}
+
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "cfgString" => json!(cfg_string(&args[0], &arg_str(args, 1))),
@@ -26,6 +53,23 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "cfgMap" => json!(cfg_map(&args[0], &arg_str(args, 1))),
         "ValidKind" => json!(valid_kind(&arg_str(args, 0))),
         "Kinds" => json!(kinds()),
+        "htmlEscape" => json!(html_escape(&arg_str(args, 0))),
+        "htmlEscapeAttr" => json!(html_escape_attr(&arg_str(args, 0))),
+        "telegramEscape" => json!(telegram_escape(&arg_str(args, 0))),
+        "telegramEscapeAttr" => json!(telegram_escape_attr(&arg_str(args, 0))),
+        "markdownEscape" => json!(markdown_escape(&arg_str(args, 0))),
+        "htmlSeverityColor" => json!(html_severity_color(&arg_str(args, 0))),
+        "containsAnyFold" => json!(contains_any_fold(
+            &arg_str(args, 0),
+            &arg_str_slice(args, 1)
+        )),
+        "intersectsInt" => json!(intersects_int(
+            &arg_i64_slice(args, 0),
+            &arg_i64_slice(args, 1)
+        )),
+        "assetLine" => json!(asset_line(&arg_str_slice(args, 0), arg_i64(args, 1))),
+        "byteSize" => json!(byte_size(&arg_str(args, 0))),
+        "runeSize" => json!(rune_size(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

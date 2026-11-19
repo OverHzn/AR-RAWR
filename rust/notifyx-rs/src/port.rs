@@ -104,3 +104,123 @@ pub fn valid_kind(kind: &str) -> bool {
 pub fn kinds() -> Vec<String> {
     KINDS.iter().map(|s| s.to_string()).collect()
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9u: pure render/escape leaf helpers (notify/html.go, telegram.go,
+// markdown.go, render.go, filter.go). All side-effect-free, value-typed.
+// ---------------------------------------------------------------------------
+
+/// `htmlEscape` (`notify/html.go`): escape HTML text content — `&`, `<`, `>`
+/// (in that order, like Go's sequential `strings.ReplaceAll`).
+pub fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// `htmlEscapeAttr` (`notify/html.go`): HTML attribute value — text escaping plus
+/// `"`.
+pub fn html_escape_attr(s: &str) -> String {
+    html_escape(s).replace('"', "&quot;")
+}
+
+/// `telegramEscape` (`notify/telegram.go`): byte-identical to [`html_escape`] (the
+/// Go function has the same three `strings.ReplaceAll` calls).
+pub fn telegram_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// `telegramEscapeAttr` (`notify/telegram.go`): text escaping plus `"`.
+pub fn telegram_escape_attr(s: &str) -> String {
+    telegram_escape(s).replace('"', "&quot;")
+}
+
+/// `markdownEscape` (`notify/markdown.go`): escape Markdown-significant characters
+/// with a backslash. Go builds a `strings.NewReplacer` over 13 **single-char** old
+/// strings; with single-char keys that is a single left-to-right pass where each
+/// char maps to its escaped form (or itself) — no rescan of the replacement. The
+/// per-char match below reproduces that exactly.
+pub fn markdown_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '`' => out.push_str("\\`"),
+            '*' => out.push_str("\\*"),
+            '_' => out.push_str("\\_"),
+            '[' => out.push_str("\\["),
+            ']' => out.push_str("\\]"),
+            '(' => out.push_str("\\("),
+            ')' => out.push_str("\\)"),
+            '!' => out.push_str("\\!"),
+            '#' => out.push_str("\\#"),
+            '>' => out.push_str("\\>"),
+            '|' => out.push_str("\\|"),
+            '~' => out.push_str("\\~"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// `htmlSeverityColor` (`notify/html.go`): accent colour per severity.
+pub fn html_severity_color(severity: &str) -> String {
+    match severity {
+        "critical" => "#d32029",
+        "high" => "#e8830c",
+        "medium" => "#d4b106",
+        "low" => "#1677ff",
+        _ => "#8c8c8c",
+    }
+    .to_string()
+}
+
+/// `containsAnyFold` (`notify/filter.go`): whether `s` (lower-cased) contains any
+/// non-blank keyword, each keyword trimmed then lower-cased.
+pub fn contains_any_fold(s: &str, keywords: &[String]) -> bool {
+    let lower = strings::go_to_lower(s);
+    for kw in keywords {
+        let kw = strings::go_to_lower(strings::go_trim_space(kw));
+        if !kw.is_empty() && lower.contains(&kw) {
+            return true;
+        }
+    }
+    false
+}
+
+/// `intersectsInt` (`notify/filter.go`): whether the two int64 slices share any
+/// element (Go's `slices.Contains` scan over `b`).
+pub fn intersects_int(a: &[i64], b: &[i64]) -> bool {
+    b.iter().any(|v| a.contains(v))
+}
+
+/// `itoa` (`notify/render.go`): short alias for `strconv.Itoa`. For the i64 values
+/// reaching it (counts), Rust's `to_string` is identical.
+pub fn itoa(n: i64) -> String {
+    n.to_string()
+}
+
+/// `assetLine` (`notify/render.go`): render an asset list onto one line; when there
+/// are more than `limit` assets, the rest collapse to " and N more".
+pub fn asset_line(assets: &[String], limit: i64) -> String {
+    if assets.is_empty() {
+        return String::new();
+    }
+    if limit <= 0 || (assets.len() as i64) <= limit {
+        return assets.join(", ");
+    }
+    let head = assets[..limit as usize].join(", ");
+    format!("{} and {} more", head, itoa(assets.len() as i64 - limit))
+}
+
+/// `byteSize` (`notify/render.go`): byte length of `s`.
+pub fn byte_size(s: &str) -> i64 {
+    s.len() as i64
+}
+
+/// `runeSize` (`notify/render.go`): rune count of `s`.
+pub fn rune_size(s: &str) -> i64 {
+    s.chars().count() as i64
+}
