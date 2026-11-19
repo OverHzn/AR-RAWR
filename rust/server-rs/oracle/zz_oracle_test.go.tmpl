@@ -373,3 +373,28 @@ func TestZZOracle9ab(t *testing.T) {
 		rec(t, "taskContextHeader", []any{c.id, c.desc, c.goal}, taskContextHeader(c.id, c.desc, c.goal), nil)
 	}
 }
+
+func TestZZOracle9ah(t *testing.T) {
+	// csvValues(s)
+	for _, s := range []string{"", "a", "a,b,c", " a , b ", "a,,b", ",", "  ", "x,  ,y", "one", "\ta\t,\tb\t"} {
+		rec(t, "csvValues", []any{s}, csvValues(s), nil)
+	}
+
+	// skillNameFromFrontmatter(md)
+	mds := []string{
+		"",
+		"name: foo",
+		"---\nname: my-skill\n---\nbody",
+		"---\nname: \"quoted\"\n---",
+		"---\ndescription: x\nname: bar\n---",
+		"---\nname: '中文'\n---",
+		"no frontmatter\nname: nope",
+		"---\nname:   spaced   \n---",
+		"---\n---\nname: after-empty",
+		"---\nname:",
+		"---\n  name: indented\n---",
+	}
+	for _, md := range mds {
+		rec(t, "skillNameFromFrontmatter", []any{md}, skillNameFromFrontmatter([]byte(md)), nil)
+	}
+}

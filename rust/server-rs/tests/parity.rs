@@ -189,6 +189,9 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
             &arg_str(args, 1),
             &arg_str(args, 2)
         ))),
+        // batch 9ah
+        "csvValues" => ok(json!(csv_values(&arg_str(args, 0)))),
+        "skillNameFromFrontmatter" => ok(json!(skill_name_from_frontmatter(&arg_str(args, 0)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

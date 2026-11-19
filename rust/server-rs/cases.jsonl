@@ -37,6 +37,7 @@
 {"args":["  ",9],"fn":"portOr","ok":9}
 {"args":["  "],"error":"invalid task id \"  \"","fn":"parseTaskID"}
 {"args":["  "],"fn":"canonicalTaskID","ok":["",false]}
+{"args":["  "],"fn":"csvValues","ok":[]}
 {"args":["  "],"fn":"defaultPort","ok":443}
 {"args":["  "],"fn":"identity","ok":"  "}
 {"args":["  "],"fn":"inheritedIntentResult","ok":false}
@@ -243,6 +244,7 @@
 {"args":[" \t\n mixed \r\n whitespace \t "],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":[" \t\n mixed \r\n whitespace \t "],"fn":"validatePassword","ok":""}
 {"args":[" \t\n mixed \r\n whitespace \t "],"fn":"yamlScalar","ok":"' \t\n mixed \r\n whitespace \t '"}
+{"args":[" a , b "],"fn":"csvValues","ok":["a","b"]}
 {"args":[" lead space",0],"fn":"firstLine","ok":"…"}
 {"args":[" lead space",0],"fn":"preview","ok":"…"}
 {"args":[" lead space",0],"fn":"trunc","ok":"…(truncated, 11 chars in total)"}
@@ -329,6 +331,7 @@
 {"args":["",true,7,100],"fn":"notifyLimitValue","ok":7}
 {"args":[""],"error":"invalid task id \"\"","fn":"parseTaskID"}
 {"args":[""],"fn":"canonicalTaskID","ok":["",false]}
+{"args":[""],"fn":"csvValues","ok":[]}
 {"args":[""],"fn":"defaultPort","ok":443}
 {"args":[""],"fn":"identity","ok":""}
 {"args":[""],"fn":"inheritedIntentResult","ok":false}
@@ -344,6 +347,7 @@
 {"args":[""],"fn":"sanitizeFilename","ok":""}
 {"args":[""],"fn":"shellQuote","ok":"''"}
 {"args":[""],"fn":"shortQuote","ok":""}
+{"args":[""],"fn":"skillNameFromFrontmatter","ok":""}
 {"args":[""],"fn":"stringValue","ok":""}
 {"args":[""],"fn":"trimTrailingSlash","ok":""}
 {"args":[""],"fn":"truncateBody","ok":""}
@@ -394,6 +398,7 @@
 {"args":["'quoted'"],"fn":"yamlScalar","ok":"'''quoted'''"}
 {"args":["*"],"fn":"skillPathRune","ok":false}
 {"args":["+7"],"fn":"parseTaskID","ok":7}
+{"args":[","],"fn":"csvValues","ok":[]}
 {"args":["-",0],"fn":"firstLine","ok":"…"}
 {"args":["-",0],"fn":"preview","ok":"…"}
 {"args":["-",0],"fn":"trunc","ok":"…(truncated, 1 chars in total)"}
@@ -433,6 +438,14 @@
 {"args":["-"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["-"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["-"],"fn":"yamlScalar","ok":"-"}
+{"args":["---\n  name: indented\n---"],"fn":"skillNameFromFrontmatter","ok":"indented"}
+{"args":["---\n---\nname: after-empty"],"fn":"skillNameFromFrontmatter","ok":""}
+{"args":["---\ndescription: x\nname: bar\n---"],"fn":"skillNameFromFrontmatter","ok":"bar"}
+{"args":["---\nname:   spaced   \n---"],"fn":"skillNameFromFrontmatter","ok":"spaced"}
+{"args":["---\nname: '中文'\n---"],"fn":"skillNameFromFrontmatter","ok":"中文"}
+{"args":["---\nname: \"quoted\"\n---"],"fn":"skillNameFromFrontmatter","ok":"quoted"}
+{"args":["---\nname: my-skill\n---\nbody"],"fn":"skillNameFromFrontmatter","ok":"my-skill"}
+{"args":["---\nname:"],"fn":"skillNameFromFrontmatter","ok":""}
 {"args":["-1",0],"fn":"firstLine","ok":"…"}
 {"args":["-1",0],"fn":"preview","ok":"…"}
 {"args":["-1",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -2465,6 +2478,7 @@
 {"args":["\t\ttabs\t\t"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["\t\ttabs\t\t"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["\t\ttabs\t\t"],"fn":"yamlScalar","ok":"\t\ttabs\t\t"}
+{"args":["\ta\t,\tb\t"],"fn":"csvValues","ok":["a","b"]}
 {"args":["\u001f"],"fn":"skillPathRune","ok":false}
 {"args":["\u003c"],"fn":"skillPathRune","ok":false}
 {"args":["\u003e"],"fn":"skillPathRune","ok":false}
@@ -2600,6 +2614,7 @@
 {"args":["a",7],"fn":"atoiDefault","ok":7}
 {"args":["a",9],"fn":"portOr","ok":9}
 {"args":["a"],"fn":"canonicalTaskID","ok":["",false]}
+{"args":["a"],"fn":"csvValues","ok":["a"]}
 {"args":["a"],"fn":"defaultPort","ok":443}
 {"args":["a"],"fn":"identity","ok":"a"}
 {"args":["a"],"fn":"inheritedIntentResult","ok":false}
@@ -2697,6 +2712,8 @@
 {"args":["a'b"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["a'b"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["a'b"],"fn":"yamlScalar","ok":"'a''b'"}
+{"args":["a,,b"],"fn":"csvValues","ok":["a","b"]}
+{"args":["a,b,c"],"fn":"csvValues","ok":["a","b","c"]}
 {"args":["a--b",0],"fn":"firstLine","ok":"…"}
 {"args":["a--b",0],"fn":"preview","ok":"…"}
 {"args":["a--b",0],"fn":"trunc","ok":"…(truncated, 4 chars in total)"}
@@ -4554,7 +4571,9 @@
 {"args":["name.tar.gz"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["name.tar.gz"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["name.tar.gz"],"fn":"yamlScalar","ok":"name.tar.gz"}
+{"args":["name: foo"],"fn":"skillNameFromFrontmatter","ok":""}
 {"args":["new\nline"],"error":"invalid task id \"new\\nline\"","fn":"parseTaskID"}
+{"args":["no frontmatter\nname: nope"],"fn":"skillNameFromFrontmatter","ok":""}
 {"args":["no_ext",0],"fn":"firstLine","ok":"…"}
 {"args":["no_ext",0],"fn":"preview","ok":"…"}
 {"args":["no_ext",0],"fn":"trunc","ok":"…(truncated, 6 chars in total)"}
@@ -4670,6 +4689,7 @@
 {"args":["null\u0000byte"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["null\u0000byte"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["null\u0000byte"],"fn":"yamlScalar","ok":"null\u0000byte"}
+{"args":["one"],"fn":"csvValues","ok":["one"]}
 {"args":["open",0],"fn":"firstLine","ok":"…"}
 {"args":["open",0],"fn":"preview","ok":"…"}
 {"args":["open",0],"fn":"trunc","ok":"…(truncated, 4 chars in total)"}
@@ -5999,6 +6019,7 @@
 {"args":["x","DEF"],"fn":"coalesceStr","ok":"x"}
 {"args":["x","fallback"],"fn":"coalesceStr","ok":"x"}
 {"args":["x"],"fn":"stringValue","ok":"x"}
+{"args":["x,  ,y"],"fn":"csvValues","ok":["x","y"]}
 {"args":["{}",0],"fn":"firstLine","ok":"…"}
 {"args":["{}",0],"fn":"preview","ok":"…"}
 {"args":["{}",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}

@@ -676,3 +676,44 @@ pub fn task_context_header(task_id: i64, desc: &str, goal: &str) -> String {
     }
     format!("[Task #{} {}]", task_id, trunc(desc, 200))
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ah: small pure leaves in `server/` (CSV value list, skill-name
+// frontmatter parse).
+// ---------------------------------------------------------------------------
+
+/// `csvValues` (`server/...`): split `s` on commas, trim each field, drop empties.
+pub fn csv_values(s: &str) -> Vec<String> {
+    s.split(',')
+        .filter_map(|p| {
+            let v = go_trim_space(p);
+            if v.is_empty() {
+                None
+            } else {
+                Some(v.to_string())
+            }
+        })
+        .collect()
+}
+
+/// `skillNameFromFrontmatter` (`server/...`): the `name:` value inside a leading
+/// `---` YAML frontmatter block, with surrounding single/double quotes stripped;
+/// `""` when there is no frontmatter or no `name:` line.
+pub fn skill_name_from_frontmatter(md: &str) -> String {
+    let mut in_fm = false;
+    for ln in md.split('\n') {
+        let t = go_trim_space(ln);
+        if t == "---" {
+            if !in_fm {
+                in_fm = true;
+                continue;
+            }
+            break; // end of frontmatter
+        }
+        if in_fm && t.starts_with("name:") {
+            let v = go_trim_space(&t["name:".len()..]);
+            return v.trim_matches(['"', '\'']).to_string();
+        }
+    }
+    String::new()
+}
