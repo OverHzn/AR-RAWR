@@ -180,6 +180,176 @@ fn ceil_div(n: i64, d: i64) -> i64 {
 }
 
 // ---------------------------------------------------------------------------
+// Batch 9c: turn-integrity helpers over CoreMessage.
+// ---------------------------------------------------------------------------
+
+/// `noa.Role` values.
+pub const ROLE_USER: &str = "user";
+pub const ROLE_ASSISTANT: &str = "assistant";
+pub const ROLE_TOOL: &str = "tool";
+
+/// `noa.ContentType` values.
+pub const CT_TEXT: &str = "text";
+pub const CT_TOOL_CALL: &str = "tool-call";
+pub const CT_TOOL_RESULT: &str = "tool-result";
+pub const CT_REASONING: &str = "reasoning";
+
+/// `noa.CoreMessage` — one flattened message. Go marshals with field names
+/// (`ID`, `Role`, `ContentType`, `Text`, `ToolName`, `ToolCallID`), no json tags.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct CoreMessage {
+    #[serde(rename = "ID")]
+    pub id: String,
+    pub role: String,
+    pub content_type: String,
+    pub text: String,
+    pub tool_name: String,
+    #[serde(rename = "ToolCallID")]
+    pub tool_call_id: String,
+}
+
+/// `noa.TurnGroup` — one assistant turn: leading reasoning run, the assistant acts
+/// after it, and the tool results those acts produced. Each index list is a Go nil
+/// slice when empty (rendered `null`).
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct TurnGroup {
+    pub reasoning_idx: Option<Vec<i64>>,
+    pub act_idx: Option<Vec<i64>>,
+    pub result_idx: Option<Vec<i64>>,
+}
+
+/// `noa.isAssistantAct` (unexported; used transitively): an assistant text or
+/// tool-call message.
+fn is_assistant_act(m: &CoreMessage) -> bool {
+    m.role == ROLE_ASSISTANT && (m.content_type == CT_TEXT || m.content_type == CT_TOOL_CALL)
+}
+
+/// `noa.ComputeTurnGroups` — partition messages into assistant turns. Returns
+/// `None` (Go nil slice → `null`) when there are no messages / no groups.
+pub fn compute_turn_groups(msgs: &[CoreMessage]) -> Option<Vec<TurnGroup>> {
+    let mut groups: Vec<TurnGroup> = Vec::new();
+    let mut i = 0usize;
+    while i < msgs.len() {
+        if msgs[i].content_type != CT_REASONING && !is_assistant_act(&msgs[i]) {
+            i += 1;
+            continue;
+        }
+        let mut g = TurnGroup::default();
+        let mut reasoning: Vec<i64> = Vec::new();
+        while i < msgs.len() && msgs[i].content_type == CT_REASONING {
+            reasoning.push(i as i64);
+            i += 1;
+        }
+        g.reasoning_idx = opt_vec(reasoning);
+
+        let mut call_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut acts: Vec<i64> = Vec::new();
+        while i < msgs.len() && is_assistant_act(&msgs[i]) {
+            acts.push(i as i64);
+            if !msgs[i].tool_call_id.is_empty() {
+                call_ids.insert(msgs[i].tool_call_id.clone());
+            }
+            i += 1;
+        }
+        g.act_idx = opt_vec(acts);
+
+        let mut results: Vec<i64> = Vec::new();
+        while i < msgs.len()
+            && msgs[i].content_type == CT_TOOL_RESULT
+            && call_ids.contains(&msgs[i].tool_call_id)
+        {
+            results.push(i as i64);
+            i += 1;
+        }
+        g.result_idx = opt_vec(results);
+
+        if g.reasoning_idx.is_some() || g.act_idx.is_some() {
+            groups.push(g);
+        }
+    }
+    opt_vec_val(groups)
+}
+
+/// Fold a built `Vec` into `Option`: empty → `None` (Go nil slice → `null`).
+fn opt_vec(v: Vec<i64>) -> Option<Vec<i64>> {
+    if v.is_empty() { None } else { Some(v) }
+}
+
+/// Fold a built `Vec<TurnGroup>` into `Option`: empty → `None`.
+fn opt_vec_val(v: Vec<TurnGroup>) -> Option<Vec<TurnGroup>> {
+    if v.is_empty() { None } else { Some(v) }
+}
+
+/// `noa.WithdrawSplitTurns` — remove from `folded` any turn that would be left
+/// broken (reasoning folded away while one of its tool calls stays visible).
+///
+/// Returns `(out, withdrawn)`. `folded == None` (Go nil map) → `(None, None)`;
+/// an empty non-nil map → `(Some(empty), None)`; otherwise a processed copy plus
+/// the withdrawn ids (`None` if none were withdrawn, mirroring Go's nil slice).
+pub fn withdraw_split_turns(
+    msgs: &[CoreMessage],
+    folded: Option<std::collections::HashMap<String, bool>>,
+) -> (
+    Option<std::collections::HashMap<String, bool>>,
+    Option<Vec<String>>,
+) {
+    let mut out = match folded {
+        None => return (None, None),
+        Some(m) => m,
+    };
+    if out.is_empty() {
+        return (Some(out), None);
+    }
+
+    let mut withdrawn: Vec<String> = Vec::new();
+    for g in compute_turn_groups(msgs).unwrap_or_default() {
+        let reasoning: Vec<i64> = g.reasoning_idx.clone().unwrap_or_default();
+        if reasoning.is_empty() {
+            continue; // nothing to lose
+        }
+        let reasoning_folded = reasoning.iter().any(|&i| {
+            out.get(msgs[i as usize].id.as_str())
+                .copied()
+                .unwrap_or(false)
+        });
+        if !reasoning_folded {
+            continue;
+        }
+        let acts: Vec<i64> = g.act_idx.clone().unwrap_or_default();
+        let call_stays_visible = acts.iter().any(|&i| {
+            msgs[i as usize].content_type == CT_TOOL_CALL
+                && !out
+                    .get(msgs[i as usize].id.as_str())
+                    .copied()
+                    .unwrap_or(false)
+        });
+        if !call_stays_visible {
+            continue;
+        }
+        // Flatten the group's indices and delete any that are in `out`.
+        let mut all: Vec<i64> = Vec::new();
+        all.extend(reasoning);
+        all.extend(acts);
+        all.extend(g.result_idx.clone().unwrap_or_default());
+        for i in all {
+            let id = msgs[i as usize].id.clone();
+            if out.get(&id).copied().unwrap_or(false) {
+                out.remove(&id);
+                withdrawn.push(id);
+            }
+        }
+    }
+    let withdrawn_opt = if withdrawn.is_empty() {
+        None
+    } else {
+        Some(withdrawn)
+    };
+    (Some(out), withdrawn_opt)
+}
+
+// ---------------------------------------------------------------------------
 // Batch 9b: archive + panel + config helpers.
 // ---------------------------------------------------------------------------
 

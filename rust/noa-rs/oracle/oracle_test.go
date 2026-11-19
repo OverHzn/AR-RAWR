@@ -266,3 +266,73 @@ func TestZZOracle9b(t *testing.T) {
 	sink.Compress.MaxSummaryLength = 5
 	rec(t, "ValidateConfig", []any{toConfigJSON(sink)}, noa.ValidateConfig(sink))
 }
+
+// msg is a CoreMessage fixture helper.
+func msg(id, role, ct, text, tname, tcid string) noa.CoreMessage {
+	return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text, ToolName: tname, ToolCallID: tcid}
+}
+
+func TestZZOracle9c(t *testing.T) {
+	// A conversation exercising: reasoning run, act (tool-call), result, plain act,
+	// user text, a second turn with reasoning + text act + no result.
+	base := []noa.CoreMessage{
+		msg("a1", "assistant", "reasoning", "think", "", ""),
+		msg("a2", "assistant", "tool-call", "", "Bash", "c1"),
+		msg("t1", "tool", "tool-result", "out", "", "c1"),
+		msg("u1", "user", "text", "hi", "", ""),
+		msg("a3", "assistant", "text", "reply", "", ""),
+	}
+
+	// ---- ComputeTurnGroups ----
+	fixtures := map[string][]noa.CoreMessage{
+		"base":        base,
+		"empty":       {},
+		"single_act":  {msg("a1", "assistant", "text", "x", "", "")},
+		"single_res":  {msg("r1", "assistant", "reasoning", "t", "", "")},
+		"no_reasoning_act": {
+			msg("a1", "assistant", "tool-call", "", "Read", "c1"),
+			msg("t1", "tool", "tool-result", "o", "", "c1"),
+			msg("a2", "assistant", "tool-call", "", "Bash", "c2"),
+			msg("t2", "tool", "tool-result", "o2", "", "c2"),
+		},
+		"reasoning_then_user": {
+			msg("a1", "assistant", "reasoning", "t", "", ""),
+			msg("u1", "user", "text", "hi", "", ""),
+		},
+		"unmatched_result": {
+			msg("a1", "assistant", "tool-call", "", "Bash", "c1"),
+			msg("t1", "tool", "tool-result", "orphan", "", "cX"), // callID mismatch -> not in group
+			msg("a2", "assistant", "text", "done", "", ""),
+		},
+		"multi_reasoning": {
+			msg("a1", "assistant", "reasoning", "r1", "", ""),
+			msg("a2", "assistant", "reasoning", "r2", "", ""),
+			msg("a3", "assistant", "text", "act", "", ""),
+		},
+	}
+	// stable order for the map iteration
+	order := []string{"base", "empty", "single_act", "single_res", "no_reasoning_act", "reasoning_then_user", "unmatched_result", "multi_reasoning"}
+	for _, name := range order {
+		rec(t, "ComputeTurnGroups", []any{fixtures[name]}, noa.ComputeTurnGroups(fixtures[name]))
+	}
+
+	// ---- WithdrawSplitTurns: fold reasoning (and variants) over base + extras ----
+	rec(t, "WithdrawSplitTurns", []any{base, map[string]bool{"a1": true}}, withdrawOut(noa.WithdrawSplitTurns(base, map[string]bool{"a1": true})))
+	rec(t, "WithdrawSplitTurns", []any{base, map[string]bool{}}, withdrawOut(noa.WithdrawSplitTurns(base, map[string]bool{})))
+	rec(t, "WithdrawSplitTurns", []any{base, nil}, withdrawOut(noa.WithdrawSplitTurns(base, nil)))
+	// fold reasoning + result together -> nothing withdrawn (reasoning gone, no visible call)
+	rec(t, "WithdrawSplitTurns", []any{base, map[string]bool{"a1": true, "t1": true}}, withdrawOut(noa.WithdrawSplitTurns(base, map[string]bool{"a1": true, "t1": true})))
+	// fold only a result, reasoning stays -> nothing to withdraw
+	rec(t, "WithdrawSplitTurns", []any{base, map[string]bool{"t1": true}}, withdrawOut(noa.WithdrawSplitTurns(base, map[string]bool{"t1": true})))
+	// fold act text (a3) only -> no reasoning involved
+	rec(t, "WithdrawSplitTurns", []any{base, map[string]bool{"a3": true}}, withdrawOut(noa.WithdrawSplitTurns(base, map[string]bool{"a3": true})))
+	// multi_reasoning: fold one reasoning of two -> split turn withdrawn
+	mr := fixtures["multi_reasoning"]
+	rec(t, "WithdrawSplitTurns", []any{mr, map[string]bool{"a1": true}}, withdrawOut(noa.WithdrawSplitTurns(mr, map[string]bool{"a1": true})))
+}
+
+// withdrawOut shapes the (map, slice) pair the way the oracle records it: a
+// two-element array [out, withdrawn]. A nil map renders as null, an empty map as {}.
+func withdrawOut(out map[string]bool, withdrawn []string) []any {
+	return []any{out, withdrawn}
+}

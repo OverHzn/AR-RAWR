@@ -84,6 +84,27 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 serde_json::to_value(warnings).expect("serialize warnings")
             }
         }
+        "ComputeTurnGroups" => {
+            let msgs: Vec<CoreMessage> =
+                serde_json::from_value(args[0].clone()).expect("messages arg decode");
+            serde_json::to_value(compute_turn_groups(&msgs)).expect("serialize groups")
+        }
+        "WithdrawSplitTurns" => {
+            let msgs: Vec<CoreMessage> =
+                serde_json::from_value(args[0].clone()).expect("messages arg decode");
+            let folded: Option<std::collections::HashMap<String, bool>> =
+                serde_json::from_value(args[1].clone()).expect("folded arg decode");
+            let (out, withdrawn) = withdraw_split_turns(&msgs, folded);
+            // Recorded as a two-element array [out, withdrawn]; each is null when
+            // its Go counterpart is nil.
+            serde_json::json!([
+                out.map(|m| serde_json::to_value(m).unwrap())
+                    .unwrap_or(Value::Null),
+                withdrawn
+                    .map(|w| serde_json::to_value(w).unwrap())
+                    .unwrap_or(Value::Null),
+            ])
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
