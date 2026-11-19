@@ -49,6 +49,17 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 serde_json::to_value(groups).expect("serialize groups")
             }
         }
+        "snapshotSummaryMessages" => {
+            let summary = args[0].as_str().expect("summary string");
+            // tail may be JSON null (Go nil slice) -> empty.
+            let tail: Vec<Message> =
+                serde_json::from_value::<Option<Vec<Message>>>(args[1].clone())
+                    .expect("tail decode")
+                    .unwrap_or_default();
+            let out = snapshot_summary_messages(summary, &tail);
+            // Output is always a non-empty slice (prepends one message); serialize.
+            serde_json::to_value(out).expect("serialize messages")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

@@ -120,3 +120,26 @@ func TestZZOracle(t *testing.T) {
 		rec(t, "EstimateInputTokens", []any{oracleRaw(req)}, EstimateInputTokens(req))
 	}
 }
+
+func TestZZOracle9w(t *testing.T) {
+	// snapshotSummaryMessages(summary, tail): prepend a summary user message.
+	tails := [][]llm.Message{
+		nil,
+		{},
+		{llm.UserText("a")},
+		{llm.UserText("a"), llm.UserText("b")},
+		{llm.UserText(""), llm.UserText("second turn")},
+	}
+	summaries := []string{
+		"",
+		"the earlier findings",
+		"multi\nline\nsummary",
+		"summary with \"quotes\" and <tags> & symbols",
+		"日本語の要約",
+	}
+	for _, tail := range tails {
+		for _, sum := range summaries {
+			rec(t, "snapshotSummaryMessages", []any{sum, tail}, snapshotSummaryMessages(sum, tail))
+		}
+	}
+}

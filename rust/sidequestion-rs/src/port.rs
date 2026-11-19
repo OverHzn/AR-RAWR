@@ -118,3 +118,21 @@ pub fn estimate_input_tokens(req: &CompletionRequest) -> i64 {
     }
     tokens
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9w: `snapshotSummaryMessages` (`sidequestion/context.go`) — a pure
+// prepend of a synthetic user summary message onto a tail slice.
+// ---------------------------------------------------------------------------
+
+/// `snapshotSummaryMessages` (`sidequestion/context.go`): prepend one user message
+/// carrying the running-summary prefix followed by `summary`, then the existing
+/// `tail` messages. Pure `[]llm.Message` → `[]llm.Message`.
+pub fn snapshot_summary_messages(summary: &str, tail: &[Message]) -> Vec<Message> {
+    let mut out = Vec::with_capacity(tail.len() + 1);
+    out.push(llm_rs::port::user_text(&format!(
+        "[Summary of the earlier portion of the current main context; the summary may omit details, state clearly when there is not enough information to judge]\n{}",
+        summary
+    )));
+    out.extend_from_slice(tail);
+    out
+}
