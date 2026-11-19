@@ -183,7 +183,36 @@ resume without re-deriving state.
   discover+call (custom long-lived `GET /sse` + `POST /message` server sharing a per-session
   mpsc channel).
 
+## Unit D-1 — db boot path (D-1a crypto + D-1b connection/schema/migrate, done, to push)
+- **D-1a `db::secrets` crypto (`9377c5a`, pushed):** `src/db/secrets.rs` — `SecretColumn`
+  model (`aad`/`row_filter`/`id_col`/`value_expr`, the 10 `COL_*` columns + 5
+  `SECRET_SETTING_KEYS`), `SecretBox` AES-256-GCM (seal/open, `enc:v1:`+base64(nonce12‖ct‖tag),
+  AAD `<table>.<col>`/`settings.<key>`), `seal_secret`/`open_secret` (plaintext passthrough
+  pre-init), `parse_secret_key` (base64|hex), `derive_sub_key` HMAC-SHA256,
+  `traffic_trace_key`/`set_traffic_trace_key`. Spec `tests/db_secrets_test.rs` (4). Deps
+  (tokio-postgres/deadpool-postgres/aes-gcm/rand/url) added.
+- **D-1b connection + schema + migrations (this commit):** `src/db/mod.rs` (`DB{pool}`,
+  `open`/`open_with_migrations`, `ensure_database`, `create_database_sql`, `build_pool` max 32,
+  `with_schema_migration_lock` = session `pg_advisory_lock(7337741001)`,
+  `apply_schema_with_retry` (deadlock 40P01 backoff ×5), `seed_builtins` STUB `Ok(())` until
+  D-1c/D-1d, `suffix_test_database`, `ensure_llm_records_table`/`ensure_llm_usage_table` +
+  `error.rs`). `src/db/migrate.rs` (`Migration`, `load_migrations` [skip non-.sql, error on bad
+  .sql, dup-version, sha256 hex, sort], `apply_migrations` [checks DB-applied versions against
+  the binary: missing-from-binary / name / checksum → fail-closed; refuse out-of-order pending
+  below max-applied before writing; per-migration tx; wrap `migration %04d (%s): …`],
+  `apply_migration`, `exec_embedded_migration` + `coordinate_with_schema_migration`
+  `pg_advisory_xact_lock`, `migration_name_re`, `schema_migration_lock_key`). Schema + 7
+  migrations pulled byte-identically from the Go tree via `include_str!` (drift-free checksum
+  parity). Spec `tests/db_migrate_test.rs` (8) ported from `migrate_test.go`: pure
+  loadMigrations validation + fresh/adopt-existing/reopen-noop/apply-once-in-order/fail-closed
+  (checksum/name/missing)/rollback-and-block/out-of-order-refuse — differential vs the
+  `artex-pg` Postgres, skip when `ARTEX_PG_DSN` unreachable. `Cargo.toml` gains
+  `[dev-dependencies]` (tokio/tokio-postgres/sha2) for the tests/ crate. artex **196 tests**
+  green, clippy `-D warnings` clean, gate 30/30, Go `TestLoadMigrations|TestOpen|TestMigrations|
+  TestFailing|TestSecretBox` still green.
+
 ## Next
-- db (differential) → intercept → egress →
+- db D-1c (settings + InitSecrets/loadSecretKey/backfill) → D-1d (real seedBuiltins + browser_mcp
+  + target-gate exemptions) → db resource groups → intercept → egress →
   traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
   `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
