@@ -48,6 +48,7 @@ pub mod markdown;
 pub mod mask;
 pub mod sign;
 pub mod telegram;
+pub mod webhook;
 pub mod wecom;
 
 use async_trait::async_trait;
@@ -401,6 +402,7 @@ pub fn channel(kind: &str) -> Option<Box<dyn Channel>> {
         KIND_FEISHU => Some(Box::new(feishu::FeishuChannel)),
         KIND_WECOM => Some(Box::new(wecom::WeComChannel)),
         KIND_TELEGRAM => Some(Box::new(telegram::TelegramChannel)),
+        KIND_WEBHOOK => Some(Box::new(webhook::WebhookChannel)),
         _ => None,
     }
 }

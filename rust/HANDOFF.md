@@ -71,22 +71,30 @@ resume without re-deriving state.
   `channels_test.go` channel cases + feishu `pack_test.go` (TestFeishuPackingReportsKept,
   TestFeishuDigestBodiesStayWithinCardLimit — body ≤16000, envelope=113, every item once & in
   order across messages) + validate-message cases for the 4 kinds. Go baseline green.
-- **9b-2 TODO:** generic webhook = **Go `text/template` engine** (`{{.Field}}`/`{{range}}`/
-  `{{if}}`/`{{- -}}`/`{{json .X}}`/`{{printf}}`/`{{index}}`; unknown field errors; result must be
-  valid JSON → else Permanent; custom method/headers; `Validate` rejects empty url, non-http(s),
-  bad method, unparseable template). No existing Rust text/template port — needs a small engine.
-  Specs: `webhook_template_test.go` (capability boundary: pure-data context, no methods) +
-  `channels_test.go` webhook cases (TestWebhookDefaultTemplateProducesValidJSON / CustomTemplateAndHeaders
-  / RejectsNonJSONRenderResult / ValidateCatchesBadConfigEarly) + `pack_test.go`
-  (TestWebhookAndEmailReportAllItems). JSON-marshal parity: Go HTML-escapes `<>&` (serde does not)
-  but template output is validated by re-parsing, not byte-compared — confirm no test byte-counts it.
+- **9b-2 DONE (ready to commit):** generic webhook = a faithful **subset of Go `text/template`**
+  built from scratch in `src/notify/webhook.rs` (mod `tmpl`). Lexer+parser+evaluator for:
+  `.Field` (leading-dot IS special — lexes to [Dot,Ident]; only Dot/Var/Paren are fieldable, a
+  string/num/func literal is NOT, so `"x" .F` is two args not a field), `$var`, `range $i,$v :=`,
+  `if`/`else`, `( )` parens, `{{- -}}` whitespace trim, string/number literals; custom funcs
+  `json`/`jsons` (json matches Go `json.Marshal` incl. HTML-escape of `<>&`/U+2028/9) + builtins
+  `printf`(subset)/`index`/`len`/`not`/`and`/`or`/`eq`/`ne`/`lt..`; unknown field → error (not echo);
+  unknown func → parse error (capability boundary). `WebhookChannel`: Validate(url/method/template),
+  Send renders→`serde_json::from_str` validity gate (else Permanent "valid JSON")→do_json (GET=bodyless),
+  returns full `m.items.len()` (no truncation). `channel()` factory now registers webhook (5 of 6).
+  Specs: 9 inline `tmpl` unit tests (field-access regression, range/if, printf/index/paren, json
+  escaping, unknown field/func, whitespace trim, rfc3339) + `tests/notify_webhook_test.rs` (10): the
+  channels_test.go webhook cases + webhook_template_test.go capability boundary (context-is-pure-data
+  key-set pin, funcs-are-minimal via undefined-func parse error, cannot-reach-unknown-data no-leak,
+  render-fails-permanently, can-only-produce-json) + report-all-items. Go baseline green.
 - **9b-3 TODO:** email = **SMTP client** (EHLO/STARTTLS/AUTH PLAIN/MAIL/RCPT/DATA/QUIT) + TLS +
   RFC 2047 Q-encoded subject + RFC 5322 + base64 HTML body (`buildEmailMessage`) + the email
   dial guard (reuse `is_blocked_dial_ip`/`allow_local_targets`). `smtpStageError`: 4xx transient,
-  5xx permanent, unparseable→transient. Also add webhook+email to `channel()` factory, and port
-  the full `TestChannelValidateReportsMissingFields` (email cases) + `TestRegistryCoversAllKinds`
-  + `ssrf_test.go` TestEmailDialGuard*. Specs: `email_test.go` (fake SMTP server),
-  `channels_test.go` email cases (TestEmailMessageIsWellFormed / EscapesStructuralInjection /
+  5xx permanent, unparseable→transient. Add email to `channel()` factory (webhook already there) so
+  all 6 kinds register. With email done, port the cross-channel tables whole: the full
+  `TestChannelValidateReportsMissingFields` (email cases: SMTP/port/recipient) + `TestRegistryCoversAllKinds`
+  + `redact_test.go` (TestChannelErrorsNeverLeakCredentials* incl. email row, TestCrossHostRedirectRefused/
+  SameHostRedirectAllowed) + `ssrf_test.go` TestEmailDialGuard*. Email specs: `email_test.go` (fake SMTP
+  server) + `channels_test.go` email cases (TestEmailMessageIsWellFormed / EscapesStructuralInjection /
   SMTPErrorClassification).
 
 ## Next
