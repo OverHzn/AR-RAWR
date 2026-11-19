@@ -1998,3 +1998,156 @@ func TestZZOracle9s(t *testing.T) {
 	// T-nil: nil message slice -> null Messages, no-op.
 	truncRec(nil, 195000, noa.DefaultConfig(200000))
 }
+
+// TestZZOracle9t records RenderNudgeText — the nudge-text capstone. It composes
+// FormatBreakdown, FormatBlockMap, FormatTierTargetBlocks, FormatRanges and the
+// unexported renderTierNudge/renderEmergencyNudge/renderGentleNudge/truncationNotice/
+// sectionOr, all reached transitively through the exported RenderNudgeText. Cases
+// cover gentle / emergency / tier-2 / tier-3 voices, section overrides, truncation
+// notices, and the block-map / range passthroughs.
+func TestZZOracle9t(t *testing.T) {
+	big := func(n int) string { return strings.Repeat("a", n) }
+
+	dec := func(mut func(*noa.NudgeDecision)) noa.NudgeDecision {
+		d := noa.NudgeDecision{
+			ContextBreakdown: map[string]int{"system": 800, "tool": 6200, "code": 1500, "summaries": 0, "text": 0},
+			Breakdown: noa.NudgeBreakdown{
+				Growth: 4200,
+			},
+		}
+		mut(&d)
+		return d
+	}
+
+	spans := func() []noa.BlockSpan {
+		return []noa.BlockSpan{
+			{BlockID: "b3", Tier: 1, StartRef: "m00011", EndRef: "m00020"},
+			{BlockID: "b4", Tier: 2, StartRef: "m00021", EndRef: "m00030"},
+		}
+	}
+	ranges := func() []noa.RangeInfo {
+		return []noa.RangeInfo{
+			{StartRef: "m00001", EndRef: "m00010", Count: 10, Tokens: 4200, Chars: 16000, ToolPct: 80, TextPct: 20, UserMsgs: 2},
+			{StartRef: "m00012", EndRef: "m00018", Count: 7, Tokens: 1300, Chars: 5000, TextPct: 100, UserMsgs: 1},
+		}
+	}
+	prot := func() []noa.ProtectedRange {
+		return []noa.ProtectedRange{{StartRef: "m00019", EndRef: "m00020", Count: 2, Tokens: 900, Tools: []string{"Read"}}}
+	}
+	blocks := func() []noa.CompressionBlock {
+		return []noa.CompressionBlock{
+			{BlockID: "b1", Tier: 1, Topic: "auth", Summary: big(120), EffectiveMessageIDs: []string{"m1", "m2"}, CompressedTokens: 3000, StartRef: "m00001", EndRef: "m00010"},
+			{BlockID: "b2", Tier: 1, Topic: "deploy", Summary: big(90), EffectiveMessageIDs: []string{"m3"}, CompressedTokens: 1800, StartRef: "m00011", EndRef: "m00015"},
+		}
+	}
+
+	sectPtr := func(s string) *string { return &s }
+
+	// run records RenderNudgeText(d, s) and serializes the (voice, text) pair.
+	run := func(label string, d noa.NudgeDecision, s noa.NudgeSections) {
+		voice, text := noa.RenderNudgeText(d, s)
+		arg := map[string]any{
+			"Decision": d,
+			"Sections": map[string]any{
+				"EfficiencyNote":  s.EfficiencyNote,
+				"EmergencyHeader": s.EmergencyHeader,
+				"T2Guidance":      s.T2Guidance,
+				"T3Guidance":      s.T3Guidance,
+			},
+		}
+		rec(t, "RenderNudgeText", []any{arg}, map[string]any{"Voice": voice, "Text": text})
+		_ = label
+	}
+
+	// T1: gentle — tier 0, no emergency, ranges + block map + truncation.
+	run("gentle", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.CompressibleRanges = ranges()
+		d.ProtectedRanges = prot()
+		d.ActiveBlockSpans = spans()
+		d.TruncatedCount = 2
+	}), noa.NudgeSections{})
+
+	// T2: gentle — empty breakdown, no ranges, no spans, no truncation (compact drops blanks).
+	run("gentle-empty", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.ContextBreakdown = nil
+		d.Breakdown = noa.NudgeBreakdown{}
+	}), noa.NudgeSections{})
+
+	// T3: gentle — efficiency note override.
+	run("gentle-note", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.CompressibleRanges = ranges()
+	}), noa.NudgeSections{EfficiencyNote: sectPtr("CUSTOM EFFICIENCY NOTE")})
+
+	// T4: emergency — tier 0, over limit, ranges + truncation.
+	run("emergency", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.Breakdown.OverLimit = true
+		d.CompressibleRanges = ranges()
+		d.ProtectedRanges = prot()
+		d.ActiveBlockSpans = spans()
+		d.TruncatedCount = 1
+	}), noa.NudgeSections{})
+
+	// T5: emergency — emergency flag (not over-limit), emergency-header override.
+	run("emergency-hdr", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.Breakdown.Emergency = true
+		d.CompressibleRanges = ranges()
+	}), noa.NudgeSections{EmergencyHeader: sectPtr("LIMIT REACHED")})
+
+	// T6: tier 2 — gentle voice, target blocks, multi-tier.
+	run("tier2", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 2
+		d.TierTargetBlocks = blocks()
+		d.ActiveBlockSpans = spans()
+	}), noa.NudgeSections{})
+
+	// T7: tier 2 — emergency voice + T2 guidance override + truncation.
+	run("tier2-emerg", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 2
+		d.Breakdown.Emergency = true
+		d.TierTargetBlocks = blocks()
+		d.TruncatedCount = 3
+	}), noa.NudgeSections{T2Guidance: sectPtr("CUSTOM T2 GUIDANCE")})
+
+	// T8: tier 3 — gentle voice, T3 guidance override.
+	run("tier3", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 3
+		d.TierTargetBlocks = blocks()
+	}), noa.NudgeSections{T3Guidance: sectPtr("CUSTOM T3 GUIDANCE")})
+
+	// T9: tier 3 — emergency voice.
+	run("tier3-emerg", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 3
+		d.Breakdown.OverLimit = true
+		d.TierTargetBlocks = blocks()
+	}), noa.NudgeSections{})
+
+	// T10: tier 2 — no target blocks (defaults to b1..b5), no spans.
+	run("tier2-notargets", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 2
+	}), noa.NudgeSections{})
+
+	// T11: gentle — only protected ranges (compressible nil), block map present.
+	run("gentle-prot-only", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.ProtectedRanges = prot()
+		d.ActiveBlockSpans = spans()
+	}), noa.NudgeSections{})
+
+	// T12: gentle — many spans (block map folds older than 8).
+	manySpans := func() []noa.BlockSpan {
+		out := make([]noa.BlockSpan, 0, 12)
+		for i := 0; i < 12; i++ {
+			out = append(out, noa.BlockSpan{BlockID: fmt.Sprintf("b%d", i), Tier: 1, StartRef: fmt.Sprintf("m%05d", i*10+1), EndRef: fmt.Sprintf("m%05d", i*10+5)})
+		}
+		return out
+	}
+	run("gentle-manyblocks", dec(func(d *noa.NudgeDecision) {
+		d.Tier = 0
+		d.ActiveBlockSpans = manySpans()
+	}), noa.NudgeSections{})
+}

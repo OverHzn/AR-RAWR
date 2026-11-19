@@ -666,7 +666,102 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                 "SavedTokens": r.saved_tokens,
             })
         }
+        "RenderNudgeText" => {
+            let a = &args[0];
+            let d = decode_nudge_decision(&a["Decision"]);
+            let sec = &a["Sections"];
+            let opt = |k: &str| {
+                if sec[k].is_null() {
+                    None
+                } else {
+                    Some(sec[k].as_str().expect("section override").to_string())
+                }
+            };
+            let sections = noa_rs::nudge_text::NudgeSections {
+                efficiency_note: opt("EfficiencyNote"),
+                emergency_header: opt("EmergencyHeader"),
+                t2_guidance: opt("T2Guidance"),
+                t3_guidance: opt("T3Guidance"),
+            };
+            let (voice, text) = noa_rs::nudge_text::render_nudge_text(&d, &sections);
+            serde_json::json!({ "Voice": voice, "Text": text })
+        }
         other => panic!("no dispatcher arm for {other}"),
+    }
+}
+
+/// Decode a recorded `noa.NudgeDecision` (PascalCase) into the Rust model.
+/// `ContextUsage`/`Breakdown.Usage` are integral floats in Go's JSON (e.g. `0`);
+/// serde_json reads them as f64 fine. Nil slices map to `None`; `TierTargetBlocks`
+/// nil -> `None`. `ActiveBlockSpans` is always an array.
+fn decode_nudge_decision(v: &Value) -> noa_rs::nudge::NudgeDecision {
+    let br = &v["Breakdown"];
+    let breakdown = noa_rs::nudge::NudgeBreakdown {
+        usage: br["Usage"].as_f64().unwrap_or(0.0),
+        growth: br["Growth"].as_i64().unwrap_or(0),
+        growth_reference: br["GrowthReference"].as_i64().unwrap_or(0),
+        growth_floor: br["GrowthFloor"].as_i64().unwrap_or(0),
+        adaptive_growth: br["AdaptiveGrowth"].as_i64().unwrap_or(0),
+        over_limit: br["OverLimit"].as_bool().unwrap_or(false),
+        emergency: br["Emergency"].as_bool().unwrap_or(false),
+        min_pressure_benefit: br["MinPressureBenefit"].as_i64().unwrap_or(0),
+        pending_t1: br["PendingT1"].as_i64().unwrap_or(0),
+        pending_t2: br["PendingT2"].as_i64().unwrap_or(0),
+        pending_t3: br["PendingT3"].as_i64().unwrap_or(0),
+        count_t1: br["CountT1"].as_i64().unwrap_or(0),
+        count_t2: br["CountT2"].as_i64().unwrap_or(0),
+    };
+    let compressible = if v["CompressibleRanges"].is_null() {
+        None
+    } else {
+        Some(
+            serde_json::from_value::<Vec<RangeInfo>>(v["CompressibleRanges"].clone())
+                .expect("compressible ranges"),
+        )
+    };
+    let protected = if v["ProtectedRanges"].is_null() {
+        None
+    } else {
+        Some(decode_protected(&v["ProtectedRanges"]))
+    };
+    let spans = v["ActiveBlockSpans"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .map(|s| noa_rs::nudgetext::BlockSpan {
+                    block_id: s["BlockID"].as_str().unwrap_or("").to_string(),
+                    tier: s["Tier"].as_i64().unwrap_or(0),
+                    start_ref: s["StartRef"].as_str().unwrap_or("").to_string(),
+                    end_ref: s["EndRef"].as_str().unwrap_or("").to_string(),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let tier_target_blocks = if v["TierTargetBlocks"].is_null() {
+        None
+    } else {
+        Some(decode_full_blocks(&v["TierTargetBlocks"]))
+    };
+    let context_breakdown = v["ContextBreakdown"]
+        .as_object()
+        .map(|m| {
+            m.iter()
+                .map(|(k, val)| (k.clone(), val.as_i64().unwrap_or(0)))
+                .collect()
+        })
+        .unwrap_or_default();
+    noa_rs::nudge::NudgeDecision {
+        should_inject: v["ShouldInject"].as_bool().unwrap_or(false),
+        reason: v["Reason"].as_str().unwrap_or("").to_string(),
+        tier: v["Tier"].as_i64().unwrap_or(0),
+        context_usage: v["ContextUsage"].as_f64().unwrap_or(0.0),
+        compressible_ranges: compressible,
+        protected_ranges: protected,
+        active_block_spans: spans,
+        tier_target_blocks,
+        breakdown,
+        context_breakdown,
+        truncated_count: v["TruncatedCount"].as_i64().unwrap_or(0),
     }
 }
 

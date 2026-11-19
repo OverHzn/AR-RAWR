@@ -27,7 +27,7 @@ const TRUNCATE_KEEP_PREFIX_CHARS: usize = 2000;
 /// `noa.truncateKeepSuffixChars` — runes of tail kept verbatim.
 const TRUNCATE_KEEP_SUFFIX_CHARS: usize = 2000;
 /// `noa.TruncationMarker` — substring identifying an already-truncated result.
-const TRUNCATION_MARKER: &str = "[truncated for context space";
+pub const TRUNCATION_MARKER: &str = "[truncated for context space";
 
 /// `noa.TruncateResult` — the truncation outcome.
 #[derive(Debug, Clone, Default)]
