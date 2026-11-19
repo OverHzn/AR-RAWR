@@ -313,7 +313,7 @@ resume without re-deriving state.
   — port of Go `TestSkillUsageLedger`+`TestToolUsageLedger` (unique names) + pure
   `mergeArchivedSkillStats` case; Go oracle green on same DB. artex **214 tests** green, clippy
   clean, fmt clean, gate 30/30.
-- **D-1h llm_usage ledger (this commit):** `src/db/llm_usage.rs` — `LLMUsage`/`ModelTokenStat`/
+- **D-1h llm_usage ledger (commit f2732f9):** `src/db/llm_usage.rs` — `LLMUsage`/`ModelTokenStat`/
   `ProfileUsage`/`ProfileDayUsage`/`JudgeDayUsage`/`JudgeUsage` + `DB::{ensure_llm_usage_table
   (delegates exec_embedded_migration 0002), task_llm_spend, insert_llm_usage, token_by_model,
   usage_by_profile, usage_daily, judge_usage_stats}` (verbatim Go SQL; NUMERIC price cols cast
@@ -326,6 +326,14 @@ resume without re-deriving state.
   + `TestCostSeparatesFreshReadAndWriteBuckets` + `TestUsageByProfileCostAggregatesRows` +
   `TestLLMUsageTsIndex` + `TokenByModel` + `ParseExpID`; Go oracle green on same DB. artex
   **220 tests** green, clippy clean, fmt clean, gate 30/30.
+- **D-1i server logs (this commit):** `src/db/logs.rs` — `DBLog` + `DB::{insert_log
+  (RETURNING id), recent_logs, list_logs_before}` (port of `db/logs.go`; `ORDER BY id
+  DESC LIMIT` then reverse -> oldest-first; `created_at` as SystemTime). No Go `_test.go`
+  -> fresh differential test `tests/db_logs_test.rs` (1): insert/page oldest-first +
+  ListLogsBefore paging + limit clamp. artex **221 tests** green, clippy clean, fmt clean,
+  gate 30/30. (Deferred `db/nkey.go`: key builders re-exportable from `db-rs::port`, but
+  `RootDomain` needs a publicsuffix/eTLD+1 not yet in the Rust tree -> build it with the
+  assets group.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

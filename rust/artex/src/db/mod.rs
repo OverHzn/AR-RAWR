@@ -22,6 +22,7 @@ pub mod error;
 pub mod gotime;
 pub mod llm_usage;
 pub mod llmhealth;
+pub mod logs;
 pub mod migrate;
 pub mod secrets;
 pub mod seed;
