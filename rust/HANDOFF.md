@@ -334,7 +334,7 @@ resume without re-deriving state.
   gate 30/30. (Deferred `db/nkey.go`: key builders re-exportable from `db-rs::port`, but
   `RootDomain` needs a publicsuffix/eTLD+1 not yet in the Rust tree -> build it with the
   assets group.)
-- **D-1j llm retry policy (this commit):** `src/db/llmretry.rs` — `RetryRule`/
+- **D-1j llm retry policy (commit 6b8944f):** `src/db/llmretry.rs` — `RetryRule`/
   `RetryOverride`/`LLMRetryPolicy` (all Copy+PartialEq) + pure `interval`/`or`/`clamped`
   (attempts [-1,20], interval [0,1h]) + `DB::{llm_retry_policy (zero on missing/
   unparseable, else Clamped), set_llm_retry_policy (clamped first)}` over the
@@ -343,6 +343,13 @@ resume without re-deriving state.
   port of Go `TestLLMRetryPolicyRoundTrip` (round-trip + clamp + missing-key, restores
   prior setting) + pure clamp/or/interval + override-clamp; Go oracle green. artex
   **224 tests** green, clippy clean, fmt clean, gate 30/30.
+- **D-1k asset intercept rules (this commit):** `src/db/asset_intercept.rs` —
+  `AssetInterceptRule` + `DB::{list (builtin DESC, id DESC), create (builtin=false),
+  update (RETURNING; missing id errors like Go ErrNoRows), delete, toggle}` (port of
+  `db/asset_intercept.go`; global rules have no action column -> action always empty).
+  No Go `_test.go` for the CRUD (only the matching logic has one) -> fresh differential
+  test `tests/db_asset_intercept_test.rs` (1): CRUD round-trip + ordering + missing-id
+  update error. artex **225 tests** green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

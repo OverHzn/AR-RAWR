@@ -16,6 +16,7 @@
 //! from the Go tree with `include_str!` so the recorded checksums stay
 //! byte-identical to the Go binary and cannot drift.
 
+pub mod asset_intercept;
 pub mod browser_mcp;
 pub mod constants;
 pub mod error;
