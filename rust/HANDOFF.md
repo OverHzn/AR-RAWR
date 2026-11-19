@@ -3,13 +3,14 @@
 Mandatory per PHASE-1 §9. Update at the end of every unit so a fresh session can
 resume without re-deriving state.
 
-## Current state (last updated: Unit 8 complete; Unit 9 next)
+## Current state (last updated: Unit 9a complete; Unit 9b next)
 
 - Branch: `main`. origin=OverHzn/AR-RAWR, upstream=BaaRai/ARTEX.
-- HEAD at Unit 7 (`c013d4f`). Units 1–7 pushed. **Unit 8 ready to commit.**
+- HEAD at Unit 8 (`5bfdc46`, pushed). **Unit 9a ready to commit** (notify doJSON/httpClient IO shell).
 - Pure-helper layer fully ported; `rust/gate-all.sh` = **PASS 30 / FAIL 0**.
-- `rust/artex/gate.sh` (fmt + clippy -D warnings + test) green; artex tests = 80 (68 + 12 sign/ssrf/redact).
-- Go baselines for ported packages re-run green (`config`, `llmpool`, `notify` pure specs incl. sign/ssrf/redact).
+- `rust/artex/gate.sh` (fmt + clippy -D warnings + test) green; **artex tests = 90**
+  (lib 11 + config 2 + llmpool 18 + notify_http 10 + notify_mask 16 + notify_pack 12 + notify_render 9 + notify_sign 12).
+- Go baselines for ported packages re-run green (`config`, `llmpool`, `notify` pure specs incl. sign/ssrf/redact + the Unit-9a `http_test.go` doJSON/dial-guard specs).
 
 ### Environment
 - Go go1.27.3; rustc/cargo 1.100.0. `export PATH="$HOME/.cargo/bin:/usr/local/go/bin:$PATH"`.
@@ -31,25 +32,40 @@ resume without re-deriving state.
 5. notify core (0f0c067) — re-exports + Channel trait + Error/Context/Snapshot/Item/Message/Limits.
 6. notify mask (8b1fd17) — mask_config/merge_config/prepare_config_update (destination-swap guard).
 7. notify markdown+html render (c013d4f) — markdown_body (pack-whole-items)/html_body etc.
+8. notify signing + SSRF/redact substrate (5bfdc46) — `src/notify/sign.rs`
+   (dingtalk_signed_url, feishu_sign) + `src/notify/http.rs` pure helpers
+   (allow_local_targets, is_blocked_dial_ip, validate_http_url, redact_request_target,
+   redact_transport_error/TransportError, redact_urls_in_text). Specs in
+   `tests/notify_sign_test.rs` (12). Crypto deps: hmac 0.12, sha2 0.10, base64 0.22.
 
 ## Active: Unit 9 — notify channel adapters + doJSON/httpClient
-- Unit 8 DONE: `src/notify/sign.rs` (dingtalk_signed_url, feishu_sign) + `src/notify/http.rs`
-  (allow_local_targets, is_blocked_dial_ip, validate_http_url, redact_request_target,
-  redact_transport_error/TransportError, redact_urls_in_text). Specs ported in
-  `tests/notify_sign_test.rs` (12 tests); Go baseline for all 11 ported pure specs green.
-  Crypto deps added: hmac 0.12, sha2 0.10, base64 0.22 (fetched; offline-buildable now).
-  NOTE: Rust `IpAddr` is non-nullable so Go's `isBlockedDialIP(nil)==true` (empty-string
-  case) has no analogue — covered by call sites skipping non-literal hosts + the dial guard.
-- Unit 9 TODO: build the IO shell (`doJSON`/`httpClient` via reqwest/hyper with a custom
-  connect that calls `is_blocked_dial_ip`; 15s timeout, cross-host redirect refusal,
-  `respBodyLimit=8<<10`, status classification 5xx/408/429 retryable vs other 4xx permanent,
-  `snippet` via notifyx OneLine). Then the 6 adapters (dingtalk/feishu/wecom/webhook/
-  telegram/email) with `feishuCard`/`telegramHTML` + the SMTP dial guard.
-  Port: `channels_test.go`, `http_test.go` (doJSON/redirect), `pack_test.go` channel cases,
+- **9a DONE (ready to commit):** the IO shell in `src/notify/http.rs` —
+  `do_json(ctx, method, url, headers, payload)` + lazy process-wide `http_client()`
+  (reqwest/rustls): 15s timeout, `respBodyLimit=8<<10`, status classification
+  (2xx ok; 429/408 & ≥500 transient; other 4xx permanent; message carries numeric status
+  + `snippet`), cross-host redirect refusal (same-host allowed, max 5), and the SSRF dial
+  guard = **literal-IP pre-check in `do_json`** (hyper-util skips the resolver for IP
+  literals) **+ `GuardResolver`** (custom `reqwest::dns::Resolve` that vets every hostname
+  lookup via `is_blocked_dial_ip`, closing DNS-rebinding). Transport errors are stripped to
+  `request failed: Op host:port: <cause>` with `reqwest::Error::without_url()` (the
+  `url.Error.Err` analogue) + `redact_urls_in_text` so no credential leaks; the read-error
+  path is redacted too (reqwest body errors can carry a URL, unlike Go's bare `io` error).
+  Specs in `tests/notify_http_test.rs` (10) over a scriptable tokio test server
+  (`tests/common/mod.rs`, the `httptest.NewServer` equivalent); `cfg_*` config readers were
+  already re-exported from `notifyx-rs` (no new `cfg.rs` needed). Port of `http_test.go`
+  (TestDoJSONClassifiesHTTPStatus/IncludesResponseSnippet/SnippetIsSingleLineAndBounded/
+  RejectsOversizedResponse) + dial-guard (literal + resolver) + cross/same-host redirect.
+  Go baseline green for all of these. New dep: reqwest 0.12 (rustls-tls), offline-buildable.
+- **9b TODO:** the 6 concrete adapters (dingtalk/feishu/wecom/webhook/telegram/email) with
+  `feishuCard`/`telegramHTML` + webhook templates + the email SMTP dial guard. Add default
+  trait bodies for `default_rate_per_min`/`secret_keys`/`destination_keys` (read
+  `channel_meta(self.kind())`) so adapters implement only kind/validate/send. Channel-level
+  `Send` returns delivered-item count (truncated batch marks only first `kept`).
+  Port: `channels_test.go`, `http_test.go` channel cases, `pack_test.go` channel cases,
   `email_test.go`, `webhook_template_test.go`, channel cases in `redact_test.go`
-  (TestChannelErrorsNeverLeakCredentials*, TestCrossHostRedirectRefused/SameHostRedirectAllowed,
-  TestDialGuard*/TestEmailDialGuard*).
+  (TestChannelErrorsNeverLeakCredentials*, TestCrossHostRedirectRefused/SameHostRedirectAllowed)
+  + `ssrf_test.go` dial-guard (TestDialGuard* through `dingTalkChannel.Send`, TestEmailDialGuard*).
 
 ## Next
-- Unit 9 (above), then sidequestion → mcphttp → db (differential) → intercept → egress →
+- Unit 9b (above), then sidequestion → mcphttp → db (differential) → intercept → egress →
   traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).
