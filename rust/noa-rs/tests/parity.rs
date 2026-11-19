@@ -8,6 +8,8 @@ use noa_rs::nudgetext::{
 };
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
+use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
+use noa_rs::schema::compress_tool_schema;
 
 fn cases() -> Vec<Value> {
     include_str!("../cases.jsonl")
@@ -186,8 +188,28 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                     .collect();
             serde_json::to_value(format_tier_target_blocks(&blocks)).expect("serialize string")
         }
+        "MergeRangesToThreshold" => {
+            let ranges: Vec<RangeInfo> = decode_ranges(&args[0]);
+            let min_chars = args[1].as_i64().expect("min_chars");
+            serde_json::to_value(merge_ranges_to_threshold(&ranges, min_chars))
+                .expect("serialize ranges")
+        }
+        "ViableRanges" => {
+            let ranges: Vec<RangeInfo> = decode_ranges(&args[0]);
+            serde_json::to_value(viable_ranges(&ranges)).expect("serialize ranges")
+        }
+        "CompressToolSchema" => compress_tool_schema(),
         other => panic!("no dispatcher arm for {other}"),
     }
+}
+
+/// Decode a recorded `[]RangeInfo` (array of objects) into `Vec<RangeInfo>`.
+/// A nil slice marshals to `null` in the recorded args; model it as empty.
+fn decode_ranges(v: &Value) -> Vec<RangeInfo> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    serde_json::from_value(v.clone()).expect("ranges decode")
 }
 
 #[test]

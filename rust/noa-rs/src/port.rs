@@ -41,7 +41,7 @@ pub fn format_tokens(n: i64) -> String {
 
 /// `noa.roundHalfUp` — JavaScript `Math.round` semantics for the non-negative
 /// values used here (half rounds up; agrees with away-from-zero on positives).
-fn round_half_up(f: f64) -> i64 {
+pub fn round_half_up(f: f64) -> i64 {
     (f + 0.5).floor() as i64
 }
 

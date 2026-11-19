@@ -560,3 +560,65 @@ func TestZZOracle9f(t *testing.T) {
 		rec(t, "FormatTierTargetBlocks", []any{cbs}, noa.FormatTierTargetBlocks(blocks))
 	}
 }
+
+func TestZZOracle9g(t *testing.T) {
+	// ---- MergeRangesToThreshold ----
+	type rg struct {
+		start, end                     string
+		count, tokens, chars           int
+		toolPct, textPct, userMsgs     int
+		dangerous                      bool
+	}
+	mk := func(r rg) noa.RangeInfo {
+		return noa.RangeInfo{
+			StartRef: r.start, EndRef: r.end, Count: r.count, Tokens: r.tokens,
+			Chars: r.chars, ToolPct: r.toolPct, TextPct: r.textPct,
+			UserMsgs: r.userMsgs, Dangerous: r.dangerous,
+		}
+	}
+	mergeCases := []struct {
+		ranges   []rg
+		minChars int
+	}{
+		// below threshold each -> all merged into one
+		{[]rg{{"m00001", "m00005", 5, 1000, 100, 60, 40, 1, false}, {"m00006", "m00010", 5, 2000, 150, 30, 70, 2, false}}, 500},
+		// first already above threshold -> flush each
+		{[]rg{{"m00001", "m00005", 5, 1000, 600, 60, 40, 1, false}, {"m00006", "m00010", 5, 2000, 150, 30, 70, 2, false}}, 500},
+		// exactly at threshold
+		{[]rg{{"m00001", "m00005", 5, 1000, 500, 60, 40, 1, false}}, 500},
+		// empty
+		{[]rg{}, 500},
+		// minChars <= 0 -> unchanged
+		{[]rg{{"m00001", "m00005", 5, 1000, 100, 60, 40, 1, false}}, 0},
+		// three small -> one merged, weighted tool pct
+		{[]rg{{"m1", "m2", 2, 100, 50, 100, 0, 0, false}, {"m3", "m4", 3, 150, 60, 0, 100, 1, false}, {"m5", "m6", 1, 80, 40, 50, 50, 0, false}}, 1000},
+	}
+	for _, c := range mergeCases {
+		var rs []noa.RangeInfo
+		for _, r := range c.ranges {
+			rs = append(rs, mk(r))
+		}
+		out := noa.MergeRangesToThreshold(rs, c.minChars)
+		rec(t, "MergeRangesToThreshold", []any{rs, c.minChars}, out)
+	}
+
+	// ---- ViableRanges ----
+	viableCases := [][]rg{
+		{{"m00001", "m00005", 5, 100, 100, 60, 40, 1, false}},   // below 200 -> dropped
+		{{"m00001", "m00005", 5, 200, 100, 60, 40, 1, false}},   // exactly 200 -> kept
+		{{"m00001", "m00005", 5, 500, 100, 60, 40, 1, false}},   // above -> kept
+		{{"m1", "m2", 1, 50, 10, 0, 0, 0, false}, {"m3", "m4", 1, 250, 20, 0, 0, 0, false}}, // mixed
+		{},                                                       // empty
+	}
+	for _, c := range viableCases {
+		var rs []noa.RangeInfo
+		for _, r := range c {
+			rs = append(rs, mk(r))
+		}
+		out := noa.ViableRanges(rs)
+		rec(t, "ViableRanges", []any{rs}, out)
+	}
+
+	// ---- CompressToolSchema ----
+	rec(t, "CompressToolSchema", []any{}, noa.CompressToolSchema())
+}
