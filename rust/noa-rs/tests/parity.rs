@@ -3,6 +3,7 @@
 
 use serde_json::Value;
 
+use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
 
 fn cases() -> Vec<Value> {
@@ -129,6 +130,10 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
                     .map(|w| serde_json::to_value(w).unwrap())
                     .unwrap_or(Value::Null),
             ])
+        }
+        "ParseCompressArgs" => {
+            let raw = args[0].as_str().expect("raw string arg");
+            serde_json::to_value(parse_compress_args(raw.as_bytes())).expect("serialize result")
         }
         other => panic!("no dispatcher arm for {other}"),
     }

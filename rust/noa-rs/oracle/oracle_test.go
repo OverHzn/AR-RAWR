@@ -16,6 +16,7 @@ package noaoracle
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/Autumn-27/norma/noa"
@@ -409,4 +410,70 @@ func TestZZOracle9d(t *testing.T) {
 	rec(t, "ApplyPairBoundaryAdjustments", []any{0, 8, msgs}, pair(noa.ApplyPairBoundaryAdjustments(0, 8, msgs)))
 	rec(t, "ApplyPairBoundaryAdjustments", []any{0, 0, msgs}, pair(noa.ApplyPairBoundaryAdjustments(0, 0, msgs)))
 	rec(t, "ApplyPairBoundaryAdjustments", []any{-1, 99, msgs}, pair(noa.ApplyPairBoundaryAdjustments(-1, 99, msgs)))
+}
+func TestZZOracle9e(t *testing.T) {
+	// ParseCompressArgs: a spread of raw inputs exercising every parse layer and
+	// every CompressParseKind. Raw is passed as a string (recorded as text).
+	inputs := []string{
+		// empty / null
+		"", "   ", "null",
+		// not an object
+		`[1,2,3]`, `"just a string"`, `42`,
+		// missing content
+		`{"topic":"x"}`,
+		// content not an array (object)
+		`{"content":{"a":1}}`,
+		// content not an array (number)
+		`{"content":5}`,
+		// empty content list -> ok, no ranges
+		`{"content":[]}`,
+		// well-formed
+		`{"topic":"t","content":[{"startId":"m00001","endId":"m00005","summary":"sum","topic":"e1"},{"startRef":"m00006","endRef":"m00010","summary":"sum2"}]}`,
+		// summaryMaxChars at top + per-entry
+		`{"summaryMaxChars":1234,"content":[{"messageId":"m00001","endRef":"m00003","summary":"s","summaryMaxChars":99}]}`,
+		// field aliases
+		`{"content":[{"startId":"m1","endId":"m2","summary":"a"},{"startRef":"m3","endRef":"m4","summary":"b"}]}`,
+		// missing fields -> invalid items -> no-valid-ranges
+		`{"content":[{"topic":"x"},{"summary":"only summary"}]}`,
+		// mixed valid + invalid
+		`{"content":[{"startId":"m1","endId":"m2","summary":"ok"},{"startId":"","endId":"","summary":""}]}`,
+		// content as JSON-string of array
+		`{"content":"[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]"}`,
+		// markdown fence wrapper
+		"```json\n{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]}\n```",
+		"```\n{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]}\n```",
+		// whole args as a JSON string
+		`"{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]}"`,
+		// trailing comma
+		`{"content":[{"startId":"m1","endId":"m2","summary":"s"},],}`,
+		// raw newline inside a summary string
+		"{\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"line1\nline2\"}]}",
+		// tail repair: missing closing brace on last object
+		`{"content":[{"startId":"m1","endId":"m2","summary":"s"}`,
+		// salvage: truncated mid-object (provider cut off)
+		`{"content":[{"startId":"m1","endId":"m2","summary":"s"},{"startId":"m3","endId":"m4","summ`,
+		// malformed / unrecoverable
+		`{not json at all`,
+		// leading/trailing whitespace
+		"  \n\t {\"content\":[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"}]} \n ",
+		// topic omitted -> empty
+		`{"content":[{"startId":"m1","endId":"m2","summary":"s"}]}`,
+		// unicode + special chars in summary
+		`{"content":[{"startId":"m1","endId":"m2","summary":"héllo 世界 😀"}]}`,
+		// multiple ranges
+		`{"content":[{"startId":"m1","endId":"m2","summary":"a"},{"startId":"m3","endId":"m4","summary":"b"},{"startId":"m5","endId":"m6","summary":"c"}]}`,
+		// tail repair (Qwen-style): content is a JSON-string array whose last object
+		// lost its closing brace, leaving `"]` where `"}]` belongs. Raw string keeps
+		// the \" literal so the outer content value carries the backslashes.
+		`{"content":"[{\"startId\":\"m1\",\"endId\":\"m2\",\"summary\":\"s\"]"}`,
+		// double-stringified payload
+		`"{"content":[{"startId":"m1","endId":"m2","summary":"s"}]}"`,
+	}
+	for _, raw := range inputs {
+		res := noa.ParseCompressArgs([]byte(raw))
+		// Keys is filled from a Go map range (random order); sort it so the recorded
+		// case is byte-reproducible. The Rust port emits serde_json's sorted keys.
+		sort.Strings(res.Diagnostics.Keys)
+		rec(t, "ParseCompressArgs", []any{raw}, res)
+	}
 }
