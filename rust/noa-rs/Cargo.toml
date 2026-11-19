@@ -1,0 +1,21 @@
+[package]
+name = "noa-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of the pure, value-typed helpers of the external norma/noa package (message-ref / block-id codec, token estimation, token formatting), parity-tested against the real Go noa package"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
