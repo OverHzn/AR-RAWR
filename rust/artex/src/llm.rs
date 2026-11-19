@@ -21,6 +21,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
+use tokio::sync::watch;
 
 /// Minimal port of the sentinel errors the LLM layer branches on.
 ///
@@ -78,20 +79,68 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// Minimal port of Go's `context.Context`: the cancellation surface the LLM layer
-/// reads (`ctx.Err()`) plus a type-keyed value bag mirroring `context.WithValue` /
-/// `ctx.Value`.
+/// reads (`ctx.Err()` / `ctx.Done()`) plus a type-keyed value bag mirroring
+/// `context.WithValue` / `ctx.Value`.
 ///
-/// `Background` never cancels; the other constructors model an already-cancelled
-/// context for tests and for the server to map a real cancellation source onto.
+/// Cancellation has two sources, matching Go's two ways a context becomes done:
+/// a *static* terminal error fixed at construction ([`canceled`](Context::canceled)
+/// / [`deadline_exceeded`](Context::deadline_exceeded)), and a *runtime* source a
+/// holder cancels while work is in flight ([`with_cancel`](Context::with_cancel) →
+/// [`CancelHandle::cancel`]). Both are observed through [`err`](Context::err) /
+/// [`is_cancelled`](Context::is_cancelled); [`cancelled`](Context::cancelled) is the
+/// awaitable `ctx.Done()`. `Background` never cancels.
+///
 /// Values are keyed by their type's [`TypeId`] — exactly how the sidequestion
 /// capture threads its checkpoint sink through the provider pool, and how Go uses
 /// private `struct{}` keys. [`with_value`](Context::with_value) returns a child
 /// carrying one more value (copy-on-write, so cloning a `Context` stays cheap);
-/// [`value`](Context::value) reads it back.
+/// [`value`](Context::value) reads it back. Children inherit the cancel source.
 #[derive(Clone, Default)]
 pub struct Context {
+    /// Static terminal error fixed at construction (`context.WithCancel` parent
+    /// already done). `None` for a live / background context.
     err: Option<Error>,
     values: Arc<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
+    /// Runtime cancellation source (`context.WithCancel`). The shared receiver sees
+    /// the error a [`CancelHandle`] sends; `None` for background / static contexts.
+    cancel: Option<Arc<CancelInner>>,
+}
+
+/// The shared side of a runtime cancellation source: a `watch` receiver carrying
+/// `Some(err)` once cancelled, `None` while live.
+struct CancelInner {
+    rx: watch::Receiver<Option<Error>>,
+}
+
+/// The holder side of a runtime cancellation source returned by
+/// [`Context::with_cancel`]. Cloning shares the same source: any clone's
+/// [`cancel`](CancelHandle::cancel) cancels every [`Context`] derived from it.
+/// This is Go's `context.CancelFunc`.
+#[derive(Clone, Debug)]
+pub struct CancelHandle {
+    tx: watch::Sender<Option<Error>>,
+}
+
+impl CancelHandle {
+    /// Cancel with `context.Canceled`. Idempotent; a later cancel is a no-op on the
+    /// observed value (the first error wins, matching `context`'s once-only cancel).
+    pub fn cancel(&self) {
+        self.cancel_with(Error::Canceled);
+    }
+
+    /// Cancel with a specific error (e.g. `context.DeadlineExceeded`).
+    pub fn cancel_with(&self, err: Error) {
+        // Only the first cancellation is observable: ignore the send error (no
+        // receivers) and don't overwrite an already-set error.
+        if self.tx.borrow().is_none() {
+            let _ = self.tx.send(Some(err));
+        }
+    }
+
+    /// Whether this source has been cancelled.
+    pub fn is_cancelled(&self) -> bool {
+        self.tx.borrow().is_some()
+    }
 }
 
 impl fmt::Debug for Context {
@@ -100,6 +149,7 @@ impl fmt::Debug for Context {
         f.debug_struct("Context")
             .field("err", &self.err)
             .field("values", &self.values.len())
+            .field("cancellable", &self.cancel.is_some())
             .finish()
     }
 }
@@ -115,6 +165,7 @@ impl Context {
         Context {
             err: Some(Error::Canceled),
             values: Default::default(),
+            cancel: None,
         }
     }
 
@@ -123,29 +174,77 @@ impl Context {
         Context {
             err: Some(Error::DeadlineExceeded),
             values: Default::default(),
+            cancel: None,
         }
     }
 
-    /// `ctx.Err()`: `Some` once cancelled, else `None`.
-    pub fn err(&self) -> Option<&Error> {
-        self.err.as_ref()
+    /// `context.WithCancel(parent)`: a live context plus the [`CancelHandle`] that
+    /// cancels it. Cancelling the handle makes this context's [`err`](Context::err)
+    /// return the error and its [`cancelled`](Context::cancelled) future resolve —
+    /// Go's `ctx.Done()` closing. Independent of any other `with_cancel` context, so
+    /// cancelling a parent (main) leaves a sibling (side) running.
+    pub fn with_cancel() -> (Context, CancelHandle) {
+        let (tx, rx) = watch::channel(None);
+        let ctx = Context {
+            err: None,
+            values: Default::default(),
+            cancel: Some(Arc::new(CancelInner { rx })),
+        };
+        (ctx, CancelHandle { tx })
+    }
+
+    /// `ctx.Err()`: `Some` once cancelled (statically or at runtime), else `None`.
+    pub fn err(&self) -> Option<Error> {
+        if let Some(e) = &self.err {
+            return Some(e.clone());
+        }
+        self.cancel.as_ref().and_then(|c| c.rx.borrow().clone())
     }
 
     /// Whether this context is cancelled.
     pub fn is_cancelled(&self) -> bool {
         self.err.is_some()
+            || self
+                .cancel
+                .as_ref()
+                .is_some_and(|c| c.rx.borrow().is_some())
+    }
+
+    /// `ctx.Done()`: resolves once the context is cancelled. For an already-done or
+    /// static context it returns at once; for `Background` (no cancel source) it
+    /// waits forever, exactly as a nil `Done()` channel does.
+    pub async fn cancelled(&self) {
+        if self.err.is_some() {
+            return;
+        }
+        let inner = match self.cancel.clone() {
+            Some(inner) => inner,
+            // Background (no cancel source): wait forever, like a nil Done channel.
+            None => return std::future::pending::<()>().await,
+        };
+        let mut rx = inner.rx.clone();
+        loop {
+            if rx.borrow().is_some() {
+                return;
+            }
+            if rx.changed().await.is_err() {
+                // All handles dropped without cancelling: never done.
+                std::future::pending::<()>().await;
+            }
+        }
     }
 
     /// `context.WithValue(ctx, key{}, value)`: a child context that also carries
-    /// `value` under its type `T`. The parent's cancellation and other values are
-    /// preserved. `T` is the key, so each distinct value type occupies its own slot
-    /// — the same role a private `struct{}` key plays in Go.
+    /// `value` under its type `T`. The parent's cancellation (static + runtime) and
+    /// other values are preserved. `T` is the key, so each distinct value type
+    /// occupies its own slot — the same role a private `struct{}` key plays in Go.
     pub fn with_value<T: Any + Send + Sync>(&self, value: Arc<T>) -> Self {
         let mut values = (*self.values).clone();
         values.insert(TypeId::of::<T>(), value);
         Context {
             err: self.err.clone(),
             values: Arc::new(values),
+            cancel: self.cancel.clone(),
         }
     }
 
@@ -615,5 +714,111 @@ mod context_value_tests {
     fn background_has_no_values() {
         assert!(Context::background().value::<Marker>().is_none());
         assert!(!Context::background().is_cancelled());
+    }
+}
+
+#[cfg(test)]
+mod cancel_tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn with_cancel_starts_live_then_cancels() {
+        let (ctx, handle) = Context::with_cancel();
+        assert!(!ctx.is_cancelled());
+        assert!(ctx.err().is_none());
+        handle.cancel();
+        assert!(ctx.is_cancelled());
+        assert_eq!(ctx.err(), Some(Error::Canceled));
+    }
+
+    #[tokio::test]
+    async fn cancelled_future_waits_then_resolves_on_cancel() {
+        let (ctx, handle) = Context::with_cancel();
+        let c2 = ctx.clone();
+        let waiter = tokio::spawn(async move { c2.cancelled().await });
+        tokio::task::yield_now().await;
+        assert!(!waiter.is_finished(), "must block while live");
+        handle.cancel();
+        tokio::time::timeout(Duration::from_secs(1), waiter)
+            .await
+            .expect("cancelled() should resolve")
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn already_cancelled_resolves_immediately() {
+        let (ctx, handle) = Context::with_cancel();
+        handle.cancel();
+        tokio::time::timeout(Duration::from_secs(1), ctx.cancelled())
+            .await
+            .expect("already-cancelled cancelled() resolves at once");
+    }
+
+    #[tokio::test]
+    async fn static_canceled_is_done() {
+        let ctx = Context::canceled();
+        assert!(ctx.is_cancelled());
+        assert_eq!(ctx.err(), Some(Error::Canceled));
+        tokio::time::timeout(Duration::from_secs(1), ctx.cancelled())
+            .await
+            .expect("static cancellation resolves cancelled() at once");
+    }
+
+    #[tokio::test]
+    async fn cancel_handle_clone_cancels_shared_context_with_custom_error() {
+        let (ctx, handle) = Context::with_cancel();
+        let h2 = handle.clone();
+        let c2 = ctx.clone();
+        let waiter = tokio::spawn(async move { c2.cancelled().await });
+        tokio::task::yield_now().await;
+        h2.cancel_with(Error::DeadlineExceeded);
+        tokio::time::timeout(Duration::from_secs(1), waiter)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(ctx.err(), Some(Error::DeadlineExceeded));
+    }
+
+    #[tokio::test]
+    async fn first_cancel_wins() {
+        let (ctx, handle) = Context::with_cancel();
+        handle.cancel_with(Error::DeadlineExceeded);
+        handle.cancel(); // second cancel must not overwrite
+        assert_eq!(ctx.err(), Some(Error::DeadlineExceeded));
+    }
+
+    #[tokio::test]
+    async fn background_never_cancels() {
+        let ctx = Context::background();
+        assert!(!ctx.is_cancelled());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(50), ctx.cancelled())
+                .await
+                .is_err(),
+            "background cancelled() must block"
+        );
+    }
+
+    #[tokio::test]
+    async fn with_value_child_inherits_runtime_cancel() {
+        let (ctx, handle) = Context::with_cancel();
+        let child = ctx.with_value(Arc::new(42u32));
+        handle.cancel();
+        assert!(child.is_cancelled());
+        assert_eq!(*child.value::<u32>().unwrap(), 42);
+    }
+
+    #[tokio::test]
+    async fn sibling_contexts_cancel_independently() {
+        // Cancelling "main" must not cancel "side" — the property the sidequestion
+        // concurrency spec relies on.
+        let (main, stop_main) = Context::with_cancel();
+        let (side, stop_side) = Context::with_cancel();
+        stop_main.cancel();
+        assert!(main.is_cancelled());
+        assert!(!side.is_cancelled());
+        stop_side.cancel();
+        assert!(side.is_cancelled());
     }
 }
