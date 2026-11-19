@@ -60,6 +60,7 @@ gates with `./gate.sh` (fmt, clippy `-D warnings`, parity tests).
 | `llmrecx-rs`      | 23   | `llmrec/`  | `parseSession`, `thinkingText` (`thinkingText` over the `norma/llm` model ported in `llm-rs`; other helpers need `context` and stay in Go) |
 | `llm-rs`          | 24   | `norma/llm` (external) | `Message.Text`, `Message.ToolUses`, `Usage.Add`, `Usage.MergeEcho`, the `boundary.go` functions (`IsBoundaryMarker`/`LastBoundaryIndex`/`MessagesAfterBoundary`/`PairToolBlocks`/`MessagesForAPI`/`BoundaryMessage`/`ParseBoundaryMeta`) + the value model (`ContentBlock`/`Message`/`Usage`/`ToolSchema`/`CompletionRequest`/`BoundaryMeta`); the oracle is a **standalone Go module** because `norma/llm` lives in the read-only module cache (can't copy an oracle into it) |
 | `compaction-rs`   | 21   | `norma/compaction` (external) | `EstimateTokens` (Σ `blockChars` `/4` over the `llm-rs` message model), `IsOverflow` (`error`→`bool`); oracle is a **standalone Go module** (only exported funcs reachable) |
+| `tool-rs`         | 23   | `norma/tool` (external) | `Text`/`Errorf` (→ `Result`), `RenderDeferredToolsBlock`, `RenderTodoReminder` (pure helpers of a mostly-IO package); oracle is a **standalone Go module** whose go.mod/go.sum mirror ARTEX's deps (tool pulls `creack/pty`, `x/net`, …) |
 
 In `server/`, the three functions the bridge *does* extract (`ScrubSecretEnv`,
 `StartLogCapture`, `WithSecretScrub`) are all side-effectful (env/IO/closure), so
@@ -77,7 +78,7 @@ cd rust/<unit>
 ../ra gate .          # fmt, clippy, tests, unsafe, API, size, error-cases, build, diff
 ```
 
-To verify **every** unit at once (gocompat build + all 24 crates, each via its own
+To verify **every** unit at once (gocompat build + all 25 crates, each via its own
 gate — `gate.sh` if present, else `ra gate .`):
 
 ```sh
@@ -122,7 +123,7 @@ The remaining Go packages are pointer/IO/concurrent-heavy. Their pure helpers th
 take **primitive parameters** are all ported via a Go oracle (`server-rs`,
 `traffic-rs`, `enrich-rs`, `guard-rs`, `sidequestion-rs`, `reportex-rs`,
 `notifyx-rs`, `dbx-rs`, `mcphttpx-rs`, `agentx-rs`, `llmpoolx-rs`, `llmrecx-rs`,
-`llm-rs`). A further tier of pure
+`llm-rs`, `compaction-rs`, `tool-rs`). A further tier of pure
 functions takes **composite parameters** (slices, maps, `[]byte`, or structs from
 other packages) — the bridge can't reach those either, and they are only
 *partially* portable; see "Composite-parameter tier" below. What stays in Go
