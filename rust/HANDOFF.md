@@ -6,7 +6,7 @@ resume without re-deriving state.
 ## Current state (last updated: SQ-4 complete; mcphttp next)
 
 - Branch: `main`. origin=OverHzn/AR-RAWR, upstream=BaaRai/ARTEX.
-- HEAD at SQ-3 (`7eb3014`, pushed). **SQ-4 ready to commit** (capture layer + harness.QueryDeps).
+- HEAD at SQ-4 (`7c47d3f`, pushed).
 - Pure-helper layer fully ported; `rust/gate-all.sh` = **PASS 30 / FAIL 0**.
 - `rust/artex`: fmt + clippy -D warnings clean; **artex tests = 177** (lib 51 + the
   per-crate integration suites: config 2, llmpool 18, notify_http 10, notify_mask 16,
@@ -132,7 +132,7 @@ resume without re-deriving state.
   to it. Added serde to `sidequestion-rs` `Parent` + `GoTime`/`Model`/`Snapshot` for the
   `json.Marshal(snapshot)` cache key. Spec: `tests/sidequestion_context_test.rs` (8 specs, all
   ported from `context_test.go`).
-- **SQ-4 (ready to commit):** capture layer `src/sidequestion/capture.rs` — `Publisher`/
+- **SQ-4 (`7c47d3f`, pushed):** capture layer `src/sidequestion/capture.rs` — `Publisher`/
   `with_publisher`, `Capture`/`attach`/`finish`, `bind`/`BoundProvider` — plus a new
   `src/harness.rs` mirroring `norma/harness.QueryDeps` (the model-call surface: `call_model`
   stream + `call_model_sync` → `complete_full`, `fill_from` fills nils from a Provider). `attach`
@@ -148,6 +148,6 @@ resume without re-deriving state.
   leaves the other running, with the cancelled side's message_start usage preserved).
 
 ## Next
-- SQ-4 commit + push. Next: mcphttp → db (differential) → intercept → egress →
+- mcphttp → db (differential) → intercept → egress →
   traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
   `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
