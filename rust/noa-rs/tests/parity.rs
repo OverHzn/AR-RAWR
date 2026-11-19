@@ -11,6 +11,7 @@ use noa_rs::panel::{ApplyResult, PanelBlock, PanelState, format_panel};
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
 use noa_rs::protection::{is_message_protected, is_never_preserve_recent_tool, match_tool_pattern};
+use noa_rs::protrefs::compute_protected_refs;
 use noa_rs::ranges::{ProtectedRange, format_ranges};
 use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
 use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
@@ -388,6 +389,22 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             serde_json::to_value(is_terminal_rewrite(target_tier, direct_count, max_tier))
                 .expect("serialize bool")
         }
+        "ComputeProtectedRefs" => {
+            let msgs = decode_core_messages(&args[0]);
+            let blocks = decode_state_blocks(&args[2]);
+            let by_raw = args[1]["ByRaw"]
+                .as_object()
+                .map(|m| {
+                    m.iter()
+                        .map(|(k, val)| (k.clone(), val.as_str().unwrap_or("").to_string()))
+                        .collect::<std::collections::HashMap<_, _>>()
+                })
+                .unwrap_or_default();
+            let p_msg = args[3]["PreserveRecentMessages"].as_i64().expect("pMsg");
+            let p_tok = args[3]["PreserveRecentTokens"].as_i64().expect("pTok");
+            let set = compute_protected_refs(&msgs, &blocks, &by_raw, p_msg, p_tok);
+            serde_json::to_value(set).expect("serialize set")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -520,6 +537,25 @@ fn decode_state_blk_arg(v: &Value) -> Vec<StateBlock> {
             end_ref: String::new(),
             active: b["Active"].as_bool().unwrap_or(false),
             effective_message_ids: Vec::new(),
+        })
+        .collect()
+}
+
+/// Decode a recorded `[]CoreMessage` into `Vec<CoreMessage>`.
+fn decode_core_messages(v: &Value) -> Vec<noa_rs::port::CoreMessage> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    v.as_array()
+        .expect("messages array")
+        .iter()
+        .map(|m| noa_rs::port::CoreMessage {
+            id: m["ID"].as_str().unwrap_or("").to_string(),
+            role: m["Role"].as_str().unwrap_or("").to_string(),
+            content_type: m["ContentType"].as_str().unwrap_or("").to_string(),
+            text: m["Text"].as_str().unwrap_or("").to_string(),
+            tool_name: m["ToolName"].as_str().unwrap_or("").to_string(),
+            tool_call_id: m["ToolCallID"].as_str().unwrap_or("").to_string(),
         })
         .collect()
 }

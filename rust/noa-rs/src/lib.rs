@@ -13,6 +13,7 @@ pub mod panel;
 pub mod parseargs;
 pub mod port;
 pub mod protection;
+pub mod protrefs;
 pub mod ranges;
 pub mod recommend;
 pub mod refsmap;

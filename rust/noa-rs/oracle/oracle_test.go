@@ -1125,3 +1125,138 @@ func TestZZOracle9m(t *testing.T) {
 		rec(t, "IsTerminalRewrite", []any{arg}, noa.IsTerminalRewrite(d, c.directCnt, cfg))
 	}
 }
+
+func TestZZOracle9n(t *testing.T) {
+	msg := func(id, role, ct, text string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text}
+	}
+	// build a MessageRefMap: byRaw hostID->ref, byRef ref->hostID (filled inverse for well-formed).
+	mkRefs := func(pairs [][2]string, blocked ...string) noa.MessageRefMap {
+		byRaw := map[string]string{}
+		byRef := map[string]string{}
+		for _, p := range pairs {
+			byRaw[p[0]] = p[1]
+			byRef[p[1]] = p[0]
+		}
+		for _, b := range blocked {
+			byRaw[b] = noa.BlockedRef
+		}
+		return noa.MessageRefMap{ByRaw: byRaw, ByRef: byRef}
+	}
+	type sc struct {
+		name    string
+		msgs    []noa.CoreMessage
+		refs    noa.MessageRefMap
+		blocks  []noa.CompressionBlock
+		pMsg    int
+		pTok    int
+	}
+	activeBlk := func(id string, eff []string) noa.CompressionBlock {
+		return noa.CompressionBlock{BlockID: id, Tier: 1, Active: true, EffectiveMessageIDs: eff}
+	}
+	cases := []sc{
+		{
+			name: "no-preserve",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "hello world"),
+				msg("a2", "assistant", "text", "hi there"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}}),
+		},
+		{
+			name: "preserve-msgs-1",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "one"),
+				msg("a2", "assistant", "text", "two"),
+				msg("a3", "user", "text", "three"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}, {"a3", "m00003"}}),
+			pMsg: 1,
+		},
+		{
+			name: "preserve-toks",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "aaaa"),         // 1 token
+				msg("a2", "assistant", "text", "bbbbbbbbbbbbbbbbbbbb"), // ~4 tokens
+				msg("a3", "user", "text", "cc"),           // 1 token
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}, {"a3", "m00003"}}),
+			pTok: 2, // acc from tail: a3(1) -> acc1<2 add; a2(4) -> acc5>=2 stop => a3,a2
+		},
+		{
+			name: "covered-skip",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "one"),
+				msg("a2", "assistant", "text", "two"),
+				msg("a3", "user", "text", "three"),
+			},
+			refs:   mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}, {"a3", "m00003"}}),
+			blocks: []noa.CompressionBlock{activeBlk("b1", []string{"a2"})},
+			pMsg:   1, // a3 not covered -> protected; a2 covered -> skip
+		},
+		{
+			name: "summary-skip",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "one"),
+				msg(noa.SummaryIDPrefix+"b1", "user", "text", noa.SummaryHeader+" body"),
+				msg("a2", "user", "text", "two"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00003"}}),
+			pMsg: 1, // summary skipped from visible; only a1,a2 visible -> a2 protected
+		},
+		{
+			name: "blocked-skip",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "one"),
+				msg("a2", "user", "text", "two"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}}, "a2"),
+			pMsg: 1, // a2 blocked -> skip; only a1 visible -> a1 protected
+		},
+		{
+			name: "never-preserve-tool-skip",
+			msgs: []noa.CoreMessage{
+				func() noa.CoreMessage { m := msg("a1", "tool", "tool-result", "out"); m.ToolName = "Read"; return m }(),
+				msg("a2", "user", "text", "two"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}}),
+			pMsg: 1, // a1 Read skipped from visible; a2 protected
+		},
+		{
+			name: "empty-id-skip",
+			msgs: []noa.CoreMessage{
+				msg("", "user", "text", "ghost"),
+				msg("a1", "user", "text", "real"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}}),
+			pMsg: 1, // empty id skipped
+		},
+		{
+			name: "both-preserve",
+			msgs: []noa.CoreMessage{
+				msg("a1", "user", "text", "one"),
+				msg("a2", "assistant", "text", "two"),
+				msg("a3", "user", "text", "three"),
+				msg("a4", "assistant", "text", "four"),
+			},
+			refs: mkRefs([][2]string{{"a1", "m00001"}, {"a2", "m00002"}, {"a3", "m00003"}, {"a4", "m00004"}}),
+			pMsg: 2, // last 2: a3,a4
+			pTok: 1, // tail accum: a4(1)>=1 -> add a4, stop
+		},
+	}
+	for _, c := range cases {
+		st := noa.CompressionState{Blocks: c.blocks, MessageRefs: c.refs}
+		cfg := noa.Config{PreserveRecentMessages: c.pMsg, PreserveRecentTokens: c.pTok}
+		got := noa.ComputeProtectedRefs(c.msgs, st, cfg)
+		keys := make([]string, 0, len(got))
+		for k := range got {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		arg := map[string]any{
+			"PreserveRecentMessages": c.pMsg,
+			"PreserveRecentTokens":   c.pTok,
+		}
+		rec(t, "ComputeProtectedRefs", []any{c.msgs, c.refs, c.blocks, arg}, keys)
+	}
+}
