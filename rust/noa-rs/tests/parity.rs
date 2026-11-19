@@ -15,6 +15,7 @@ use noa_rs::ranges::{ProtectedRange, format_ranges};
 use noa_rs::recommend::{RangeInfo, merge_ranges_to_threshold, viable_ranges};
 use noa_rs::refsmap::{ArchiveBlock, archive_tag, highest_used_index, raw_for_ref, ref_for_raw};
 use noa_rs::schema::compress_tool_schema;
+use noa_rs::state::{StateBlock, active_block_spans, active_blocks, covered_message_ids};
 
 fn cases() -> Vec<Value> {
     include_str!("../cases.jsonl")
@@ -313,6 +314,44 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let state = decode_panel_state(&args[7]);
             serde_json::to_value(format_panel(before, after, &r, &state)).expect("serialize string")
         }
+        "ActiveBlocks" => {
+            let blocks = decode_state_blocks(&args[0]);
+            let out: Vec<Value> = active_blocks(&blocks)
+                .iter()
+                .map(|b| {
+                    serde_json::json!({
+                        "BlockID": b.block_id,
+                        "Tier": b.tier,
+                        "StartRef": b.start_ref,
+                        "EndRef": b.end_ref,
+                        "Active": b.active,
+                        "EffectiveMessageIDs": b.effective_message_ids,
+                    })
+                })
+                .collect();
+            Value::Array(out)
+        }
+        "CoveredMessageIDs" => {
+            let blocks = decode_state_blocks(&args[0]);
+            let set = covered_message_ids(&blocks);
+            serde_json::to_value(set).expect("serialize set")
+        }
+        "ActiveBlockSpans" => {
+            let blocks = decode_state_blocks(&args[0]);
+            let spans = active_block_spans(&blocks);
+            let out: Vec<Value> = spans
+                .iter()
+                .map(|s| {
+                    serde_json::json!({
+                        "BlockID": s.block_id,
+                        "Tier": s.tier,
+                        "StartRef": s.start_ref,
+                        "EndRef": s.end_ref,
+                    })
+                })
+                .collect();
+            Value::Array(out)
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -401,6 +440,32 @@ fn decode_panel_state(v: &Value) -> PanelState {
         })
         .unwrap_or_default();
     PanelState { blocks, by_ref }
+}
+
+/// Decode a recorded CompressionState's `Blocks` into `Vec<StateBlock>` (subset).
+fn decode_state_blocks(v: &Value) -> Vec<StateBlock> {
+    v["Blocks"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .map(|b| StateBlock {
+                    block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
+                    tier: b["Tier"].as_i64().unwrap_or(0),
+                    start_ref: b["StartRef"].as_str().unwrap_or("").to_string(),
+                    end_ref: b["EndRef"].as_str().unwrap_or("").to_string(),
+                    active: b["Active"].as_bool().unwrap_or(false),
+                    effective_message_ids: b["EffectiveMessageIDs"]
+                        .as_array()
+                        .map(|a| {
+                            a.iter()
+                                .filter_map(|x| x.as_str().map(String::from))
+                                .collect()
+                        })
+                        .unwrap_or_default(),
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 #[test]

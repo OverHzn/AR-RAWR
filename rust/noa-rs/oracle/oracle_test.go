@@ -956,3 +956,70 @@ func TestZZOracle9k(t *testing.T) {
 		rec(t, "FormatPanel", []any{c.name, c.before, c.after, c.blocks, c.surviving, c.errors, c.warns, c.state}, noa.FormatPanel(in))
 	}
 }
+
+// blkOut is the observable subset of CompressionBlock for ActiveBlocks output.
+type blkOut struct {
+	BlockID             string
+	Tier                int
+	StartRef            string
+	EndRef              string
+	Active              bool
+	EffectiveMessageIDs []string
+}
+
+func TestZZOracle9l(t *testing.T) {
+	mkBlk := func(id string, tier int, start, end string, active bool, eff []string) noa.CompressionBlock {
+		return noa.CompressionBlock{
+			BlockID: id, Tier: noa.Tier(tier), StartRef: start, EndRef: end,
+			Active: active, EffectiveMessageIDs: eff,
+		}
+	}
+	toOut := func(bs []noa.CompressionBlock) []blkOut {
+		out := make([]blkOut, 0, len(bs))
+		for _, b := range bs {
+			out = append(out, blkOut{b.BlockID, int(b.Tier), b.StartRef, b.EndRef, b.Active, b.EffectiveMessageIDs})
+		}
+		return out
+	}
+	sortedKeys := func(m map[string]bool) []string {
+		ks := make([]string, 0, len(m))
+		for k := range m {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+		return ks
+	}
+	states := map[string][]noa.CompressionBlock{
+		"empty": {},
+		"all-inactive": {
+			mkBlk("b1", 1, "m00001", "m00005", false, []string{"h1", "h2"}),
+			mkBlk("b2", 2, "m00006", "m00010", false, []string{"h3"}),
+		},
+		"mix": {
+			mkBlk("b1", 1, "m00001", "m00005", true, []string{"h1", "h2"}),
+			mkBlk("b2", 2, "m00006", "m00010", false, []string{"h3"}),
+			mkBlk("b3", 3, "m00001", "m00020", true, []string{"h4"}),
+		},
+		"overlap-eff": {
+			mkBlk("b1", 1, "m00001", "m00005", true, []string{"h1", "h2", "h3"}),
+			mkBlk("b2", 2, "m00003", "m00008", true, []string{"h3", "h4", "h5"}),
+		},
+		"unsorted-spans": {
+			mkBlk("b9", 1, "m00020", "m00030", true, []string{"h1"}),
+			mkBlk("b2", 1, "m00001", "m00005", true, []string{"h2"}),
+			mkBlk("b5", 2, "m00010", "m00015", true, []string{"h3"}),
+		},
+		"equal-start": {
+			mkBlk("b2", 1, "m00005", "m00008", true, []string{"h1"}),
+			mkBlk("b1", 1, "m00005", "m00010", true, []string{"h2"}),
+		},
+	}
+	order := []string{"empty", "all-inactive", "mix", "overlap-eff", "unsorted-spans", "equal-start"}
+	for _, name := range order {
+		blocks := states[name]
+		st := noa.CompressionState{Blocks: blocks}
+		rec(t, "ActiveBlocks", []any{st}, toOut(noa.ActiveBlocks(st)))
+		rec(t, "CoveredMessageIDs", []any{st}, sortedKeys(noa.CoveredMessageIDs(st)))
+		rec(t, "ActiveBlockSpans", []any{st}, noa.ActiveBlockSpans(st))
+	}
+}
