@@ -346,3 +346,28 @@ func TestZZOracle9aq(t *testing.T) {
 		rec(t, "validChatSessionID", []any{id}, validChatSessionID(id))
 	}
 }
+
+func TestZZOracle9ar(t *testing.T) {
+	// tokenize(s) — ToLower then split on non-letter/non-digit runs.
+	for _, s := range []string{
+		"",
+		"hello world",
+		"Hello, World!",
+		"foo-bar_baz.qux",
+		"path/to/file.go",
+		"host=example.com:443",
+		"multiple   spaces\tand\ttabs",
+		"CamelCaseID",
+		"v1.2.3-rc1",
+		"cape-with-underscores_and123",
+		"café résumé naïve",
+		"你好 世界 hello",
+		"123 456 abc",
+		"ALLCAPS",
+		"mixedCASE123def",
+		"a--b__c..d",
+		"emoji \U0001F600 test",
+	} {
+		rec(t, "tokenize", []any{s}, tokenize(s))
+	}
+}

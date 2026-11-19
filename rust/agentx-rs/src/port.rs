@@ -515,3 +515,32 @@ pub fn valid_chat_session_id(id: &str) -> bool {
     }
     true
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ar: `tokenize` (`agent/toolrag.go`) — lowercase then split into maximal
+// runs of letters/digits. Go uses `unicode.IsLetter || unicode.IsDigit`;
+// `is_alphabetic`/`is_numeric` match for ASCII and common scripts (Latin accents,
+// Greek, Cyrillic, CJK + Nd digits). Exotic categories (Nl/No, combining
+// alphabetic marks) may differ from Go — the RAG tokenizer corpus is ASCII-ish.
+// ---------------------------------------------------------------------------
+
+/// `tokenize` (`agent/toolrag.go`): `strings.FieldsFunc(strings.ToLower(s),
+/// !unicode.IsLetter && !unicode.IsDigit)` — lowercase, then split on any rune
+/// that is neither a letter nor a digit, dropping the separators.
+pub fn tokenize(s: &str) -> Vec<String> {
+    use gocompat::strings::go_to_lower;
+    let lower = go_to_lower(s);
+    let mut out: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    for ch in lower.chars() {
+        if ch.is_alphabetic() || ch.is_numeric() {
+            cur.push(ch);
+        } else if !cur.is_empty() {
+            out.push(std::mem::take(&mut cur));
+        }
+    }
+    if !cur.is_empty() {
+        out.push(cur);
+    }
+    out
+}
