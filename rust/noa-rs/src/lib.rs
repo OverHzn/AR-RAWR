@@ -9,6 +9,7 @@
 
 pub mod blocks;
 pub mod nudgetext;
+pub mod panel;
 pub mod parseargs;
 pub mod port;
 pub mod protection;

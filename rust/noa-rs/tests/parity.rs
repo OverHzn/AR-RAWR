@@ -7,6 +7,7 @@ use noa_rs::blocks::{CompressionBlock, render_summary_message};
 use noa_rs::nudgetext::{
     BlockSpan, TierTargetBlock, format_block_map, format_breakdown, format_tier_target_blocks,
 };
+use noa_rs::panel::{ApplyResult, PanelBlock, PanelState, format_panel};
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
 use noa_rs::protection::{is_message_protected, is_never_preserve_recent_tool, match_tool_pattern};
@@ -279,6 +280,39 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let prot = decode_protected(&args[1]);
             serde_json::to_value(format_ranges(&comp, &prot)).expect("serialize string")
         }
+        "FormatPanel" => {
+            let before = args[1].as_i64().expect("before");
+            let after = args[2].as_i64().expect("after");
+            let r = ApplyResult {
+                blocks_created: decode_panel_blocks(&args[3]),
+                surviving_block_ids: args[4]
+                    .as_array()
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                errors: args[5]
+                    .as_array()
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                warnings: args[6]
+                    .as_array()
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            };
+            let state = decode_panel_state(&args[7]);
+            serde_json::to_value(format_panel(before, after, &r, &state)).expect("serialize string")
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
@@ -315,6 +349,58 @@ fn decode_protected(v: &Value) -> Vec<ProtectedRange> {
                 .unwrap_or_default(),
         })
         .collect()
+}
+
+/// Decode recorded `[]CompressionBlock` (subset) into `Vec<PanelBlock>`; null -> empty.
+fn decode_panel_blocks(v: &Value) -> Vec<PanelBlock> {
+    if v.is_null() {
+        return Vec::new();
+    }
+    v.as_array()
+        .expect("blocks array")
+        .iter()
+        .map(|b| PanelBlock {
+            block_id: b["BlockID"].as_str().unwrap_or("").to_string(),
+            tier: b["Tier"].as_i64().unwrap_or(0),
+            start_ref: b["StartRef"].as_str().unwrap_or("").to_string(),
+            end_ref: b["EndRef"].as_str().unwrap_or("").to_string(),
+            archive_path: b["ArchivePath"].as_str().unwrap_or("").to_string(),
+            effective_message_ids: b["EffectiveMessageIDs"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
+        })
+        .collect()
+}
+
+/// Decode a recorded CompressionState (subset) into `PanelState`.
+fn decode_panel_state(v: &Value) -> PanelState {
+    let blocks = v["Blocks"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .map(|b| {
+                    (
+                        b["BlockID"].as_str().unwrap_or("").to_string(),
+                        b["Tier"].as_i64().unwrap_or(0),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let by_ref = v["MessageRefs"]["ByRef"]
+        .as_object()
+        .map(|m| {
+            m.iter()
+                .map(|(k, val)| (k.clone(), val.as_str().unwrap_or("").to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+    PanelState { blocks, by_ref }
 }
 
 #[test]

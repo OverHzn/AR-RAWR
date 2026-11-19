@@ -849,3 +849,110 @@ func TestZZOracle9j(t *testing.T) {
 		rec(t, "FormatRanges", []any{comp, prot}, noa.FormatRanges(comp, prot))
 	}
 }
+
+func TestZZOracle9k(t *testing.T) {
+	mkBlk := func(id string, tier int, start, end, path string, eff []string) noa.CompressionBlock {
+		return noa.CompressionBlock{
+			BlockID: id, Tier: noa.Tier(tier), StartRef: start, EndRef: end,
+			ArchivePath: path, EffectiveMessageIDs: eff,
+		}
+	}
+	mkState := func(blocks []noa.CompressionBlock, byRef map[string]string) noa.CompressionState {
+		if byRef == nil {
+			byRef = map[string]string{}
+		}
+		return noa.CompressionState{
+			Blocks:      blocks,
+			MessageRefs: noa.MessageRefMap{ByRaw: map[string]string{}, ByRef: byRef},
+		}
+	}
+	type pc struct {
+		name           string
+		before, after  int
+		blocks         []noa.CompressionBlock
+		errors, warns  []string
+		surviving      []string
+		state          noa.CompressionState
+	}
+	cases := []pc{
+		{
+			name: "empty", before: 5000, after: 5000,
+			state: mkState(nil, nil),
+		},
+		{
+			name: "no-blocks-errors-warns", before: 5000, after: 5000,
+			errors: []string{"bad ref m99999", "overlap"}, warns: []string{"summary short"},
+			state: mkState(nil, nil),
+		},
+		{
+			name: "one-block-clean", before: 8000, after: 3000,
+			blocks: []noa.CompressionBlock{mkBlk("b10", 3, "m00001", "m00005", "/arc/b10.md", []string{"h1", "h2", "h3", "h4", "h5"})},
+			state: mkState(
+				[]noa.CompressionBlock{mkBlk("b10", 3, "m00001", "m00005", "/arc/b10.md", nil)},
+				map[string]string{"m00001": "h1", "m00002": "h2", "m00003": "h3", "m00004": "h4", "m00005": "h5"},
+			),
+		},
+		{
+			name: "reclaimed-negative", before: 2000, after: 5000,
+			blocks: []noa.CompressionBlock{mkBlk("b10", 1, "m00001", "m00003", "/arc/b10.md", []string{"h1", "h2", "h3"})},
+			state: mkState(
+				[]noa.CompressionBlock{mkBlk("b10", 1, "m00001", "m00003", "/arc/b10.md", nil)},
+				map[string]string{"m00001": "h1", "m00002": "h2", "m00003": "h3"},
+			),
+		},
+		{
+			name: "surviving-tier", before: 9000, after: 4000,
+			blocks:    []noa.CompressionBlock{mkBlk("b10", 3, "m00001", "m00020", "/arc/b10.md", []string{"h1"})},
+			surviving: []string{"b5"},
+			state: mkState(
+				[]noa.CompressionBlock{mkBlk("b5", 2, "m00001", "m00010", "/arc/b5.md", nil), mkBlk("b10", 3, "m00001", "m00020", "/arc/b10.md", nil)},
+				map[string]string{"m00001": "h1"},
+			),
+		},
+		{
+			name: "surviving-missing-id", before: 9000, after: 4000,
+			blocks:    []noa.CompressionBlock{mkBlk("b10", 2, "m00001", "m00010", "/arc/b10.md", []string{"h1"})},
+			surviving: []string{"b99"},
+			state:     mkState([]noa.CompressionBlock{mkBlk("b10", 2, "m00001", "m00010", "/arc/b10.md", nil)}, map[string]string{"m00001": "h1"}),
+		},
+		{
+			name: "uncovered-star", before: 8000, after: 2000,
+			blocks: []noa.CompressionBlock{mkBlk("b10", 1, "m00001", "m00005", "/arc/b10.md", []string{"h1", "h2", "h3", "h5"})},
+			state: mkState(
+				[]noa.CompressionBlock{mkBlk("b10", 1, "m00001", "m00005", "/arc/b10.md", nil)},
+				map[string]string{"m00001": "h1", "m00002": "h2", "m00003": "h3", "m00004": "h4", "m00005": "h5"},
+			),
+		},
+		{
+			name: "two-blocks", before: 12000, after: 4000,
+			blocks: []noa.CompressionBlock{
+				mkBlk("b10", 1, "m00001", "m00005", "/arc/b10.md", []string{"h1", "h2"}),
+				mkBlk("b11", 2, "m00006", "m00010", "/arc/b11.md", []string{"h3", "h4"}),
+			},
+			errors: []string{"e1"}, warns: []string{"w1", "w2"},
+			state: mkState(
+				[]noa.CompressionBlock{mkBlk("b10", 1, "m00001", "m00005", "/arc/b10.md", nil), mkBlk("b11", 2, "m00006", "m00010", "/arc/b11.md", nil)},
+				map[string]string{"m00001": "h1", "m00002": "h2", "m00006": "h3", "m00007": "h4"},
+			),
+		},
+		{
+			name: "bad-refs-no-star", before: 5000, after: 1000,
+			blocks: []noa.CompressionBlock{mkBlk("b10", 1, "x", "y", "/arc/b10.md", []string{"h1"})},
+			state:  mkState([]noa.CompressionBlock{mkBlk("b10", 1, "x", "y", "/arc/b10.md", nil)}, map[string]string{"m00001": "h2"}),
+		},
+	}
+	for _, c := range cases {
+		in := noa.PanelInput{
+			Result: noa.ApplyResult{
+				State:             c.state,
+				BlocksCreated:     c.blocks,
+				Errors:            c.errors,
+				Warnings:          c.warns,
+				SurvivingBlockIDs: c.surviving,
+			},
+			BeforeTokens: c.before,
+			AfterTokens:  c.after,
+		}
+		rec(t, "FormatPanel", []any{c.name, c.before, c.after, c.blocks, c.surviving, c.errors, c.warns, c.state}, noa.FormatPanel(in))
+	}
+}
