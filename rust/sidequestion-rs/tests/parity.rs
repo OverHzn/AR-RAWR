@@ -18,6 +18,10 @@ fn arg_i64(args: &[Value], i: usize) -> i64 {
     args[i].as_i64().expect("int arg")
 }
 
+fn arg_str(args: &[Value], i: usize) -> String {
+    args[i].as_str().expect("str arg").to_string()
+}
+
 fn dispatch(name: &str, args: &[Value]) -> Value {
     match name {
         "Parent.Key" => {
@@ -60,6 +64,8 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             // Output is always a non-empty slice (prepends one message); serialize.
             serde_json::to_value(out).expect("serialize messages")
         }
+        // batch 9aq
+        "isContextOverflow" => json!(is_context_overflow(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

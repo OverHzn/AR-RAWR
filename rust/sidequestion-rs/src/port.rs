@@ -136,3 +136,23 @@ pub fn snapshot_summary_messages(summary: &str, tail: &[Message]) -> Vec<Message
     out.extend_from_slice(tail);
     out
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9aq: `isContextOverflow` (`sidequestion/context.go`) — pure error-message
+// classifier. Modeled as `string -> bool` over `err.Error()`.
+// ---------------------------------------------------------------------------
+
+/// `isContextOverflow` (`sidequestion/context.go`): true when an error message
+/// (lowercased) contains any known model context-window overflow marker.
+pub fn is_context_overflow(err: &str) -> bool {
+    const MARKERS: [&str; 6] = [
+        "context_length_exceeded",
+        "maximum context length",
+        "context window",
+        "prompt is too long",
+        "input is too long",
+        "context length exceeded",
+    ];
+    let text = err.to_lowercase();
+    MARKERS.iter().any(|m| text.contains(m))
+}
