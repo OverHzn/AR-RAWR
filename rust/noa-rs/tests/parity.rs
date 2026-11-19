@@ -3,6 +3,9 @@
 
 use serde_json::Value;
 
+use noa_rs::nudgetext::{
+    BlockSpan, TierTargetBlock, format_block_map, format_breakdown, format_tier_target_blocks,
+};
 use noa_rs::parseargs::parse_compress_args;
 use noa_rs::port::*;
 
@@ -134,6 +137,54 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "ParseCompressArgs" => {
             let raw = args[0].as_str().expect("raw string arg");
             serde_json::to_value(parse_compress_args(raw.as_bytes())).expect("serialize result")
+        }
+        "FormatBreakdown" => {
+            let obj = args[0].as_object().expect("breakdown arg object");
+            let growth = obj["Growth"].as_i64().expect("growth");
+            let cb = obj["ContextBreakdown"]
+                .as_object()
+                .expect("context breakdown");
+            let breakdown: Vec<(String, i64)> = cb
+                .iter()
+                .map(|(k, v)| (k.clone(), v.as_i64().unwrap_or(0)))
+                .collect();
+            serde_json::to_value(format_breakdown(&breakdown, growth)).expect("serialize string")
+        }
+        "FormatBlockMap" => {
+            let spans: Vec<BlockSpan> = serde_json::from_value::<Vec<Value>>(args[0].clone())
+                .expect("block spans decode")
+                .into_iter()
+                .map(|v| BlockSpan {
+                    block_id: v["BlockID"].as_str().unwrap_or("").to_string(),
+                    tier: v["Tier"].as_i64().unwrap_or(0),
+                    start_ref: v["StartRef"].as_str().unwrap_or("").to_string(),
+                    end_ref: v["EndRef"].as_str().unwrap_or("").to_string(),
+                })
+                .collect();
+            serde_json::to_value(format_block_map(&spans)).expect("serialize string")
+        }
+        "FormatTierTargetBlocks" => {
+            let blocks: Vec<TierTargetBlock> =
+                serde_json::from_value::<Vec<Value>>(args[0].clone())
+                    .expect("blocks decode")
+                    .into_iter()
+                    .map(|v| TierTargetBlock {
+                        block_id: v["BlockID"].as_str().unwrap_or("").to_string(),
+                        tier: v["Tier"].as_i64().unwrap_or(0),
+                        topic: v["Topic"].as_str().unwrap_or("").to_string(),
+                        summary: v["Summary"].as_str().unwrap_or("").to_string(),
+                        effective_message_ids: v["EffectiveMessageIDs"]
+                            .as_array()
+                            .map(|a| {
+                                a.iter()
+                                    .filter_map(|x| x.as_str().map(String::from))
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
+                        compressed_tokens: v["CompressedTokens"].as_i64().unwrap_or(0),
+                    })
+                    .collect();
+            serde_json::to_value(format_tier_target_blocks(&blocks)).expect("serialize string")
         }
         other => panic!("no dispatcher arm for {other}"),
     }

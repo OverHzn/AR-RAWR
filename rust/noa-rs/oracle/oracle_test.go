@@ -477,3 +477,86 @@ func TestZZOracle9e(t *testing.T) {
 		rec(t, "ParseCompressArgs", []any{raw}, res)
 	}
 }
+
+// bdArg is the subset of NudgeDecision that FormatBreakdown reads.
+type bdArg struct {
+	ContextBreakdown map[string]int
+	Growth           int
+}
+
+// cbArg is the subset of CompressionBlock that FormatTierTargetBlocks reads.
+type cbArg struct {
+	BlockID             string
+	Tier                int
+	Topic               string
+	Summary             string
+	EffectiveMessageIDs []string
+	CompressedTokens    int
+}
+
+func TestZZOracle9f(t *testing.T) {
+	// ---- FormatBreakdown ----
+	breakdowns := []bdArg{
+		{ContextBreakdown: map[string]int{"system": 1200, "tool": 3400, "code": 500, "text": 800}, Growth: 0},
+		{ContextBreakdown: map[string]int{"system": 1200, "summaries": 900}, Growth: 2500},
+		{ContextBreakdown: map[string]int{}, Growth: 0},
+		{ContextBreakdown: map[string]int{"text": 0, "tool": 0}, Growth: 100},
+		{ContextBreakdown: map[string]int{"code": 999999}, Growth: 12345},
+		{ContextBreakdown: map[string]int{"unknownbucket": 5000, "system": 100}, Growth: 0},
+	}
+	for _, b := range breakdowns {
+		d := noa.NudgeDecision{ContextBreakdown: b.ContextBreakdown}
+		d.Breakdown.Growth = b.Growth
+		rec(t, "FormatBreakdown", []any{b}, noa.FormatBreakdown(d))
+	}
+
+	// ---- FormatBlockMap ----
+	spanSets := map[string][]noa.BlockSpan{
+		"empty":   {},
+		"one":     {{BlockID: "b5", Tier: 1, StartRef: "m00001", EndRef: "m00010"}},
+		"three":   {{BlockID: "b1", Tier: 1, StartRef: "m00001", EndRef: "m00005"}, {BlockID: "b2", Tier: 2, StartRef: "m00006", EndRef: "m00020"}, {BlockID: "b3", Tier: 3, StartRef: "m00001", EndRef: "m00020"}},
+		"ten": {
+			{BlockID: "b1", Tier: 1, StartRef: "m00001", EndRef: "m00002"},
+			{BlockID: "b2", Tier: 1, StartRef: "m00003", EndRef: "m00004"},
+			{BlockID: "b3", Tier: 1, StartRef: "m00005", EndRef: "m00006"},
+			{BlockID: "b4", Tier: 1, StartRef: "m00007", EndRef: "m00008"},
+			{BlockID: "b5", Tier: 1, StartRef: "m00009", EndRef: "m00010"},
+			{BlockID: "b6", Tier: 2, StartRef: "m00011", EndRef: "m00015"},
+			{BlockID: "b7", Tier: 2, StartRef: "m00016", EndRef: "m00020"},
+			{BlockID: "b8", Tier: 2, StartRef: "m00021", EndRef: "m00025"},
+			{BlockID: "b9", Tier: 3, StartRef: "m00001", EndRef: "m00025"},
+			{BlockID: "b10", Tier: 3, StartRef: "m00001", EndRef: "m00025"},
+		},
+	}
+	order := []string{"empty", "one", "three", "ten"}
+	for _, name := range order {
+		rec(t, "FormatBlockMap", []any{spanSets[name]}, noa.FormatBlockMap(spanSets[name]))
+	}
+
+	// ---- FormatTierTargetBlocks ----
+	blockSets := map[string][]cbArg{
+		"empty": {},
+		"one":   {{BlockID: "b1", Tier: 1, Topic: "auth flow", Summary: "did the auth thing", EffectiveMessageIDs: []string{"a", "b", "c"}, CompressedTokens: 12000}},
+		"two": {
+			{BlockID: "b1", Tier: 2, Topic: "", Summary: "short", EffectiveMessageIDs: []string{"a", "b"}, CompressedTokens: 5000},
+			{BlockID: "b2", Tier: 2, Topic: "db work", Summary: "a longer summary here", EffectiveMessageIDs: []string{"c", "d", "e", "f", "g"}, CompressedTokens: 250000},
+		},
+		"noTopic": {{BlockID: "b9", Tier: 3, Topic: "", Summary: "x", EffectiveMessageIDs: nil, CompressedTokens: 0}},
+	}
+	border := []string{"empty", "one", "two", "noTopic"}
+	for _, name := range border {
+		cbs := blockSets[name]
+		var blocks []noa.CompressionBlock
+		for _, c := range cbs {
+			blocks = append(blocks, noa.CompressionBlock{
+				BlockID:             c.BlockID,
+				Tier:                noa.Tier(c.Tier),
+				Topic:               c.Topic,
+				Summary:             c.Summary,
+				EffectiveMessageIDs: c.EffectiveMessageIDs,
+				CompressedTokens:    c.CompressedTokens,
+			})
+		}
+		rec(t, "FormatTierTargetBlocks", []any{cbs}, noa.FormatTierTargetBlocks(blocks))
+	}
+}
