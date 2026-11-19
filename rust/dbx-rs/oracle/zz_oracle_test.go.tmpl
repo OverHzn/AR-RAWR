@@ -252,3 +252,69 @@ func optIntPtrVal(p *int) any {
 	}
 	return *p
 }
+
+func TestZZOracle9ad(t *testing.T) {
+	// isModelReason(reason)
+	for _, r := range []string{"", "[model]", "[model] foo", "[MODEL] x", "[模型]", "[模型] bar", "prefix[model]", "model", "[model"} {
+		rec(t, "isModelReason", []any{r}, isModelReason(r))
+	}
+
+	// inheritedIntentTerminal(state)
+	for _, s := range []string{"done", "blocked", "exhausted", "stopped", "running", "", "DONE", "pending", "failed"} {
+		rec(t, "inheritedIntentTerminal", []any{s}, inheritedIntentTerminal(s))
+	}
+
+	// assetDisplayName(typ, domain, ip, url, appName, bundleID)
+	type ad struct{ typ, domain, ip, url, app, bundle string }
+	adCases := []ad{
+		{"root_domain", "example.com", "", "", "", ""},
+		{"subdomain", "a.example.com", "", "", "", ""},
+		{"ip", "", "1.2.3.4", "", "", ""},
+		{"app", "", "", "", "MyApp", "com.x"},
+		{"app", "", "", "", "  ", "com.x"},
+		{"app", "", "", "", "", "com.x"},
+		{"service", "", "", "http://x/y", "dom", ""},
+		{"endpoint", "", "", "http://x/y", "", ""},
+		{"endpoint", "", "9.9.9.9", "", "", ""},
+		{"other", "dom", "ip1", "url1", "app1", ""},
+		{"other", "  ", "  ", "url1", "", ""},
+		{"unknown", "", "", "", "", ""},
+	}
+	for _, c := range adCases {
+		rec(t, "assetDisplayName", []any{c.typ, c.domain, c.ip, c.url, c.app, c.bundle}, assetDisplayName(c.typ, c.domain, c.ip, c.url, c.app, c.bundle))
+	}
+
+	// isKnownField(f)
+	for _, f := range []string{"domain", "DOMAIN", "ip", "title", "page_title", "technology", "tech", "port", "status_code", "status", "company_id", "task_id", "unknown", "", "Url", "Bundle_Id"} {
+		rec(t, "isKnownField", []any{f}, isKnownField(f))
+	}
+
+	// sealedJSON(raw)
+	sealedInputs := []string{
+		"",
+		`{"__artex_enc":"enc:v1:abc"}`,
+		`{"__artex_enc":"plain"}`,
+		`{"__artex_enc":"enc:v1:x","other":1}`,
+		`[1,2]`,
+		`{bad`,
+		`{"__artex_enc":123}`,
+		`{"other":1}`,
+		`"a string"`,
+		`{"__artex_enc":""}`,
+	}
+	for _, s := range sealedInputs {
+		v, ok := sealedJSON(s)
+		rec(t, "sealedJSON", []any{s}, []any{v, ok})
+	}
+
+	// looksLikeIPAddress(value)
+	for _, v := range []string{
+		"", "  ", "1.2.3.4", "1.2.3", "999.999.999.999", "1.2.3.4.5",
+		"a.b.c.d", "1..2", "12.34", "example.com", "http://1.2.3.4",
+		"::1", "fe80::1", "2001:db8::zz", "2001:db8::1", "::", "a:b",
+		"gggg::1", "12345::1", "has space", "no-colon-or-dot",
+		"1:2:3", "cafe:cafe", "CAFE::1",
+	} {
+		rec(t, "looksLikeIPAddress", []any{v}, looksLikeIPAddress(v))
+	}
+}

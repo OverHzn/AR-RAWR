@@ -14,6 +14,7 @@
 {"args":["   "],"fn":"normalizeKeyword","ok":""}
 {"args":["   "],"fn":"taskTemplateNKey","ok":""}
 {"args":["   "],"fn":"taskTemplateName","ok":""}
+{"args":["  "],"fn":"looksLikeIPAddress","ok":false}
 {"args":["  Leading And   Trailing  "],"fn":"NormalizeCoverageField","ok":"Leading And Trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"companyNKey","ok":"leading and trailing"}
 {"args":["  Leading And   Trailing  "],"fn":"normRiskArea","ok":"leading and trailing"}
@@ -45,28 +46,49 @@
 {"args":["",5],"fn":"truncateRunes","ok":""}
 {"args":[""],"fn":"NormalizeCoverageField","ok":""}
 {"args":[""],"fn":"companyNKey","ok":""}
+{"args":[""],"fn":"inheritedIntentTerminal","ok":false}
 {"args":[""],"fn":"isEncrypted","ok":false}
 {"args":[""],"fn":"isIPLiteral","ok":false}
+{"args":[""],"fn":"isKnownField","ok":false}
+{"args":[""],"fn":"isModelReason","ok":false}
+{"args":[""],"fn":"looksLikeIPAddress","ok":false}
 {"args":[""],"fn":"normRiskArea","ok":""}
 {"args":[""],"fn":"normalizeKeyword","ok":""}
 {"args":[""],"fn":"normalizeRuleAction","ok":"block"}
 {"args":[""],"fn":"nullIfEmpty","ok":null}
+{"args":[""],"fn":"sealedJSON","ok":["",false]}
 {"args":[""],"fn":"taskTemplateNKey","ok":""}
 {"args":[""],"fn":"taskTemplateName","ok":""}
 {"args":[""],"fn":"truncateNotifyError","ok":""}
 {"args":[".1.2.3"],"fn":"isIPLiteral","ok":false}
+{"args":["1..2"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["1.2.3"],"fn":"isIPLiteral","ok":false}
+{"args":["1.2.3"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["1.2.3."],"fn":"isIPLiteral","ok":false}
 {"args":["1.2.3.+4"],"fn":"isIPLiteral","ok":true}
 {"args":["1.2.3.-4"],"fn":"isIPLiteral","ok":true}
 {"args":["1.2.3.04"],"fn":"isIPLiteral","ok":true}
 {"args":["1.2.3.4"],"fn":"isIPLiteral","ok":true}
+{"args":["1.2.3.4"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["1.2.3.4.5"],"fn":"isIPLiteral","ok":false}
+{"args":["1.2.3.4.5"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["10.0.0.1"],"fn":"isIPLiteral","ok":true}
+{"args":["12.34"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["12345::1"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["1:2:3"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["2001:db8::1"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["2001:db8::zz"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["999.999.999.999"],"fn":"isIPLiteral","ok":true}
+{"args":["999.999.999.999"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["::"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["::1"],"fn":"isIPLiteral","ok":true}
+{"args":["::1"],"fn":"looksLikeIPAddress","ok":true}
 {"args":["ALLOW"],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["Allow"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["Bundle_Id"],"fn":"isKnownField","ok":true}
+{"args":["CAFE::1"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["DOMAIN"],"fn":"isKnownField","ok":true}
+{"args":["DONE"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["ENC:V1:"],"fn":"isEncrypted","ok":false}
 {"args":["MixedCASE  Value"],"fn":"NormalizeCoverageField","ok":"MixedCASE Value"}
 {"args":["MixedCASE  Value"],"fn":"companyNKey","ok":"mixedcase value"}
@@ -74,8 +96,19 @@
 {"args":["MixedCASE  Value"],"fn":"normalizeKeyword","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"taskTemplateNKey","ok":"mixedcase value"}
 {"args":["MixedCASE  Value"],"fn":"taskTemplateName","ok":"MixedCASE Value"}
+{"args":["Url"],"fn":"isKnownField","ok":true}
+{"args":["[1,2]"],"fn":"sealedJSON","ok":["",false]}
+{"args":["[MODEL] x"],"fn":"isModelReason","ok":true}
+{"args":["[model"],"fn":"isModelReason","ok":false}
+{"args":["[model] foo"],"fn":"isModelReason","ok":true}
+{"args":["[model]"],"fn":"isModelReason","ok":true}
+{"args":["[模型] bar"],"fn":"isModelReason","ok":true}
+{"args":["[模型]"],"fn":"isModelReason","ok":true}
+{"args":["\"a string\""],"fn":"sealedJSON","ok":["",false]}
 {"args":["\t"],"fn":"nullIfEmpty","ok":"\t"}
 {"args":["a.b.c.d"],"fn":"isIPLiteral","ok":false}
+{"args":["a.b.c.d"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["a:b"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["a\tb\nc",0],"fn":"truncateRunes","ok":"…"}
 {"args":["a\tb\nc",100],"fn":"truncateRunes","ok":"a\tb\nc"}
 {"args":["a\tb\nc",1],"fn":"truncateRunes","ok":"a…"}
@@ -85,13 +118,19 @@
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"truncateNotifyError","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…"}
 {"args":["allow "],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["allow"],"fn":"normalizeRuleAction","ok":"allow"}
+{"args":["app","","","","  ","com.x"],"fn":"assetDisplayName","ok":"com.x"}
+{"args":["app","","","","","com.x"],"fn":"assetDisplayName","ok":"com.x"}
+{"args":["app","","","","MyApp","com.x"],"fn":"assetDisplayName","ok":"MyApp"}
 {"args":["block"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["blocked"],"fn":"inheritedIntentTerminal","ok":true}
 {"args":["c1�� bytes"],"fn":"NormalizeCoverageField","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"companyNKey","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"normRiskArea","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"normalizeKeyword","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateNKey","ok":"c1�� bytes"}
 {"args":["c1�� bytes"],"fn":"taskTemplateName","ok":"c1�� bytes"}
+{"args":["cafe:cafe"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["company_id"],"fn":"isKnownField","ok":true}
 {"args":["ctrl\u0000\u001fdel",-1],"fn":"lessonText","ok":"ctrl del"}
 {"args":["ctrl\u0000\u001fdel",0],"fn":"lessonText","ok":"ctrl del"}
 {"args":["ctrl\u0000\u001fdel",100],"fn":"lessonText","ok":"ctrl del"}
@@ -104,10 +143,20 @@
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"taskTemplateNKey","ok":"ctrl\u0000nul\u001fenddel"}
 {"args":["ctrl\u0000nul\u001fenddel"],"fn":"taskTemplateName","ok":"ctrl\u0000nul\u001fenddel"}
 {"args":["deny"],"fn":"normalizeRuleAction","ok":"block"}
+{"args":["domain"],"fn":"isKnownField","ok":true}
+{"args":["done"],"fn":"inheritedIntentTerminal","ok":true}
 {"args":["enc:v1:"],"fn":"isEncrypted","ok":true}
 {"args":["enc:v1:abc"],"fn":"isEncrypted","ok":true}
 {"args":["enc:v2:x"],"fn":"isEncrypted","ok":false}
+{"args":["endpoint","","","http://x/y","",""],"fn":"assetDisplayName","ok":"http://x/y"}
+{"args":["endpoint","","9.9.9.9","","",""],"fn":"assetDisplayName","ok":"9.9.9.9"}
+{"args":["example.com"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["exhausted"],"fn":"inheritedIntentTerminal","ok":true}
+{"args":["failed"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["fe80::1"],"fn":"isIPLiteral","ok":true}
+{"args":["fe80::1"],"fn":"looksLikeIPAddress","ok":true}
+{"args":["gggg::1"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["has space"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["hello",0],"fn":"truncateRunes","ok":"…"}
 {"args":["hello",100],"fn":"truncateRunes","ok":"hello"}
 {"args":["hello",1],"fn":"truncateRunes","ok":"h…"}
@@ -115,6 +164,7 @@
 {"args":["hello",5],"fn":"truncateRunes","ok":"hello"}
 {"args":["hello"],"fn":"nullIfEmpty","ok":"hello"}
 {"args":["host"],"fn":"isIPLiteral","ok":false}
+{"args":["http://1.2.3.4"],"fn":"looksLikeIPAddress","ok":false}
 {"args":["héllo wörld",-1],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",0],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",0],"fn":"truncateRunes","ok":"…"}
@@ -125,6 +175,8 @@
 {"args":["héllo wörld",3],"fn":"truncateRunes","ok":"hél…"}
 {"args":["héllo wörld",5],"fn":"lessonText","ok":"héllo"}
 {"args":["héllo wörld",5],"fn":"truncateRunes","ok":"héllo…"}
+{"args":["ip","","1.2.3.4","","",""],"fn":"assetDisplayName","ok":"1.2.3.4"}
+{"args":["ip"],"fn":"isKnownField","ok":true}
 {"args":["line\u2028sep\u2029para"],"fn":"NormalizeCoverageField","ok":"line sep para"}
 {"args":["line\u2028sep\u2029para"],"fn":"companyNKey","ok":"line sep para"}
 {"args":["line\u2028sep\u2029para"],"fn":"normRiskArea","ok":"line sep para"}
@@ -136,6 +188,7 @@
 {"args":["mixed\u0000CASE  Value",100],"fn":"lessonText","ok":"mixed CASE Value"}
 {"args":["mixed\u0000CASE  Value",3],"fn":"lessonText","ok":"mix"}
 {"args":["mixed\u0000CASE  Value",5],"fn":"lessonText","ok":"mixed"}
+{"args":["model"],"fn":"isModelReason","ok":false}
 {"args":["multi em-space here"],"fn":"NormalizeCoverageField","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"companyNKey","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"normRiskArea","ok":"multi em-space here"}
@@ -148,7 +201,17 @@
 {"args":["nbsp only"],"fn":"normalizeKeyword","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"taskTemplateNKey","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"taskTemplateName","ok":"nbsp only"}
+{"args":["no-colon-or-dot"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["other","  ","  ","url1","",""],"fn":"assetDisplayName","ok":"url1"}
+{"args":["other","dom","ip1","url1","app1",""],"fn":"assetDisplayName","ok":"dom"}
+{"args":["page_title"],"fn":"isKnownField","ok":true}
+{"args":["pending"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["plain"],"fn":"isEncrypted","ok":false}
+{"args":["port"],"fn":"isKnownField","ok":true}
+{"args":["prefix[model]"],"fn":"isModelReason","ok":false}
+{"args":["root_domain","example.com","","","",""],"fn":"assetDisplayName","ok":"example.com"}
+{"args":["running"],"fn":"inheritedIntentTerminal","ok":false}
+{"args":["service","","","http://x/y","dom",""],"fn":"assetDisplayName","ok":"http://x/y"}
 {"args":["short error"],"fn":"truncateNotifyError","ok":"short error"}
 {"args":["simple text",-1],"fn":"lessonText","ok":"simple text"}
 {"args":["simple text",0],"fn":"lessonText","ok":"simple text"}
@@ -161,6 +224,10 @@
 {"args":["simple"],"fn":"normalizeKeyword","ok":"simple"}
 {"args":["simple"],"fn":"taskTemplateNKey","ok":"simple"}
 {"args":["simple"],"fn":"taskTemplateName","ok":"simple"}
+{"args":["status"],"fn":"isKnownField","ok":true}
+{"args":["status_code"],"fn":"isKnownField","ok":true}
+{"args":["stopped"],"fn":"inheritedIntentTerminal","ok":true}
+{"args":["subdomain","a.example.com","","","",""],"fn":"assetDisplayName","ok":"a.example.com"}
 {"args":["tab\there\nnewline",-1],"fn":"lessonText","ok":"tab here newline"}
 {"args":["tab\there\nnewline",0],"fn":"lessonText","ok":"tab here newline"}
 {"args":["tab\there\nnewline",100],"fn":"lessonText","ok":"tab here newline"}
@@ -172,8 +239,21 @@
 {"args":["tab\there\nnewline"],"fn":"normalizeKeyword","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"taskTemplateNKey","ok":"tab here newline"}
 {"args":["tab\there\nnewline"],"fn":"taskTemplateName","ok":"tab here newline"}
+{"args":["task_id"],"fn":"isKnownField","ok":true}
+{"args":["tech"],"fn":"isKnownField","ok":true}
+{"args":["technology"],"fn":"isKnownField","ok":true}
+{"args":["title"],"fn":"isKnownField","ok":true}
+{"args":["unknown","","","","",""],"fn":"assetDisplayName","ok":""}
+{"args":["unknown"],"fn":"isKnownField","ok":false}
 {"args":["x"],"fn":"nullIfEmpty","ok":"x"}
 {"args":["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"],"fn":"truncateNotifyError","ok":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"}
+{"args":["{\"__artex_enc\":123}"],"fn":"sealedJSON","ok":["",false]}
+{"args":["{\"__artex_enc\":\"\"}"],"fn":"sealedJSON","ok":["",false]}
+{"args":["{\"__artex_enc\":\"enc:v1:abc\"}"],"fn":"sealedJSON","ok":["enc:v1:abc",true]}
+{"args":["{\"__artex_enc\":\"enc:v1:x\",\"other\":1}"],"fn":"sealedJSON","ok":["",false]}
+{"args":["{\"__artex_enc\":\"plain\"}"],"fn":"sealedJSON","ok":["",false]}
+{"args":["{\"other\":1}"],"fn":"sealedJSON","ok":["",false]}
+{"args":["{bad"],"fn":"sealedJSON","ok":["",false]}
 {"args":["世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世"],"fn":"truncateNotifyError","ok":"世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世世…"}
 {"args":["日本語  テスト"],"fn":"NormalizeCoverageField","ok":"日本語 テスト"}
 {"args":["日本語  テスト"],"fn":"companyNKey","ok":"日本語 テスト"}

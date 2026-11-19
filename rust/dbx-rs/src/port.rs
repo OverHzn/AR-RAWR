@@ -285,3 +285,160 @@ pub fn is_ip_literal(host: &str) -> bool {
 fn go_atoi_ok(s: &str) -> bool {
     !s.is_empty() && s.parse::<i64>().is_ok()
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9ad: pure predicate/scan helpers in `db/` (deterministic, no net/url).
+// ---------------------------------------------------------------------------
+
+/// `ModelReasonPrefix` (`db/intercept.go`).
+pub const MODEL_REASON_PREFIX: &str = "[model]";
+
+/// `legacyModelReasonPrefix` (`db/intercept.go`) — the legacy Chinese marker.
+pub const LEGACY_MODEL_REASON_PREFIX: &str = "[模型]";
+
+/// `sealedJSONKey` (`db/secrets.go`): the JSON key wrapping a sealed secret.
+pub const SEALED_JSON_KEY: &str = "__artex_enc";
+
+/// `isModelReason` (`db/intercept.go`): whether `reason` carries the model marker
+/// (current lower-cased `[model]` prefix or the legacy `[模型]` prefix as-is).
+pub fn is_model_reason(reason: &str) -> bool {
+    strings::go_to_lower(reason).starts_with(MODEL_REASON_PREFIX)
+        || reason.starts_with(LEGACY_MODEL_REASON_PREFIX)
+}
+
+/// `inheritedIntentTerminal` (`db/...`): whether `state` is one of the four
+/// terminal intent states.
+pub fn inherited_intent_terminal(state: &str) -> bool {
+    matches!(state, "done" | "blocked" | "exhausted" | "stopped")
+}
+
+/// `assetDisplayName` (`db/...`): the human-facing name for an asset, chosen by
+/// type with a first-non-blank fallback.
+pub fn asset_display_name(
+    typ: &str,
+    domain: &str,
+    ip: &str,
+    url: &str,
+    app_name: &str,
+    bundle_id: &str,
+) -> String {
+    fn pick(vals: &[&str]) -> String {
+        for v in vals {
+            if !strings::go_trim_space(v).is_empty() {
+                return (*v).to_string();
+            }
+        }
+        String::new()
+    }
+    match typ {
+        "root_domain" | "subdomain" => domain.to_string(),
+        "ip" => ip.to_string(),
+        "app" => pick(&[app_name, bundle_id]),
+        "service" | "endpoint" => pick(&[url, domain, ip]),
+        _ => pick(&[domain, ip, url, app_name]),
+    }
+}
+
+/// `isKnownField` (`db/asset_dsl.go`): whether `f` (lower-cased) is a recognized
+/// DSL field — the union of the string/array/numeric field maps plus the id
+/// columns.
+pub fn is_known_field(f: &str) -> bool {
+    let f = strings::go_to_lower(f);
+    matches!(
+        f.as_str(),
+        "domain"
+            | "root_domain"
+            | "ip"
+            | "url"
+            | "page_title"
+            | "title"
+            | "icp"
+            | "service_name"
+            | "app_name"
+            | "bundle_id"
+            | "category"
+            | "app_icp"
+            | "method"
+            | "service_type"
+            | "record_type"
+            | "technology"
+            | "technologies"
+            | "tech"
+            | "port"
+            | "status_code"
+            | "status"
+            | "company_id"
+            | "task_id"
+    )
+}
+
+/// `sealedJSON` (`db/secrets.go`): decode a JSON object that wraps exactly one
+/// [`SEALED_JSON_KEY`] string value which is encrypted; returns `(value, true)`
+/// or `("", false)`. Uses the already-portable [`is_encrypted`].
+pub fn sealed_json(raw: &str) -> (String, bool) {
+    let needle = format!("\"{SEALED_JSON_KEY}\"");
+    if !raw.contains(&needle) {
+        return (String::new(), false);
+    }
+    let v: serde_json::Value = match serde_json::from_str(raw) {
+        Ok(v) => v,
+        Err(_) => return (String::new(), false),
+    };
+    let obj = match v.as_object() {
+        Some(o) => o,
+        None => return (String::new(), false),
+    };
+    if obj.len() != 1 {
+        return (String::new(), false);
+    }
+    let s = match obj.get(SEALED_JSON_KEY).and_then(|x| x.as_str()) {
+        Some(s) => s,
+        None => return (String::new(), false),
+    };
+    if !is_encrypted(s) {
+        return (String::new(), false);
+    }
+    (s.to_string(), true)
+}
+
+/// `looksLikeIPAddress` (`db/...`): a heuristic (not `net/netip`) that recognises
+/// IPv6-looking colon strings and dotted IPv4-ish strings.
+pub fn looks_like_ip_address(value: &str) -> bool {
+    let value = strings::go_trim_space(value);
+    if value.contains("://") || value.chars().any(|c| c.is_whitespace()) {
+        return false;
+    }
+    if value.matches(':').count() >= 2 {
+        let mut valid_segments = 0;
+        for part in value.split(':') {
+            if part.is_empty() {
+                if valid_segments > 0 || value.starts_with("::") {
+                    return true;
+                }
+                continue;
+            }
+            if part.len() > 4 {
+                return false;
+            }
+            for r in part.chars() {
+                if !(r.is_ascii_digit() || ('a'..='f').contains(&r) || ('A'..='F').contains(&r)) {
+                    return false;
+                }
+            }
+            valid_segments += 1;
+            if valid_segments >= 2 {
+                return true;
+            }
+        }
+        return false;
+    }
+    if !value.contains('.') {
+        return false;
+    }
+    for r in value.chars() {
+        if r != '.' && !r.is_ascii_digit() {
+            return false;
+        }
+    }
+    true
+}

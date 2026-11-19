@@ -95,6 +95,22 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             ))
         }
         "isIPLiteral" => json!(is_ip_literal(&arg_str(args, 0))),
+        "isModelReason" => json!(is_model_reason(&arg_str(args, 0))),
+        "inheritedIntentTerminal" => json!(inherited_intent_terminal(&arg_str(args, 0))),
+        "assetDisplayName" => json!(asset_display_name(
+            &arg_str(args, 0),
+            &arg_str(args, 1),
+            &arg_str(args, 2),
+            &arg_str(args, 3),
+            &arg_str(args, 4),
+            &arg_str(args, 5),
+        )),
+        "isKnownField" => json!(is_known_field(&arg_str(args, 0))),
+        "sealedJSON" => {
+            let (s, ok) = sealed_json(&arg_str(args, 0));
+            json!([s, ok])
+        }
+        "looksLikeIPAddress" => json!(looks_like_ip_address(&arg_str(args, 0))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
