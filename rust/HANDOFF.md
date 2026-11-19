@@ -183,7 +183,7 @@ resume without re-deriving state.
   discover+call (custom long-lived `GET /sse` + `POST /message` server sharing a per-session
   mpsc channel).
 
-## Unit D-1 — db boot path (D-1a crypto + D-1b connection/schema/migrate, done, to push)
+## Unit D-1 — db boot path (D-1a crypto + D-1b connection/schema/migrate + D-1c settings/secrets, done)
 - **D-1a `db::secrets` crypto (`9377c5a`, pushed):** `src/db/secrets.rs` — `SecretColumn`
   model (`aad`/`row_filter`/`id_col`/`value_expr`, the 10 `COL_*` columns + 5
   `SECRET_SETTING_KEYS`), `SecretBox` AES-256-GCM (seal/open, `enc:v1:`+base64(nonce12‖ct‖tag),
@@ -210,9 +210,38 @@ resume without re-deriving state.
   `[dev-dependencies]` (tokio/tokio-postgres/sha2) for the tests/ crate. artex **196 tests**
   green, clippy `-D warnings` clean, gate 30/30, Go `TestLoadMigrations|TestOpen|TestMigrations|
   TestFailing|TestSecretBox` still green.
+- **D-1c settings + DB-bound secrets (this commit):** `src/db/settings.rs` —
+  `seal_setting` (secret key → `seal_secret`, else passthrough), `DB::{get_setting`
+  (SELECT value, `secret_setting` decrypt, ErrNoRows → `("",false)`), `set_setting` (UPSERT
+  value=EXCLUDED + updated_at=now()), `insert_setting_if_absent` (ON CONFLICT DO NOTHING,
+  rows>0 → inserted; rests on the PK constraint), `rotate_password` (tx: seal hash UPSERT +
+  version `(value::bigint+1)::text RETURNING value`, parse i64, commit; non-numeric version →
+  increment fails → whole tx rolls back, hash preserved), `insert_password` (tx: hash ON
+  CONFLICT DO NOTHING, rows==0 → `(0,false)`; else version='1' → `(1,true)`),
+  `get_bool`/`set_bool` ("true"/"1" = true, default on unset/unparseable)}`. `src/db/secrets.rs`
+  DB-bound half: `DB::init_secrets` = `with_schema_migration_lock` { load_secret_key →
+  `SecretBox::new` → per-column key check (`SELECT valueExpr … WHERE valueExpr LIKE 'enc:v1:%'
+  rowFilter LIMIT 1`, decrypt → `secret key check: …` on err≠NoRows) → `backfill_secrets` →
+  set_active_secret_box + set_traffic_trace_key(derive_sub_key(key, TRAFFIC_TRACE_DOMAIN))};
+  `load_secret_key` (env `ARTEX_SECRET_KEY` trimmed → parse; else `keyDir/secret.key` → parse;
+  else sum per-column `count(*) WHERE … LIKE 'enc:v1:%'` → refuse `the database holds N
+  encrypted secret(s) … refusing to generate a new key` if N>0; else gen 32 rand, mkdir 0700,
+  O_EXCL 0600, base64+"\n"); `backfill_secrets` (per column: SELECT id,col::text WHERE col NOT
+  NULL rowFilter; skip is_sealed; seal; UPDATE `SET col=$1[::text::jsonb] WHERE id=$2 AND
+  col::text=$3` matching the read value; count rows). `mod.rs` gains `pub mod settings;`,
+  `with_schema_migration_lock` made `pub(crate)`. Spec `tests/db_settings_test.rs` (4) ported
+  from `settings_insert_test.go` (insert-if-absent no-overwrite, rotate-password rollback on
+  non-numeric version) + the DB-bound halves of `secrets_test.go` (legacy plaintext backfill →
+  all 10 secret columns sealed at rest → plain reads; idempotent re-backfill; no-key refusal
+  (+encrypted-count); wrong-key `secret key check`; per-column key check on settings.global_proxy)
+  via raw-SQL fixtures + `t.TempDir()`-equivalent scratch dirs + shared async lock, differential
+  vs the `artex-pg` Postgres. `[dev-dependencies]` tokio-postgres gains `with-serde_json-1`
+  (jsonb fixture binds). artex **196 + 4 = 200 tests** green, clippy clean, gate 30/30, Go
+  `TestSecret|TestInsertSetting|TestRotatePassword` green.
 
 ## Next
-- db D-1c (settings + InitSecrets/loadSecretKey/backfill) → D-1d (real seedBuiltins + browser_mcp
-  + target-gate exemptions) → db resource groups → intercept → egress →
-  traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
-  `harness.Query`/`QueryInput` machinery lands with the agent/server layer.
+- db D-1d (real seedBuiltins — intercept rules v1/v2/v3, asset rules, skill visibility,
+  browser_mcp_direct_bin, target-gate exemptions — gated by settings) → db resource groups
+  (tasks/assets/findings/…) → intercept → egress → traffic → evidence/guard/enrich/report/llmrec
+  → agent → server (see MAP.md). The full `harness.Query`/`QueryInput` machinery lands with the
+  agent/server layer.

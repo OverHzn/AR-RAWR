@@ -19,6 +19,7 @@
 pub mod error;
 pub mod migrate;
 pub mod secrets;
+pub mod settings;
 
 pub use error::{Error, Result};
 pub use migrate::{
@@ -124,7 +125,7 @@ fn build_pool(cfg: PgConfig) -> Pool {
 /// `withSchemaMigrationLock`: hold the session-level migration advisory lock for
 /// the duration of `f`, which runs on the same connection. The closure gets
 /// `&mut Client` so it can open a transaction for an individual migration.
-async fn with_schema_migration_lock<T, F>(client: &mut Client, f: F) -> Result<T>
+pub(crate) async fn with_schema_migration_lock<T, F>(client: &mut Client, f: F) -> Result<T>
 where
     F: for<'a> FnOnce(&'a mut Client) -> Pin<Box<dyn Future<Output = Result<T>> + 'a>>,
 {

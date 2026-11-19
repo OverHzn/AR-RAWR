@@ -55,5 +55,5 @@ all = { level = "warn", priority = -1 }
 # to Postgres directly (admin DDL, schema_migrations assertions) and compute
 # sha256 checksums independently of the code under test, mirroring the Go specs.
 tokio = { version = "1", features = ["full"] }
-tokio-postgres = "0.7"
+tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
 sha2 = "0.10"

@@ -425,3 +425,266 @@ fn hex_decode(s: &str) -> Option<Vec<u8>> {
     }
     Some(out)
 }
+
+// ---------------------------------------------------------------------------
+// DB-bound half — `InitSecrets` / `loadSecretKey` / `backfillSecrets`.
+//
+// These need a live connection and the schema advisory lock; they live here
+// (not in a bridge crate) and operate on a `&mut Client` handed in by
+// `with_schema_migration_lock`, exactly as the Go originals take a `*sql.Conn`.
+
+use crate::db::error::Error;
+use crate::db::with_schema_migration_lock;
+use crate::db::DB;
+use std::future::Future;
+use std::pin::Pin;
+use tokio_postgres::Client;
+
+impl DB {
+    /// `InitSecrets`: load the key (`ARTEX_SECRET_KEY`, else `keyDir/secret.key`,
+    /// else a new one — refused when encrypted data exists) and encrypt legacy
+    /// plaintext, under the schema advisory lock so concurrent instances
+    /// backfill once.
+    pub async fn init_secrets(&self, key_dir: &str) -> crate::db::Result<()> {
+        let key_dir = key_dir.to_string();
+        let mut client = self.pool.get().await?;
+        with_schema_migration_lock(&mut client, move |client| {
+            Box::pin(async move {
+                let key = load_secret_key(client, &key_dir).await?;
+                let secret_box =
+                    SecretBox::new(&key).map_err(|_| Error::msg("new secret box: key size"))?;
+                // A key other than the one that sealed the data fails here, at
+                // startup: try to decrypt one stored value per secret column.
+                for c in secret_columns() {
+                    let value_expr = c.value_expr();
+                    let sql = format!(
+                        "SELECT {} FROM {} WHERE {} LIKE 'enc:v1:%'{} LIMIT 1",
+                        value_expr,
+                        c.table,
+                        value_expr,
+                        c.row_filter()
+                    );
+                    let found = client.query_opt(&sql, &[]).await?;
+                    if let Some(row) = found {
+                        let v: String = row.get(0);
+                        secret_box
+                            .decrypt(&c.aad(), &v)
+                            .map_err(|e| Error::msg(format!("secret key check: {}", e)))?;
+                    }
+                }
+                let n = backfill_secrets(client, &secret_box).await?;
+                eprintln!(
+                    "[secrets] at-rest encryption ready; backfill encrypted {} plaintext value(s)",
+                    n
+                );
+                set_active_secret_box(secret_box);
+                let sub = derive_sub_key(&key, TRAFFIC_TRACE_DOMAIN);
+                set_traffic_trace_key(sub);
+                Ok(())
+            }) as Pin<Box<dyn Future<Output = crate::db::Result<()>> + '_>>
+        })
+        .await
+    }
+}
+
+/// `loadSecretKey`: resolve the key from the environment, else a key file, else
+/// generate a fresh one — refusing to generate when the database already holds
+/// encrypted values (which would strand them under an unknown key).
+async fn load_secret_key(client: &Client, key_dir: &str) -> crate::db::Result<Vec<u8>> {
+    if let Ok(v) = std::env::var(SECRET_KEY_ENV) {
+        let v = gocompat::strings::go_trim_space(&v);
+        if !v.is_empty() {
+            return parse_secret_key(v)
+                .map_err(|e| Error::msg(format!("{} {}", SECRET_KEY_ENV, e)));
+        }
+    }
+
+    let path = std::path::Path::new(key_dir).join(SECRET_KEY_FILE);
+    match std::fs::read_to_string(&path) {
+        Ok(data) => {
+            return parse_secret_key(&data)
+                .map_err(|e| Error::msg(format!("secret key {} {}", path.display(), e)));
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(Error::msg(format!("read secret key: {}", e))),
+    }
+
+    // No env key and no file: count encrypted values across all secret columns.
+    let parts: Vec<String> = secret_columns()
+        .iter()
+        .map(|c| {
+            format!(
+                "(SELECT count(*) FROM {} WHERE {} LIKE 'enc:v1:%'{})",
+                c.table,
+                c.value_expr(),
+                c.row_filter()
+            )
+        })
+        .collect();
+    let row = client
+        .query_one(&format!("SELECT {}", parts.join("+")), &[])
+        .await?;
+    let n: i64 = row.get(0);
+    if n > 0 {
+        return Err(Error::msg(format!(
+            "the database holds {} encrypted secret(s) but no key is available: set {} or restore {} (refusing to generate a new key over encrypted data)",
+            n,
+            SECRET_KEY_ENV,
+            path.display()
+        )));
+    }
+
+    // Generate a fresh 32-byte key and write it 0600, never overwriting a file.
+    let key = random_key_32();
+    create_secret_key_dir(key_dir)?;
+    let write_result = write_new_secret_key(&path, &key);
+    if let Err(e) = write_result {
+        let _ = std::fs::remove_file(&path);
+        return Err(Error::msg(format!("write secret key: {}", e)));
+    }
+    eprintln!("[secrets] new secret key written to {}", path.display());
+    Ok(key)
+}
+
+/// `os.MkdirAll(keyDir, 0o700)` — create the key directory (private).
+fn create_secret_key_dir(key_dir: &str) -> crate::db::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(key_dir)
+            .map_err(|e| Error::msg(format!("create secret key dir: {}", e)))
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::create_dir_all(key_dir)
+            .map_err(|e| Error::msg(format!("create secret key dir: {}", e)))
+    }
+}
+
+/// `os.OpenFile(path, O_WRONLY|O_CREATE|O_EXCL, 0o600)` then write the base64
+/// key + newline. `create_new` is the `O_EXCL` guarantee (never overwrite).
+fn write_new_secret_key(path: &std::path::Path, key: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let payload = format!("{}\n", gocompat::encoding::base64_std_encode(key));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut f = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(path)?;
+        f.write_all(payload.as_bytes())?;
+    }
+    #[cfg(not(unix))]
+    {
+        let mut f = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)?;
+        f.write_all(payload.as_bytes())?;
+    }
+    Ok(())
+}
+
+/// `backfillSecrets`: encrypt every plaintext value once; sealed values are
+/// skipped, so it is idempotent. Each `UPDATE` matches the value it read, so a
+/// concurrent write is never overwritten.
+async fn backfill_secrets(client: &Client, secret_box: &SecretBox) -> crate::db::Result<i64> {
+    let mut total: i64 = 0;
+    for c in secret_columns() {
+        // Collect (id, old) for every non-NULL value, sealing plaintext ones.
+        let select_sql = format!(
+            "SELECT {}, {}::text FROM {} WHERE {} IS NOT NULL{}",
+            c.id_col(),
+            c.col,
+            c.table,
+            c.col,
+            c.row_filter()
+        );
+        let rows = client.query(&select_sql, &[]).await?;
+
+        // id is BIGINT for table columns and TEXT (the key) for settings/tools.
+        // Read it as a string representation to keep one update path.
+        enum Id {
+            Int(i64),
+            Str(String),
+        }
+        impl Id {
+            fn dbg(&self) -> String {
+                match self {
+                    Id::Int(n) => n.to_string(),
+                    Id::Str(s) => s.clone(),
+                }
+            }
+        }
+        let mut ids: Vec<Id> = Vec::new();
+        let mut olds: Vec<String> = Vec::new();
+        let mut news: Vec<String> = Vec::new();
+        for row in &rows {
+            let id = if c.id_col() == "id" {
+                Id::Int(row.get::<usize, i64>(0))
+            } else {
+                Id::Str(row.get::<usize, String>(0))
+            };
+            let old: String = row.get(1);
+            if is_sealed(&c, &old) {
+                continue;
+            }
+            let nv = secret_box
+                .seal(&c, &old)
+                .map_err(|e| Error::msg(format!("backfill {} id={}: {}", c.aad(), id.dbg(), e)))?;
+            if is_sealed(&c, &nv) {
+                // empty values stay as they are
+                ids.push(id);
+                olds.push(old);
+                news.push(nv);
+            }
+        }
+
+        // `$1::text::jsonb` for JSON columns: the innermost cast fixes the
+        // parameter type as TEXT (so a String binds without the serde_json
+        // ToSql feature), and Postgres then casts text → jsonb.
+        let cast = if c.json { "::text::jsonb" } else { "" };
+        for (i, id) in ids.iter().enumerate() {
+            let update_sql = format!(
+                "UPDATE {} SET {}=$1{} WHERE {}=$2 AND {}::text=$3",
+                c.table,
+                c.col,
+                cast,
+                c.id_col(),
+                c.col
+            );
+            let res = match id {
+                Id::Int(n) => client.execute(&update_sql, &[&news[i], n, &olds[i]]).await,
+                Id::Str(s) => client.execute(&update_sql, &[&news[i], s, &olds[i]]).await,
+            };
+            match res {
+                Ok(n) => {
+                    if n > 0 {
+                        total += 1;
+                    }
+                }
+                Err(e) => {
+                    return Err(Error::msg(format!(
+                        "backfill {} id={}: {}",
+                        c.aad(),
+                        id.dbg(),
+                        e
+                    )));
+                }
+            }
+        }
+    }
+    Ok(total)
+}
+
+fn random_key_32() -> Vec<u8> {
+    use rand::RngCore;
+    let mut k = vec![0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut k);
+    k
+}
