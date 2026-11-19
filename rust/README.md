@@ -3,7 +3,19 @@
 Behavioral-parity Rust ports of the ARTEX Go modules, one unit at a time, proven
 against the Go original with [`rust-anything`](https://github.com/erkamyaman/rust-anything).
 
-Each unit is a standalone crate (`crate-type = ["cdylib", "rlib"]`) that exposes
+## Two tracks
+
+- **`rust/*-rs` — pure-helper parity crates (oracle harness).** Extract the pure,
+  deterministic, value-typed helpers of each Go package and prove byte-for-byte
+  parity against recorded Go outputs. These are the units tabulated below (gate 30/30).
+- **`rust/artex/` — the full Rust rewrite (application).** A standalone binary+lib
+  crate that ports the *entire* ARTEX system (config, db, agent, server, traffic, …)
+  module-by-module in dependency order. Because that code is IO/stateful (Postgres,
+  HTTP, crypto), it is verified by porting the Go `_test.go` specs into `tests/`
+  (`rust/artex/gate.sh` = fmt + clippy + test), reusing `gocompat` for Go-stdlib
+  semantics. Ported so far: **config**.
+
+Each pure-helper unit is a standalone crate (`crate-type = ["cdylib", "rlib"]`) that exposes
 the same API as its Go package, plus a JSON dispatcher (`call_json`) and typed/wire
 C entry points. `rust-anything` drives the loop:
 
