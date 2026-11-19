@@ -1875,3 +1875,126 @@ func TestZZOracle9r(t *testing.T) {
 		TruncatedCount: 3,
 	})
 }
+
+// TestZZOracle9s records three small pure helpers: CountMessageTokens (token count of
+// one message via the resolved callback), NudgeGrowthFloor (adaptive growth floor for a
+// config), and TruncateLargeToolOutputs (the mechanical largest-first tool-result cut,
+// with truncateBody reached transitively).
+func TestZZOracle9s(t *testing.T) {
+	big := func(ch string, n int) string { return strings.Repeat(ch, n) }
+
+	// ---- CountMessageTokens (nil count -> DefaultCountTokens) ----
+	cm := func(id, role, ct, text string) noa.CoreMessage {
+		return noa.CoreMessage{ID: id, Role: noa.Role(role), ContentType: noa.ContentType(ct), Text: text}
+	}
+	for _, m := range []noa.CoreMessage{
+		cm("a1", "user", "text", ""),
+		cm("a2", "user", "text", "hi"),
+		cm("a3", "assistant", "tool-call", big("x", 400)),
+		cm("a4", "tool", "tool-result", big("中", 250)), // CJK: 250 tokens
+		cm("a5", "user", "text", "mixed 中文 text"),
+	} {
+		rec(t, "CountMessageTokens", []any{m}, noa.CountMessageTokens(m, nil))
+	}
+
+	// ---- NudgeGrowthFloor (exercises resolveAdaptiveGrowth + growthFloorOf) ----
+	growthRec := func(cfg noa.Config) {
+		arg := map[string]any{
+			"ModelContextLimit": cfg.ModelContextLimit,
+			"Nudge": map[string]any{
+				"GrowthRatio": cfg.Nudge.GrowthRatio, "GrowthFloor": cfg.Nudge.GrowthFloor,
+				"GrowthCap": cfg.Nudge.GrowthCap, "MinGrowthFloor": cfg.Nudge.MinGrowthFloor,
+				"MinGrowthRatio": cfg.Nudge.MinGrowthRatio,
+			},
+		}
+		rec(t, "NudgeGrowthFloor", []any{arg}, noa.NudgeGrowthFloor(cfg))
+	}
+	growthRec(noa.DefaultConfig(200000)) // floor 22500
+	growthRec(noa.DefaultConfig(0))      // limit<=0 -> growthFloor path, still 22500
+
+	c1 := noa.DefaultConfig(2000000) // ratio*limit=100000 > cap 50000 -> cap
+	growthRec(c1)
+	c2 := noa.DefaultConfig(1200000)
+	c2.Nudge.GrowthCap = 200000 // ratio*limit=60000 in band -> 60000; floor int(0.45*60000)=27000
+	growthRec(c2)
+	c3 := noa.DefaultConfig(1999980)
+	c3.Nudge.GrowthFloor = 0
+	c3.Nudge.GrowthCap = 200000
+	c3.Nudge.MinGrowthFloor = 0
+	c3.Nudge.MinGrowthRatio = 0.333 // adaptive 99999; int(0.333*99999)=33299 (truncation)
+	growthRec(c3)
+	c4 := noa.DefaultConfig(200000)
+	c4.Nudge.GrowthFloor = 0
+	c4.Nudge.GrowthCap = 200000
+	// adaptive 10000; min_growth_floor 20000 dominates int(0.45*10000)=4500
+	growthRec(c4)
+	c5 := noa.DefaultConfig(200000)
+	c5.Nudge.MinGrowthFloor = 0
+	c5.Nudge.MinGrowthRatio = 0.45 // adaptive 50000; int(22500.0)=22500
+	growthRec(c5)
+
+	// ---- TruncateLargeToolOutputs ----
+	truncRec := func(msgs []noa.CoreMessage, tokenCount int, cfg noa.Config) {
+		arg := map[string]any{
+			"Msgs":       msgs,
+			"TokenCount": tokenCount,
+			"Config": map[string]any{
+				"ModelContextLimit":      cfg.ModelContextLimit,
+				"Truncate":               map[string]any{"Threshold": cfg.Truncate.Threshold},
+				"PreserveRecentMessages": cfg.PreserveRecentMessages,
+			},
+		}
+		rec(t, "TruncateLargeToolOutputs", []any{arg}, noa.TruncateLargeToolOutputs(msgs, tokenCount, cfg, nil))
+	}
+
+	// T1: limit<=0 -> no-op, messages pass through.
+	truncRec([]noa.CoreMessage{cm("a1", "tool", "tool-result", big("x", 12000))}, 195000, noa.DefaultConfig(0))
+	// T2: tokenCount below threshold -> no-op.
+	truncRec([]noa.CoreMessage{cm("a1", "tool", "tool-result", big("x", 12000))}, 100000, noa.DefaultConfig(200000))
+	// T3: above threshold but result too small (<1000 tokens) -> no candidates.
+	truncRec([]noa.CoreMessage{cm("a1", "tool", "tool-result", big("x", 1000))}, 195000, noa.DefaultConfig(200000))
+	// T4: single large result, preserve=0 -> cut (DefaultConfig pres=5 would protect it).
+	cfgT4 := noa.DefaultConfig(200000)
+	cfgT4.PreserveRecentMessages = 0
+	truncRec([]noa.CoreMessage{cm("a1", "tool", "tool-result", big("x", 12000))}, 195000, cfgT4)
+	// T5: preserve=0 -> both candidates eligible; largest-first cuts both to reach target.
+	cfg5 := noa.DefaultConfig(20000)
+	cfg5.PreserveRecentMessages = 0
+	truncRec([]noa.CoreMessage{
+		cm("b1", "tool", "tool-result", big("b", 6000)),  // 1500 tokens
+		cm("a1", "tool", "tool-result", big("a", 12000)), // 3000 tokens
+	}, 19000, cfg5)
+	// T12: largest-first single cut — cutting only the big result reaches the target.
+	cfg12 := noa.DefaultConfig(20000)
+	cfg12.PreserveRecentMessages = 0
+	truncRec([]noa.CoreMessage{
+		cm("s1", "tool", "tool-result", big("s", 6000)),   // 1500 tokens (kept)
+		cm("a1", "tool", "tool-result", big("a", 40000)),  // 10000 tokens (cut)
+	}, 17000, cfg12)
+	// T6: preserve-recent tail is protected — only index 0 (of 2) is a candidate.
+	cfg6 := noa.DefaultConfig(200000)
+	cfg6.PreserveRecentMessages = 1
+	truncRec([]noa.CoreMessage{
+		cm("a1", "tool", "tool-result", big("a", 12000)),
+		cm("b1", "tool", "tool-result", big("b", 12000)),
+	}, 195000, cfg6)
+	// T7: an already-truncated result is skipped; a fresh one is cut.
+	truncRec([]noa.CoreMessage{
+		cm("a1", "tool", "tool-result", noa.TruncationMarker+big("z", 12000)),
+		cm("c1", "tool", "tool-result", big("c", 12000)),
+	}, 195000, noa.DefaultConfig(200000))
+	// T8: result exactly keepPrefix+keepSuffix runes (4000) -> candidate but body guard skips.
+	cfgT8 := noa.DefaultConfig(200000)
+	cfgT8.PreserveRecentMessages = 0
+	truncRec([]noa.CoreMessage{cm("d1", "tool", "tool-result", big("d", 4000))}, 195000, cfgT8)
+	// T9: multibyte (CJK) content, preserve=0 -> rune-correct head/tail slicing.
+	cfgT9 := noa.DefaultConfig(200000)
+	cfgT9.PreserveRecentMessages = 0
+	truncRec([]noa.CoreMessage{cm("u1", "tool", "tool-result", big("中", 5000))}, 195000, cfgT9)
+	// T10: a large NON-tool-result message is not a candidate.
+	truncRec([]noa.CoreMessage{cm("v1", "assistant", "text", big("v", 12000))}, 195000, noa.DefaultConfig(200000))
+	// T11: an empty-text tool result is skipped.
+	truncRec([]noa.CoreMessage{cm("e1", "tool", "tool-result", "")}, 195000, noa.DefaultConfig(200000))
+	// T-nil: nil message slice -> null Messages, no-op.
+	truncRec(nil, 195000, noa.DefaultConfig(200000))
+}

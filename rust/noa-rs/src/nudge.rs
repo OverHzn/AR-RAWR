@@ -83,6 +83,13 @@ pub struct NudgeBreakdown {
     pub count_t2: i64,
 }
 
+/// `noa.NudgeGrowthFloor` — the adaptive growth floor for a config, in tokens:
+/// `growthFloorOf(resolveAdaptiveGrowth(limit, nudge), nudge)`.
+pub fn nudge_growth_floor(cfg: &Config) -> i64 {
+    let adaptive = resolve_adaptive_growth(cfg.model_context_limit, &cfg.nudge);
+    growth_floor_of(adaptive, &cfg.nudge)
+}
+
 /// `noa.NudgeDecision` — the full decision. The range/block slices are kept as
 /// `Option`/selected blocks so nil-ness round-trips exactly as Go serializes it.
 #[derive(Debug, Clone, Default)]

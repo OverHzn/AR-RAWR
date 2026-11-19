@@ -158,6 +158,12 @@ pub fn default_count_tokens(text: &str) -> i64 {
     cjk + ceil_div(other, 4)
 }
 
+/// `noa.CountMessageTokens` — tokens attributed to one message's text via the
+/// resolved `TokenCountFn` (a nil callback defaults to `DefaultCountTokens`).
+pub fn count_message_tokens(m: &CoreMessage, count: fn(&str) -> i64) -> i64 {
+    count(&m.text)
+}
+
 /// `noa.EstimateTokensFast` — rough figure: ceil(rune-count / 4).
 pub fn estimate_tokens_fast(text: &str) -> i64 {
     ceil_div(text.chars().count() as i64, 4)

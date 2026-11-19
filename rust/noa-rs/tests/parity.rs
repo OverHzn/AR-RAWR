@@ -594,6 +594,78 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let d = noa_rs::nudge::decide_nudge(&inp, noa_rs::port::default_count_tokens);
             d.to_value()
         }
+        "CountMessageTokens" => {
+            // `args[0]` is a single message object (the oracle records one CoreMessage).
+            let m = &args[0];
+            let msg = noa_rs::port::CoreMessage {
+                id: m["ID"].as_str().unwrap_or("").to_string(),
+                role: m["Role"].as_str().unwrap_or("").to_string(),
+                content_type: m["ContentType"].as_str().unwrap_or("").to_string(),
+                text: m["Text"].as_str().unwrap_or("").to_string(),
+                tool_name: m["ToolName"].as_str().unwrap_or("").to_string(),
+                tool_call_id: m["ToolCallID"].as_str().unwrap_or("").to_string(),
+            };
+            Value::from(noa_rs::port::count_message_tokens(
+                &msg,
+                noa_rs::port::default_count_tokens,
+            ))
+        }
+        "NudgeGrowthFloor" => {
+            let a = &args[0];
+            let limit = a["ModelContextLimit"].as_i64().expect("ModelContextLimit");
+            let mut cfg = noa_rs::port::default_config(limit);
+            let n = &a["Nudge"];
+            cfg.nudge.growth_ratio = n["GrowthRatio"].as_f64().unwrap_or(0.0);
+            cfg.nudge.growth_floor = n["GrowthFloor"].as_i64().unwrap_or(0);
+            cfg.nudge.growth_cap = n["GrowthCap"].as_i64().unwrap_or(0);
+            cfg.nudge.min_growth_floor = n["MinGrowthFloor"].as_i64().unwrap_or(0);
+            cfg.nudge.min_growth_ratio = n["MinGrowthRatio"].as_f64().unwrap_or(0.0);
+            Value::from(noa_rs::nudge::nudge_growth_floor(&cfg))
+        }
+        "TruncateLargeToolOutputs" => {
+            let a = &args[0];
+            let cfg_in = &a["Config"];
+            let limit = cfg_in["ModelContextLimit"].as_i64().unwrap_or(0);
+            let mut cfg = noa_rs::port::default_config(limit);
+            cfg.truncate.threshold = cfg_in["Truncate"]["Threshold"].as_f64().unwrap_or(0.0);
+            cfg.preserve_recent_messages = cfg_in["PreserveRecentMessages"].as_i64().unwrap_or(0);
+            let msgs = if a["Msgs"].is_null() {
+                None
+            } else {
+                Some(decode_core_messages(&a["Msgs"]))
+            };
+            let token_count = a["TokenCount"].as_i64().expect("TokenCount");
+            let r = noa_rs::truncate::truncate_large_tool_outputs(
+                msgs.as_deref(),
+                token_count,
+                &cfg,
+                noa_rs::port::default_count_tokens,
+            );
+            let messages = match &r.messages {
+                None => Value::Null,
+                Some(ms) => {
+                    let arr: Vec<Value> = ms
+                        .iter()
+                        .map(|m| {
+                            serde_json::json!({
+                                "ID": m.id,
+                                "Role": m.role,
+                                "ContentType": m.content_type,
+                                "Text": m.text,
+                                "ToolName": m.tool_name,
+                                "ToolCallID": m.tool_call_id,
+                            })
+                        })
+                        .collect();
+                    Value::Array(arr)
+                }
+            };
+            serde_json::json!({
+                "Messages": messages,
+                "TruncatedCount": r.truncated_count,
+                "SavedTokens": r.saved_tokens,
+            })
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }
