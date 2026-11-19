@@ -41,6 +41,7 @@ pub use notifyx_rs::port::{
 };
 
 pub mod dingtalk;
+pub mod email;
 pub mod feishu;
 pub mod html;
 pub mod http;
@@ -403,6 +404,7 @@ pub fn channel(kind: &str) -> Option<Box<dyn Channel>> {
         KIND_WECOM => Some(Box::new(wecom::WeComChannel)),
         KIND_TELEGRAM => Some(Box::new(telegram::TelegramChannel)),
         KIND_WEBHOOK => Some(Box::new(webhook::WebhookChannel)),
+        KIND_EMAIL => Some(Box::new(email::EmailChannel)),
         _ => None,
     }
 }

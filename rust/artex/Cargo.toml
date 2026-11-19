@@ -20,6 +20,12 @@ hmac = "0.12"
 sha2 = "0.10"
 base64 = "0.22"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+# SMTP transport (email channel): TLS via rustls with the ring provider (NOT the
+# default aws-lc-rs, which is not available offline). Pinned to the versions
+# already resolved in Cargo.lock so the build stays offline-friendly.
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+webpki-roots = "1"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }

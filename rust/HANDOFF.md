@@ -86,17 +86,31 @@ resume without re-deriving state.
   channels_test.go webhook cases + webhook_template_test.go capability boundary (context-is-pure-data
   key-set pin, funcs-are-minimal via undefined-func parse error, cannot-reach-unknown-data no-leak,
   render-fails-permanently, can-only-produce-json) + report-all-items. Go baseline green.
-- **9b-3 TODO:** email = **SMTP client** (EHLO/STARTTLS/AUTH PLAIN/MAIL/RCPT/DATA/QUIT) + TLS +
-  RFC 2047 Q-encoded subject + RFC 5322 + base64 HTML body (`buildEmailMessage`) + the email
-  dial guard (reuse `is_blocked_dial_ip`/`allow_local_targets`). `smtpStageError`: 4xx transient,
-  5xx permanent, unparseable→transient. Add email to `channel()` factory (webhook already there) so
-  all 6 kinds register. With email done, port the cross-channel tables whole: the full
-  `TestChannelValidateReportsMissingFields` (email cases: SMTP/port/recipient) + `TestRegistryCoversAllKinds`
-  + `redact_test.go` (TestChannelErrorsNeverLeakCredentials* incl. email row, TestCrossHostRedirectRefused/
-  SameHostRedirectAllowed) + `ssrf_test.go` TestEmailDialGuard*. Email specs: `email_test.go` (fake SMTP
-  server) + `channels_test.go` email cases (TestEmailMessageIsWellFormed / EscapesStructuralInjection /
-  SMTPErrorClassification).
+- **9b-3 DONE (ready to commit):** email = a direct **SMTP client** in `src/notify/email.rs`
+  (EHLO/STARTTLS/AUTH PLAIN/MAIL/RCPT/DATA/QUIT) over an owned `SmtpStream` (Plain TcpStream |
+  TLS via tokio-rustls) with `AsyncRead`/`AsyncWrite` delegation + `BufReader`. TLS uses **rustls
+  with the ring provider** (`builder_with_provider(ring::default_provider())` + webpki-roots;
+  `tokio-rustls`/`rustls` added to Cargo.toml with `default-features=false, features=["ring",…]`
+  to avoid the offline-missing aws-lc-rs). `tls` config is a **bool** (`cfg_bool` → implicit TLS),
+  `to` via `cfg_strings`. `validate` = host/port(1-65535)/from/to with the exact Go messages;
+  `Send` wraps validate err as Permanent, builds the message, dials. **buildEmailMessage** is a
+  simple RFC5322 message: `From/To/Subject/MIME-Version/Content-Type: text/html; charset="UTF-8"/
+  Content-Transfer-Encoding: base64` + base64(htmlBody(m,0)) wrapped at 76 cols (no multipart, no
+  Date, no dot-stuffing). Subject = **mime.QEncoding.Encode("utf-8", title)** — a faithful port of
+  Go's RFC2047 Q-encoder (`q_encode`: needsEncoding check, 63-char content split that never breaks
+  a UTF-8 seq, space→`_`, else `=XX`/byte), verified byte-for-byte against Go. Dial guard: resolve
+  via `lookup_host` then `is_blocked_dial_ip` (reuse http.rs `is_blocked_dial_ip`/`allow_local_targets`
+  /`ALLOW_LOCAL_TARGETS_ENV`); refusal names the env var. `smtp_stage_error`: 5xx→permanent, else
+  (4xx/unparseable)→transient; keeps the reply text. Credentials refused over plaintext to a
+  non-local host (`is_localhost`). Email registered in `channel()` factory → all 6 kinds.
+  Cross-channel tables ported whole: `notify_registry_test.rs` (TestRegistryCoversAllKinds +
+  full TestChannelValidateReportsMissingFields: dingtalk/feishu/wecom "Webhook", telegram "Bot Token"/
+  "Chat ID", email "SMTP"/"port"/"recipient") + `notify_redact_test.rs` (TestChannelErrorsNeverLeak
+  Credentials + …InPermanentPath: every channel at a doomed/malformed address, sentinel secret never
+  in error). Email specs: `notify_email_test.rs` (7: fake hand-rolled SMTP server → deliver-full-
+  message/AUTH-without-account/classify-5xx-vs-4xx/validate-missing/config-string-tolerance/dial-guard
+  reject-loopback/opt-in). artex 140 tests; Go baseline green; gate-all 30/30.
 
 ## Next
-- Unit 9b (above), then sidequestion → mcphttp → db (differential) → intercept → egress →
-  traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).
+- Unit 9b complete (9a/9b-1/9b-2/9b-3 done). Next: sidequestion → mcphttp → db (differential) →
+  intercept → egress → traffic → evidence/guard/enrich/report/llmrec → agent → server (see MAP.md).
