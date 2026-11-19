@@ -1,0 +1,169 @@
+{"args":["  80"],"fn":"validPort","ok":0}
+{"args":["  ```x```  "],"fn":"stripCodeFence","ok":"x"}
+{"args":["","my-rule"],"fn":"defaultMessage","ok":""}
+{"args":["",0],"fn":"bounded","ok":["",false]}
+{"args":["",100],"fn":"bounded","ok":["",false]}
+{"args":["",1],"fn":"bounded","ok":["",false]}
+{"args":["",2],"fn":"bounded","ok":["",false]}
+{"args":["",3],"fn":"bounded","ok":["",false]}
+{"args":["",4],"fn":"bounded","ok":["",false]}
+{"args":["",5],"fn":"bounded","ok":["",false]}
+{"args":["",6],"fn":"bounded","ok":["",false]}
+{"args":["",7],"fn":"bounded","ok":["",false]}
+{"args":[""],"fn":"argvProgramName","ok":"."}
+{"args":[""],"fn":"judgeActionLabel","ok":""}
+{"args":[""],"fn":"stripCodeFence","ok":""}
+{"args":[""],"fn":"validPort","ok":0}
+{"args":["+80"],"fn":"validPort","ok":80}
+{"args":["-1"],"fn":"validPort","ok":0}
+{"args":["..."],"fn":"argvProgramName","ok":"..."}
+{"args":["./script.sh"],"fn":"argvProgramName","ok":"script.sh"}
+{"args":["/sbin/mkfs.xfs"],"fn":"argvProgramName","ok":"mkfs"}
+{"args":["/usr/bin/"],"fn":"argvProgramName","ok":"bin"}
+{"args":["/usr/bin/cat"],"fn":"argvProgramName","ok":"cat"}
+{"args":["0"],"fn":"validPort","ok":0}
+{"args":["1"],"fn":"validPort","ok":1}
+{"args":["123"],"fn":"argvProgramName","ok":"123"}
+{"args":["443"],"fn":"validPort","ok":443}
+{"args":["65535"],"fn":"validPort","ok":65535}
+{"args":["65536"],"fn":"validPort","ok":0}
+{"args":["80 "],"fn":"validPort","ok":0}
+{"args":["80"],"fn":"validPort","ok":80}
+{"args":["999999999999"],"fn":"validPort","ok":0}
+{"args":["ALLOW"],"fn":"judgeActionLabel","ok":"ALLOW"}
+{"args":["CAT"],"fn":"argvProgramName","ok":"cat"}
+{"args":["Docker"],"fn":"argvProgramName","ok":"docker"}
+{"args":["```\nplain\n```"],"fn":"stripCodeFence","ok":"plain"}
+{"args":["``````"],"fn":"stripCodeFence","ok":"``````"}
+{"args":["```code```"],"fn":"stripCodeFence","ok":"code"}
+{"args":["```js\nvar x=1;\n```\n"],"fn":"stripCodeFence","ok":"var x=1;"}
+{"args":["```json\n{\"a\":1}\n```"],"fn":"stripCodeFence","ok":"{\"a\":1}"}
+{"args":["```only open"],"fn":"stripCodeFence","ok":"```only open"}
+{"args":["```py\nprint(1)\n```"],"fn":"stripCodeFence","ok":"print(1)"}
+{"args":["```{\"a\":1}```"],"fn":"stripCodeFence","ok":"{\"a\":1}"}
+{"args":["a",0],"fn":"bounded","ok":["",true]}
+{"args":["a",100],"fn":"bounded","ok":["a",false]}
+{"args":["a",1],"fn":"bounded","ok":["a",false]}
+{"args":["a",2],"fn":"bounded","ok":["a",false]}
+{"args":["a",3],"fn":"bounded","ok":["a",false]}
+{"args":["a",4],"fn":"bounded","ok":["a",false]}
+{"args":["a",5],"fn":"bounded","ok":["a",false]}
+{"args":["a",6],"fn":"bounded","ok":["a",false]}
+{"args":["a",7],"fn":"bounded","ok":["a",false]}
+{"args":["a.b.c"],"fn":"argvProgramName","ok":"a.b.c"}
+{"args":["abc"],"fn":"validPort","ok":0}
+{"args":["abcdef",0],"fn":"bounded","ok":["",true]}
+{"args":["abcdef",100],"fn":"bounded","ok":["abcdef",false]}
+{"args":["abcdef",1],"fn":"bounded","ok":["a",true]}
+{"args":["abcdef",2],"fn":"bounded","ok":["ab",true]}
+{"args":["abcdef",3],"fn":"bounded","ok":["abc",true]}
+{"args":["abcdef",4],"fn":"bounded","ok":["abcd",true]}
+{"args":["abcdef",5],"fn":"bounded","ok":["abcde",true]}
+{"args":["abcdef",6],"fn":"bounded","ok":["abcdef",false]}
+{"args":["abcdef",7],"fn":"bounded","ok":["abcdef",false]}
+{"args":["allow","my-rule"],"fn":"defaultMessage","ok":""}
+{"args":["allow"],"fn":"judgeActionLabel","ok":"allow"}
+{"args":["app-2.0.1"],"fn":"argvProgramName","ok":"app-"}
+{"args":["ask","my-rule"],"fn":"defaultMessage","ok":"intercept rule [my-rule] requires user approval, please wait"}
+{"args":["ask"],"fn":"judgeActionLabel","ok":"escalated to manual approval"}
+{"args":["cat"],"fn":"argvProgramName","ok":"cat"}
+{"args":["curl7.8"],"fn":"argvProgramName","ok":"curl"}
+{"args":["deny","my-rule"],"fn":"defaultMessage","ok":"intercept rule [my-rule] forbids executing this tool"}
+{"args":["deny"],"fn":"judgeActionLabel","ok":"block"}
+{"args":["gcc-12"],"fn":"argvProgramName","ok":"gcc-"}
+{"args":["git"],"fn":"argvProgramName","ok":"git"}
+{"args":["hello",0],"fn":"bounded","ok":["",true]}
+{"args":["hello",100],"fn":"bounded","ok":["hello",false]}
+{"args":["hello",1],"fn":"bounded","ok":["h",true]}
+{"args":["hello",2],"fn":"bounded","ok":["he",true]}
+{"args":["hello",3],"fn":"bounded","ok":["hel",true]}
+{"args":["hello",4],"fn":"bounded","ok":["hell",true]}
+{"args":["hello",5],"fn":"bounded","ok":["hello",false]}
+{"args":["hello",6],"fn":"bounded","ok":["hello",false]}
+{"args":["hello",7],"fn":"bounded","ok":["hello",false]}
+{"args":["héllo wörld",0],"fn":"bounded","ok":["",true]}
+{"args":["héllo wörld",100],"fn":"bounded","ok":["héllo wörld",false]}
+{"args":["héllo wörld",1],"fn":"bounded","ok":["h",true]}
+{"args":["héllo wörld",2],"fn":"bounded","ok":["h",true]}
+{"args":["héllo wörld",3],"fn":"bounded","ok":["hé",true]}
+{"args":["héllo wörld",4],"fn":"bounded","ok":["hél",true]}
+{"args":["héllo wörld",5],"fn":"bounded","ok":["héll",true]}
+{"args":["héllo wörld",6],"fn":"bounded","ok":["héllo",true]}
+{"args":["héllo wörld",7],"fn":"bounded","ok":["héllo ",true]}
+{"args":["mkfs"],"fn":"argvProgramName","ok":"mkfs"}
+{"args":["mkfs.ext4"],"fn":"argvProgramName","ok":"mkfs"}
+{"args":["no fence here"],"fn":"stripCodeFence","ok":"no fence here"}
+{"args":["node"],"fn":"argvProgramName","ok":"node"}
+{"args":["other"],"fn":"judgeActionLabel","ok":"other"}
+{"args":["python3"],"fn":"argvProgramName","ok":"python"}
+{"args":["python3.11"],"fn":"argvProgramName","ok":"python"}
+{"args":["short"],"fn":"stripCodeFence","ok":"short"}
+{"args":["日本語テキスト",0],"fn":"bounded","ok":["",true]}
+{"args":["日本語テキスト",100],"fn":"bounded","ok":["日本語テキスト",false]}
+{"args":["日本語テキスト",1],"fn":"bounded","ok":["",true]}
+{"args":["日本語テキスト",2],"fn":"bounded","ok":["",true]}
+{"args":["日本語テキスト",3],"fn":"bounded","ok":["日",true]}
+{"args":["日本語テキスト",4],"fn":"bounded","ok":["日",true]}
+{"args":["日本語テキスト",5],"fn":"bounded","ok":["日",true]}
+{"args":["日本語テキスト",6],"fn":"bounded","ok":["日本",true]}
+{"args":["日本語テキスト",7],"fn":"bounded","ok":["日本",true]}
+{"args":[-5],"fn":"riskLevel","ok":"low"}
+{"args":[0],"fn":"isWord","ok":false}
+{"args":[0],"fn":"riskLevel","ok":"low"}
+{"args":[100],"fn":"riskLevel","ok":"high"}
+{"args":[200],"fn":"isWord","ok":false}
+{"args":[255],"fn":"isWord","ok":false}
+{"args":[29],"fn":"riskLevel","ok":"low"}
+{"args":[30],"fn":"riskLevel","ok":"medium"}
+{"args":[31],"fn":"riskLevel","ok":"medium"}
+{"args":[32],"fn":"isWord","ok":false}
+{"args":[45],"fn":"isWord","ok":false}
+{"args":[46],"fn":"isWord","ok":false}
+{"args":[47],"fn":"isWord","ok":false}
+{"args":[48],"fn":"isWord","ok":true}
+{"args":[57],"fn":"isWord","ok":true}
+{"args":[69],"fn":"riskLevel","ok":"medium"}
+{"args":[70],"fn":"riskLevel","ok":"high"}
+{"args":[71],"fn":"riskLevel","ok":"high"}
+{"args":[90],"fn":"isWord","ok":true}
+{"args":[95],"fn":"isWord","ok":true}
+{"args":[97],"fn":"isWord","ok":true}
+{"args":[["a","b"],["a","b"]],"fn":"subset","ok":true}
+{"args":[["a","c"],["a","b"]],"fn":"subset","ok":false}
+{"args":[["a"],["a","b"]],"fn":"subset","ok":true}
+{"args":[["a"],null],"fn":"subset","ok":false}
+{"args":[["aws","s3","ls"]],"fn":"argvPrefixLen","ok":3}
+{"args":[["cat","file"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["cat"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["docker","compose","up"]],"fn":"argvPrefixLen","ok":3}
+{"args":[["echo","hi","there"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["gcloud","x"]],"fn":"argvPrefixLen","ok":2}
+{"args":[["gh","pr"]],"fn":"argvPrefixLen","ok":2}
+{"args":[["git","config","x"]],"fn":"argvPrefixLen","ok":3}
+{"args":[["git","status"]],"fn":"argvPrefixLen","ok":2}
+{"args":[["git"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["kubectl","rollout","restart"]],"fn":"argvPrefixLen","ok":3}
+{"args":[["ls","-la"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["npm","run","build"]],"fn":"argvPrefixLen","ok":3}
+{"args":[["npm","run"]],"fn":"argvPrefixLen","ok":2}
+{"args":[["npm"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["rm"]],"fn":"argvPrefixLen","ok":1}
+{"args":[["terraform","apply"]],"fn":"argvPrefixLen","ok":2}
+{"args":[["unknowncmd","a"]],"fn":"argvPrefixLen","ok":1}
+{"args":[[102,111,111,46,98,97,114],3],"fn":"endsToken","ok":false}
+{"args":[[102,111,111,46,98,97,114],4],"fn":"endsToken","ok":false}
+{"args":[[120,95,121],1],"fn":"endsToken","ok":false}
+{"args":[[97,32,98],1],"fn":"endsToken","ok":true}
+{"args":[[97,46,98],1],"fn":"endsToken","ok":false}
+{"args":[[97,46,98],2],"fn":"endsToken","ok":false}
+{"args":[[97,46],1],"fn":"endsToken","ok":true}
+{"args":[[97,46],2],"fn":"endsToken","ok":true}
+{"args":[[97,98,99],0],"fn":"endsToken","ok":false}
+{"args":[[97,98,99],2],"fn":"endsToken","ok":false}
+{"args":[[97,98,99],3],"fn":"endsToken","ok":true}
+{"args":[[],0],"fn":"endsToken","ok":true}
+{"args":[[],["a"]],"fn":"subset","ok":false}
+{"args":[[]],"fn":"argvPrefixLen","ok":0}
+{"args":[null,["a"]],"fn":"subset","ok":false}
+{"args":[null,null],"fn":"subset","ok":false}
+{"args":[null],"fn":"argvPrefixLen","ok":0}

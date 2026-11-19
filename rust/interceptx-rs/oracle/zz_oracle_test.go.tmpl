@@ -1,0 +1,120 @@
+package intercept
+
+// Temporary oracle: records ground-truth outputs of the unexported pure helpers
+// in this package for the Rust parity harness. Copied in by record.sh, run under
+// `go test -run TestZZOracle`, then deleted — the package is left untouched.
+//
+// Each line is a JSON object {fn, args, ok}. record.sh sorts the lines so the
+// output is byte-reproducible.
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func rec(t *testing.T, fn string, args []any, out any) {
+	t.Helper()
+	c := map[string]any{"fn": fn, "args": args, "ok": out}
+	b, _ := json.Marshal(c)
+	fmt.Println(string(b))
+}
+
+func TestZZOracle(t *testing.T) {
+	// bounded(s, limit) — record [result, truncated?]
+	bstr := []string{"", "a", "hello", "héllo wörld", "日本語テキスト", "abcdef"}
+	for _, s := range bstr {
+		for _, lim := range []int{0, 1, 2, 3, 4, 5, 6, 7, 100} {
+			r, ch := bounded(s, lim)
+			rec(t, "bounded", []any{s, lim}, []any{r, ch})
+		}
+	}
+
+	// argvPrefixLen(tokens)
+	tokSets := [][]string{
+		nil, {}, {"cat"}, {"cat", "file"}, {"git"}, {"git", "status"},
+		{"git", "config", "x"}, {"npm"}, {"npm", "run"}, {"npm", "run", "build"},
+		{"docker", "compose", "up"}, {"kubectl", "rollout", "restart"},
+		{"unknowncmd", "a"}, {"ls", "-la"}, {"aws", "s3", "ls"}, {"gcloud", "x"},
+		{"echo", "hi", "there"}, {"rm"}, {"terraform", "apply"}, {"gh", "pr"},
+	}
+	for _, ts := range tokSets {
+		rec(t, "argvPrefixLen", []any{ts}, argvPrefixLen(ts))
+	}
+
+	// argvProgramName(tok)
+	for _, tok := range []string{
+		"", "cat", "/usr/bin/cat", "CAT", "mkfs.ext4", "/sbin/mkfs.xfs", "python3",
+		"python3.11", "node", "gcc-12", "a.b.c", "123", "...", "./script.sh",
+		"/usr/bin/", "git", "Docker", "app-2.0.1", "mkfs", "curl7.8",
+	} {
+		rec(t, "argvProgramName", []any{tok}, argvProgramName(tok))
+	}
+
+	// isWord(c)
+	for _, c := range []int{0, 'a', 'Z', '0', '9', '_', '-', '.', '/', ' ', 200, 255} {
+		rec(t, "isWord", []any{c}, isWord(byte(c)))
+	}
+
+	// endsToken(b, i)
+	type eb struct {
+		b []byte
+		i int
+	}
+	ebCases := []eb{
+		{[]byte("abc"), 0}, {[]byte("abc"), 3}, {[]byte("abc"), 2},
+		{[]byte("a.b"), 1}, {[]byte("a.b"), 2}, {[]byte("a."), 1},
+		{[]byte("a."), 2}, {[]byte(""), 0}, {[]byte("a b"), 1},
+		{[]byte("foo.bar"), 3}, {[]byte("foo.bar"), 4}, {[]byte("x_y"), 1},
+	}
+	for _, c := range ebCases {
+		ints := make([]int, len(c.b))
+		for i, b := range c.b {
+			ints[i] = int(b)
+		}
+		rec(t, "endsToken", []any{ints, c.i}, endsToken(c.b, c.i))
+	}
+
+	// stripCodeFence(text)
+	for _, text := range []string{
+		"", "short", "``````", "```code```", "```json\n{\"a\":1}\n```",
+		"```\nplain\n```", "  ```x```  ", "```py\nprint(1)\n```", "no fence here",
+		"```only open", "```{\"a\":1}```", "```js\nvar x=1;\n```\n",
+	} {
+		rec(t, "stripCodeFence", []any{text}, stripCodeFence(text))
+	}
+
+	// validPort(s)
+	for _, s := range []string{
+		"", "0", "1", "80", "443", "65535", "65536", "-1", "abc", "  80",
+		"80 ", "999999999999", "+80",
+	} {
+		rec(t, "validPort", []any{s}, validPort(s))
+	}
+
+	// riskLevel(score)
+	for _, sc := range []int{-5, 0, 29, 30, 31, 69, 70, 71, 100} {
+		rec(t, "riskLevel", []any{sc}, riskLevel(sc))
+	}
+
+	// judgeActionLabel(action)
+	for _, a := range []string{"allow", "deny", "ask", "", "other", "ALLOW"} {
+		rec(t, "judgeActionLabel", []any{a}, judgeActionLabel(a))
+	}
+
+	// defaultMessage(action, name)
+	for _, a := range []string{"allow", "deny", "ask", ""} {
+		rec(t, "defaultMessage", []any{a, "my-rule"}, defaultMessage(a, "my-rule"))
+	}
+
+	// subset(resolved, pinned)
+	type sp struct{ resolved, pinned []string }
+	spCases := []sp{
+		{nil, nil}, {nil, []string{"a"}}, {[]string{}, []string{"a"}},
+		{[]string{"a"}, []string{"a", "b"}}, {[]string{"a", "b"}, []string{"a", "b"}},
+		{[]string{"a", "c"}, []string{"a", "b"}}, {[]string{"a"}, nil},
+	}
+	for _, c := range spCases {
+		rec(t, "subset", []any{c.resolved, c.pinned}, subset(c.resolved, c.pinned))
+	}
+}

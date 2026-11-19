@@ -1,0 +1,21 @@
+[package]
+name = "interceptx-rs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Rust port of `intercept/` unexported pure helpers (argv-prefix arity/program-name, code-fence strip, byte/word predicates, UTF-8 bounded, port/risk/action/message/label, subset)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+gocompat = { path = "../gocompat" }
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+lto = true
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
