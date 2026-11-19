@@ -447,3 +447,85 @@ func TestZZOracle9am(t *testing.T) {
 func TestZZOracle9ao(t *testing.T) {
 	rec(t, "archiveAssetIDsQuery", []any{}, archiveAssetIDsQuery())
 }
+
+func TestZZOracle9aq(t *testing.T) {
+	// marshalStringArray — backslash + quote escaping
+	for _, items := range [][]string{
+		{`plain`},
+		{`with "quote"`},
+		{`back\slash`},
+		{`both\and"quote`},
+		{`C:\path\to`},
+		{``, `a`, `b\c`},
+	} {
+		rec(t, "marshalStringArray", []any{items}, marshalStringArray(items))
+	}
+
+	// createDatabaseSQL(name) — pgx.Identifier.Sanitize: drop NUL, double quotes, wrap
+	for _, name := range []string{
+		"mydb", "my\"db", "with\x00nul", "hyphen-name", "dot.name",
+		"unicode_\u4e16\u754c", "", "quote\"and\x00nul\"",
+	} {
+		rec(t, "createDatabaseSQL", []any{name}, createDatabaseSQL(name))
+	}
+
+	// hasCLIFlag(args, flag)
+	type hc struct {
+		args []string
+		flag string
+	}
+	for _, c := range []hc{
+		{[]string{"--headless"}, "--headless"},
+		{[]string{"--headless=true"}, "--headless"},
+		{[]string{"x", "--browser", "chromium"}, "--browser"},
+		{[]string{"--browser=firefox"}, "--browser"},
+		{[]string{"a", "b"}, "--headless"},
+		{[]string{}, "--headless"},
+		{[]string{"--browserx"}, "--browser"},
+	} {
+		rec(t, "hasCLIFlag", []any{c.args, c.flag}, hasCLIFlag(c.args, c.flag))
+	}
+
+	// playwrightMCPPackageIndex(args) -> (int, bool)
+	for _, args := range [][]string{
+		{"@playwright/mcp"},
+		{"-y", "@playwright/mcp"},
+		{"--yes", "-q", "@playwright/mcp@1.2.3", "--headless"},
+		{"-p", "@playwright/mcp"},
+		{"other", "@playwright/mcp"},
+		{},
+		{"--", "@playwright/mcp"},
+	} {
+		i, ok := playwrightMCPPackageIndex(args)
+		rec(t, "playwrightMCPPackageIndex", []any{args}, []any{i, ok})
+	}
+
+	// rewriteStockNpxBrowserMCP(command, args) -> (string, []string, bool)
+	type rw struct {
+		cmd  string
+		args []string
+	}
+	for _, c := range []rw{
+		{"npx", []string{"@playwright/mcp"}},
+		{"npx", []string{"-y", "@playwright/mcp", "--headless"}},
+		{"npx", []string{"@playwright/mcp", "--browser", "firefox"}},
+		{"npx", []string{"other-pkg"}},
+		{"playwright-mcp", []string{"--headless"}},
+		{"npx", []string{}},
+	} {
+		cmd, out, ok := rewriteStockNpxBrowserMCP(c.cmd, c.args)
+		rec(t, "rewriteStockNpxBrowserMCP", []any{c.cmd, c.args}, []any{cmd, out, ok})
+	}
+
+	// rewriteBrowserMCPRow(command, args) -> (string, []string, bool)
+	for _, c := range []rw{
+		{"npx", []string{"@playwright/mcp"}},
+		{"playwright-mcp", []string{"--headless"}},
+		{"playwright-mcp", []string{}},
+		{"other", []string{"x"}},
+		{"npx", []string{"other"}},
+	} {
+		cmd, out, ok := rewriteBrowserMCPRow(c.cmd, c.args)
+		rec(t, "rewriteBrowserMCPRow", []any{c.cmd, c.args}, []any{cmd, out, ok})
+	}
+}

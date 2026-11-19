@@ -152,6 +152,22 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         }
         "interceptSource" => json!(intercept_source(arg_i64(args, 0), &arg_str(args, 1))),
         "archiveAssetIDsQuery" => json!(archive_asset_ids_query()),
+        // batch 9aq
+        "createDatabaseSQL" => json!(create_database_sql(&arg_str(args, 0))),
+        "hasCLIFlag" => json!(has_cli_flag(&arg_str_slice(args, 0), &arg_str(args, 1))),
+        "playwrightMCPPackageIndex" => {
+            let (i, o) = playwright_mcp_package_index(&arg_str_slice(args, 0));
+            json!([i, o])
+        }
+        "rewriteStockNpxBrowserMCP" => {
+            let (c, o, k) =
+                rewrite_stock_npx_browser_mcp(&arg_str(args, 0), &arg_str_slice(args, 1));
+            json!([c, o, k])
+        }
+        "rewriteBrowserMCPRow" => {
+            let (c, o, k) = rewrite_browser_mcp_row(&arg_str(args, 0), &arg_str_slice(args, 1));
+            json!([c, o, k])
+        }
         other => panic!("no dispatcher arm for {other}"),
     }
 }

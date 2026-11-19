@@ -28,15 +28,19 @@ pub fn is_ident_char(c: u8) -> bool {
 }
 
 /// `marshalStringArray` (`db/...`): render a Go `[]string` as a Postgres text[]
-/// literal — empty → `{}`, otherwise `{"a","b"}`, with only `"` escaped to
-/// `\"` (exactly Go's `strings.ReplaceAll(s, "\"", "\\\"")`).
+/// literal — empty → `{}`, otherwise `{"a","b"}`. Each element escapes `\` → `\\`
+/// first, then `"` → `\"`, mirroring the PostgreSQL text[] backslash+quote escaping.
 pub fn marshal_string_array(items: &[String]) -> String {
     if items.is_empty() {
         return "{}".to_string();
     }
     let body: Vec<String> = items
         .iter()
-        .map(|s| format!("\"{}\"", s.replace('"', "\\\"")))
+        .map(|s| {
+            let s = s.replace('\\', "\\\\");
+            let s = s.replace('"', "\\\"");
+            format!("\"{s}\"")
+        })
         .collect();
     format!("{{{}}}", body.join(","))
 }
@@ -731,4 +735,91 @@ UNION SELECT value::bigint FROM findings finding
       CROSS JOIN LATERAL jsonb_array_elements_text(
         CASE WHEN jsonb_typeof(finding.asset_ids)='array' THEN finding.asset_ids ELSE '[]'::jsonb END
       ) value WHERE finding.task_id=$1 AND value ~ '^[0-9]+$'"#.to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Batch 9aq: upstream-fixed pure helpers in `db/` (CREATE DATABASE identifier
+// quoting, PostgreSQL text[] escaping already above) + the browser-MCP row
+// rewrite logic (all value-typed, slice/string only).
+// ---------------------------------------------------------------------------
+
+/// `createDatabaseSQL` (`db/...`): build `CREATE DATABASE <ident>` where `<ident>`
+/// is `pgx.Identifier{name}.Sanitize()` — drop NUL bytes, double any `"`, wrap in
+/// quotes, so the name cannot break out of the identifier.
+pub fn create_database_sql(name: &str) -> String {
+    let s = name.replace('\0', "");
+    format!("CREATE DATABASE \"{}\"", s.replace('"', "\"\""))
+}
+
+/// `hasCLIFlag` (`db/browser_mcp.go`): whether `args` contains `flag`, either as a
+/// bare token or as a `--flag=value` prefix.
+pub fn has_cli_flag(args: &[String], flag: &str) -> bool {
+    let eq = format!("{flag}=");
+    args.iter().any(|a| a == flag || a.starts_with(&eq))
+}
+
+/// `playwrightMCPPackageIndex` (`db/browser_mcp.go`): index of the `@playwright/mcp`
+/// package token in an `npx` arg list, skipping leading npx meta flags
+/// (`-y`, `--yes`, `--`, `-q`, `--quiet`); the first non-meta token must be the
+/// package (or `0, false`).
+pub fn playwright_mcp_package_index(args: &[String]) -> (i64, bool) {
+    for (i, a) in args.iter().enumerate() {
+        if is_npx_meta_flag(a) {
+            continue;
+        }
+        if a == "@playwright/mcp" || a.starts_with("@playwright/mcp@") {
+            return (i as i64, true);
+        }
+        return (0, false);
+    }
+    (0, false)
+}
+
+/// `npxMetaFlags` membership: npx switches that take no value and leave the next
+/// token as the package spec.
+fn is_npx_meta_flag(a: &str) -> bool {
+    matches!(a, "-y" | "--yes" | "--" | "-q" | "--quiet")
+}
+
+/// `rewriteStockNpxBrowserMCP` (`db/browser_mcp.go`): convert `npx [meta...]
+/// @playwright/mcp [...]` to the global `playwright-mcp` binary, adding
+/// `--headless` and `--browser chromium` if absent. `ok` is false (inputs returned
+/// unchanged) when the command is not `npx` or the package is not `@playwright/mcp`.
+pub fn rewrite_stock_npx_browser_mcp(
+    command: &str,
+    args: &[String],
+) -> (String, Vec<String>, bool) {
+    if command != "npx" {
+        return (command.to_string(), args.to_vec(), false);
+    }
+    let (idx, ok) = playwright_mcp_package_index(args);
+    if !ok {
+        return (command.to_string(), args.to_vec(), false);
+    }
+    let mut rest: Vec<String> = args[(idx as usize + 1)..].to_vec();
+    if !has_cli_flag(&rest, "--headless") {
+        rest.push("--headless".to_string());
+    }
+    if !has_cli_flag(&rest, "--browser") {
+        rest.push("--browser".to_string());
+        rest.push("chromium".to_string());
+    }
+    ("playwright-mcp".to_string(), rest, true)
+}
+
+/// `rewriteBrowserMCPRow` (`db/browser_mcp.go`): one-time row rewrite — a stock
+/// `npx @playwright/mcp` becomes `playwright-mcp`, and a `playwright-mcp` row with
+/// no `--browser` gets `--browser chromium`. Any other command/package is untouched.
+pub fn rewrite_browser_mcp_row(command: &str, args: &[String]) -> (String, Vec<String>, bool) {
+    let (mut cmd, mut out, mut ok) = rewrite_stock_npx_browser_mcp(command, args);
+    if !ok {
+        cmd = command.to_string();
+        out = args.to_vec();
+    }
+    if cmd == "playwright-mcp" && !has_cli_flag(&out, "--browser") {
+        out.push("--browser".to_string());
+        out.push("chromium".to_string());
+        ok = true;
+    }
+    (cmd, out, ok)
 }

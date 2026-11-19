@@ -52,6 +52,7 @@
 {"args":["",5],"fn":"truncateRunes","ok":""}
 {"args":[""],"fn":"NormalizeCoverageField","ok":""}
 {"args":[""],"fn":"companyNKey","ok":""}
+{"args":[""],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"\""}
 {"args":[""],"fn":"inheritedIntentTerminal","ok":false}
 {"args":[""],"fn":"isEncrypted","ok":false}
 {"args":[""],"fn":"isIPLiteral","ok":false}
@@ -183,6 +184,7 @@
 {"args":["deny"],"fn":"normalizeRuleAction","ok":"block"}
 {"args":["domain"],"fn":"isKnownField","ok":true}
 {"args":["done"],"fn":"inheritedIntentTerminal","ok":true}
+{"args":["dot.name"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"dot.name\""}
 {"args":["enc:v1:"],"fn":"isEncrypted","ok":true}
 {"args":["enc:v1:abc"],"fn":"isEncrypted","ok":true}
 {"args":["enc:v2:x"],"fn":"isEncrypted","ok":false}
@@ -207,6 +209,7 @@
 {"args":["hello"],"fn":"nullIfEmpty","ok":"hello"}
 {"args":["host"],"fn":"isIPLiteral","ok":false}
 {"args":["http://1.2.3.4"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["hyphen-name"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"hyphen-name\""}
 {"args":["héllo wörld",-1],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",0],"fn":"lessonText","ok":"héllo wörld"}
 {"args":["héllo wörld",0],"fn":"truncateRunes","ok":"…"}
@@ -237,6 +240,8 @@
 {"args":["multi em-space here"],"fn":"normalizeKeyword","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"taskTemplateNKey","ok":"multi em-space here"}
 {"args":["multi em-space here"],"fn":"taskTemplateName","ok":"multi em-space here"}
+{"args":["my\"db"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"my\"\"db\""}
+{"args":["mydb"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"mydb\""}
 {"args":["nbsp only"],"fn":"NormalizeCoverageField","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"companyNKey","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"normRiskArea","ok":"nbsp only"}
@@ -244,14 +249,26 @@
 {"args":["nbsp only"],"fn":"taskTemplateNKey","ok":"nbsp only"}
 {"args":["nbsp only"],"fn":"taskTemplateName","ok":"nbsp only"}
 {"args":["no-colon-or-dot"],"fn":"looksLikeIPAddress","ok":false}
+{"args":["npx",["-y","@playwright/mcp","--headless"]],"fn":"rewriteStockNpxBrowserMCP","ok":["playwright-mcp",["--headless","--browser","chromium"],true]}
+{"args":["npx",["@playwright/mcp","--browser","firefox"]],"fn":"rewriteStockNpxBrowserMCP","ok":["playwright-mcp",["--browser","firefox","--headless"],true]}
+{"args":["npx",["@playwright/mcp"]],"fn":"rewriteBrowserMCPRow","ok":["playwright-mcp",["--headless","--browser","chromium"],true]}
+{"args":["npx",["@playwright/mcp"]],"fn":"rewriteStockNpxBrowserMCP","ok":["playwright-mcp",["--headless","--browser","chromium"],true]}
+{"args":["npx",["other"]],"fn":"rewriteBrowserMCPRow","ok":["npx",["other"],false]}
+{"args":["npx",["other-pkg"]],"fn":"rewriteStockNpxBrowserMCP","ok":["npx",["other-pkg"],false]}
+{"args":["npx",[]],"fn":"rewriteStockNpxBrowserMCP","ok":["npx",[],false]}
 {"args":["other","  ","  ","url1","",""],"fn":"assetDisplayName","ok":"url1"}
 {"args":["other","dom","ip1","url1","app1",""],"fn":"assetDisplayName","ok":"dom"}
+{"args":["other",["x"]],"fn":"rewriteBrowserMCPRow","ok":["other",["x"],false]}
 {"args":["page_title"],"fn":"isKnownField","ok":true}
 {"args":["pending"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["plain"],"fn":"isEncrypted","ok":false}
+{"args":["playwright-mcp",["--headless"]],"fn":"rewriteBrowserMCPRow","ok":["playwright-mcp",["--headless","--browser","chromium"],true]}
+{"args":["playwright-mcp",["--headless"]],"fn":"rewriteStockNpxBrowserMCP","ok":["playwright-mcp",["--headless"],false]}
+{"args":["playwright-mcp",[]],"fn":"rewriteBrowserMCPRow","ok":["playwright-mcp",["--browser","chromium"],true]}
 {"args":["port"],"fn":"isKnownField","ok":true}
 {"args":["pos\u003elen",100],"fn":"readToken","ok":["",100]}
 {"args":["prefix[model]"],"fn":"isModelReason","ok":false}
+{"args":["quote\"and\u0000nul\""],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"quote\"\"andnul\"\"\""}
 {"args":["root_domain","example.com","","","",""],"fn":"assetDisplayName","ok":"example.com"}
 {"args":["running"],"fn":"inheritedIntentTerminal","ok":false}
 {"args":["service","","","http://x/y","dom",""],"fn":"assetDisplayName","ok":"http://x/y"}
@@ -290,9 +307,11 @@
 {"args":["token)",0],"fn":"readToken","ok":["token",5]}
 {"args":["trail "],"fn":"normalizeTaskCategoryName","ok":[["trail","trail"],null]}
 {"args":["trailing ",0],"fn":"readToken","ok":["trailing",8]}
+{"args":["unicode_世界"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"unicode_世界\""}
 {"args":["unknown","","","","",""],"fn":"assetDisplayName","ok":""}
 {"args":["unknown"],"fn":"isKnownField","ok":false}
 {"args":["wIA="],"fn":"utf8Clean","ok":"77+9"}
+{"args":["with\u0000nul"],"fn":"createDatabaseSQL","ok":"CREATE DATABASE \"withnul\""}
 {"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],null]}
 {"args":["x","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],"fn":"normalizeTaskAssetSource","ok":[["",""],"invalid task asset association: source summary exceeds 500 characters"]}
 {"args":["x"],"fn":"nullIfEmpty","ok":"x"}
@@ -455,16 +474,34 @@
 {"args":[9],"fn":"isIdentChar","ok":false}
 {"args":[9],"fn":"isIdentStart","ok":false}
 {"args":[["  spaced  "]],"fn":"marshalStringArray","ok":"{\"  spaced  \"}"}
+{"args":[["","a","b\\c"]],"fn":"marshalStringArray","ok":"{\"\",\"a\",\"b\\\\c\"}"}
 {"args":[[""]],"fn":"marshalStringArray","ok":"{\"\"}"}
+{"args":[["--","@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[1,true]}
+{"args":[["--browser=firefox"],"--browser"],"fn":"hasCLIFlag","ok":true}
+{"args":[["--browserx"],"--browser"],"fn":"hasCLIFlag","ok":false}
+{"args":[["--headless"],"--headless"],"fn":"hasCLIFlag","ok":true}
+{"args":[["--headless=true"],"--headless"],"fn":"hasCLIFlag","ok":true}
+{"args":[["--yes","-q","@playwright/mcp@1.2.3","--headless"]],"fn":"playwrightMCPPackageIndex","ok":[2,true]}
+{"args":[["-p","@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[0,false]}
+{"args":[["-y","@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[1,true]}
+{"args":[["@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[0,true]}
+{"args":[["C:\\path\\to"]],"fn":"marshalStringArray","ok":"{\"C:\\\\path\\\\to\"}"}
 {"args":[["a",""],["a","d"]],"fn":"mergeAgentKeys","ok":["a","d"]}
 {"args":[["a","a","b"],["b","a","c"]],"fn":"mergeAgentKeys","ok":["a","b","c"]}
+{"args":[["a","b"],"--headless"],"fn":"hasCLIFlag","ok":false}
 {"args":[["a","b"],["b","c"]],"fn":"mergeAgentKeys","ok":["a","b","c"]}
 {"args":[["a","b"]],"fn":"marshalStringArray","ok":"{\"a\",\"b\"}"}
 {"args":[["a"]],"fn":"marshalStringArray","ok":"{\"a\"}"}
 {"args":[["a,b","c"]],"fn":"marshalStringArray","ok":"{\"a,b\",\"c\"}"}
-{"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\slash\"}"}
+{"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\\\slash\"}"}
+{"args":[["back\\slash"]],"fn":"marshalStringArray","ok":"{\"back\\\\slash\"}"}
+{"args":[["both\\and\"quote"]],"fn":"marshalStringArray","ok":"{\"both\\\\and\\\"quote\"}"}
 {"args":[["he said \"hi\""]],"fn":"marshalStringArray","ok":"{\"he said \\\"hi\\\"\"}"}
+{"args":[["other","@playwright/mcp"]],"fn":"playwrightMCPPackageIndex","ok":[0,false]}
+{"args":[["plain"]],"fn":"marshalStringArray","ok":"{\"plain\"}"}
 {"args":[["quote\"and,comma","tab\there"]],"fn":"marshalStringArray","ok":"{\"quote\\\"and,comma\",\"tab\there\"}"}
+{"args":[["with \"quote\""]],"fn":"marshalStringArray","ok":"{\"with \\\"quote\\\"\"}"}
+{"args":[["x","--browser","chromium"],"--browser"],"fn":"hasCLIFlag","ok":true}
 {"args":[["x"],null],"fn":"mergeAgentKeys","ok":["x"]}
 {"args":[[-1,0,99]],"fn":"assetIDContainments","ok":["[-1]","[0]","[99]"]}
 {"args":[[-1]],"fn":"NormalizeTaskCompanyIDs","ok":[null,"invalid task company ids: company id must be positive"]}
@@ -493,12 +530,14 @@
 {"args":[[7,7,7,8]],"fn":"normalizeTaskAssetIDs","ok":[[7,8],null]}
 {"args":[[7,8]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[7]],"fn":"lessonExtractCompanyID","ok":7}
+{"args":[[],"--headless"],"fn":"hasCLIFlag","ok":false}
 {"args":[[],[]],"fn":"mergeAgentKeys","ok":[]}
 {"args":[[]],"fn":"NormalizeTaskCompanyIDs","ok":[null,null]}
 {"args":[[]],"fn":"assetIDContainments","ok":[]}
 {"args":[[]],"fn":"lessonExtractCompanyID","ok":0}
 {"args":[[]],"fn":"marshalStringArray","ok":"{}"}
 {"args":[[]],"fn":"normalizeTaskAssetIDs","ok":[null,"invalid task asset association: asset_ids is required"]}
+{"args":[[]],"fn":"playwrightMCPPackageIndex","ok":[0,false]}
 {"args":[],"fn":"archiveAssetIDsQuery","ok":"SELECT id FROM assets WHERE $1=ANY(task_ids)\nUNION SELECT link.asset_id FROM task_asset_links link WHERE link.task_id=$1\nUNION SELECT anchor.asset_id FROM exploration_anchors anchor\n      JOIN exploration_nodes node ON node.id=anchor.node_id WHERE node.exploration_id=$2\nUNION SELECT value::bigint FROM findings finding\n      CROSS JOIN LATERAL jsonb_array_elements_text(\n        CASE WHEN jsonb_typeof(finding.asset_ids)='array' THEN finding.asset_ids ELSE '[]'::jsonb END\n      ) value WHERE finding.task_id=$1 AND value ~ '^[0-9]+$'"}
 {"args":[null,-3],"fn":"sameMainSegment","ok":false}
 {"args":[null,-3],"fn":"sameOptionalInt64","ok":false}
