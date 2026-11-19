@@ -147,3 +147,88 @@ func TestZZOracle9u(t *testing.T) {
 		rec(t, "assetLine", []any{c.a, c.limit}, assetLine(c.a, c.limit))
 	}
 }
+
+func TestZZOracle9u2(t *testing.T) {
+	// TruncateRunes(s, max) / OneLine(s, max) / markdownText(s, max)
+	trInputs := []string{"", "   ", "hello world", "  a  b  c  ", "héllo wörld", "日本語テキストです", "a_b*c[d]", "line1\nline2\ttab"}
+	for _, s := range trInputs {
+		for _, max := range []int{-1, 0, 1, 3, 5, 200} {
+			rec(t, "TruncateRunes", []any{s, max}, TruncateRunes(s, max))
+			rec(t, "OneLine", []any{s, max}, OneLine(s, max))
+			rec(t, "markdownText", []any{s, max}, markdownText(s, max))
+		}
+	}
+
+	// snippet(raw []byte) == OneLine(string(raw), 200)
+	snipInputs := []string{
+		"",
+		"   whitespace   collapsed   ",
+		"a single line",
+		"line1\nline2\r\nline3",
+		"tab\tseparated\tvalues",
+		strings_Repeat("long ", 100),
+		"日本語のテキスト です",
+	}
+	for _, s := range snipInputs {
+		rec(t, "snippet", []any{s}, snippet([]byte(s)))
+	}
+
+	// isBlankConfigValue(v any)
+	blankVals := []any{
+		nil,
+		"",
+		"   ",
+		" x ",
+		"x",
+		0,
+		42,
+		3.14,
+		true,
+		false,
+		[]any{"a"},
+		map[string]any{"k": "v"},
+	}
+	for _, v := range blankVals {
+		rec(t, "isBlankConfigValue", []any{v}, isBlankConfigValue(v))
+	}
+
+	// sameConfigValue(a, b any)
+	type pair struct{ a, b any }
+	n := 5
+	nf := 5.0
+	pairs := []pair{
+		{nil, nil},
+		{nil, ""},
+		{"", "   "},
+		{"  ", ""},
+		{"x", "x"},
+		{"x", "y"},
+		{n, n},
+		{n, nf}, // int 5 vs float 5.0 -> both marshal "5"
+		{5, 6},
+		{3.14, 3.14},
+		{3.14, 3.15},
+		{true, true},
+		{true, false},
+		{[]any{1, 2}, []any{1, 2}},
+		{[]any{1, 2}, []any{2, 1}},
+		{map[string]any{"a": 1, "b": 2}, map[string]any{"b": 2, "a": 1}},
+		{map[string]any{"a": 1}, map[string]any{"a": 2}},
+		{"<tag>", "<tag>"},
+		{"a&b", "a&b"},
+		{nil, 0},
+	}
+	for _, pr := range pairs {
+		rec(t, "sameConfigValue", []any{pr.a, pr.b}, sameConfigValue(pr.a, pr.b))
+	}
+}
+
+// strings_Repeat is a tiny local helper so the oracle needs no extra import.
+func strings_Repeat(s string, n int) string {
+	out := ""
+	for i := 0; i < n; i++ {
+		out += s
+	}
+	return out
+}
+

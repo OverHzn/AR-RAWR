@@ -224,3 +224,66 @@ pub fn byte_size(s: &str) -> i64 {
 pub fn rune_size(s: &str) -> i64 {
     s.chars().count() as i64
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9u2: notify render leaves (render.go markdownText/snippet, TruncateRunes/
+// OneLine, channel.go isBlankConfigValue/sameConfigValue). `markdown_escape` above.
+// ---------------------------------------------------------------------------
+
+/// The Markdown ellipsis (`…`), matching `notify.render.go`.
+const ELLIPSIS: &str = "…";
+
+/// `TruncateRunes` (`notify/render.go`): cut `s` to at most `max` runes, appending
+/// an ellipsis when truncated. `max <= 0` means no truncation; `max <= 1` truncates
+/// without an ellipsis.
+pub fn truncate_runes(s: &str, max: i64) -> String {
+    if max <= 0 {
+        return s.to_string();
+    }
+    let runes: Vec<char> = s.chars().collect();
+    if (runes.len() as i64) <= max {
+        return s.to_string();
+    }
+    if max <= 1 {
+        return runes[..max as usize].iter().collect();
+    }
+    let mut out: String = runes[..(max - 1) as usize].iter().collect();
+    out.push_str(ELLIPSIS);
+    out
+}
+
+/// `OneLine` (`notify/render.go`): collapse whitespace to single spaces, then
+/// [`truncate_runes`].
+pub fn one_line(s: &str, max: i64) -> String {
+    truncate_runes(&strings::go_fields_join(s), max)
+}
+
+/// `markdownText` (`notify/render.go`): [`markdown_escape`] of [`one_line`].
+pub fn markdown_text(s: &str, max_runes: i64) -> String {
+    markdown_escape(&one_line(s, max_runes))
+}
+
+/// `snippet` (`notify/render.go`): a one-line, 200-rune preview of raw bytes.
+pub fn snippet(raw: &str) -> String {
+    one_line(raw, 200)
+}
+
+/// `isBlankConfigValue` (`notify/channel.go`): nil is blank; a string is blank when
+/// it trims to empty; every other type is non-blank.
+pub fn is_blank_config_value(v: &serde_json::Value) -> bool {
+    match v {
+        serde_json::Value::Null => true,
+        serde_json::Value::String(s) => strings::go_trim_space(s).is_empty(),
+        _ => false,
+    }
+}
+
+/// `sameConfigValue` (`notify/channel.go`): both blank, or the two values marshal
+/// to the same JSON (serde `Value` equality mirrors Go's `json.Marshal` string
+/// comparison for the recorded corpus).
+pub fn same_config_value(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    if is_blank_config_value(a) && is_blank_config_value(b) {
+        return true;
+    }
+    a == b
+}

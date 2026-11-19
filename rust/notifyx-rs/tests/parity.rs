@@ -70,6 +70,12 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
         "assetLine" => json!(asset_line(&arg_str_slice(args, 0), arg_i64(args, 1))),
         "byteSize" => json!(byte_size(&arg_str(args, 0))),
         "runeSize" => json!(rune_size(&arg_str(args, 0))),
+        "TruncateRunes" => json!(truncate_runes(&arg_str(args, 0), arg_i64(args, 1))),
+        "OneLine" => json!(one_line(&arg_str(args, 0), arg_i64(args, 1))),
+        "markdownText" => json!(markdown_text(&arg_str(args, 0), arg_i64(args, 1))),
+        "snippet" => json!(snippet(&arg_str(args, 0))),
+        "isBlankConfigValue" => json!(is_blank_config_value(&args[0])),
+        "sameConfigValue" => json!(same_config_value(&args[0], &args[1])),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
