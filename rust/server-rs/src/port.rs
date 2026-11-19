@@ -717,3 +717,18 @@ pub fn skill_name_from_frontmatter(md: &str) -> String {
     }
     String::new()
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9an: LLMPool member ordering in `server/` (reads Active + Priority).
+// ---------------------------------------------------------------------------
+
+/// `poolLess` (`server/llmpool.go`): failover ordering — an active member sorts
+/// before an inactive one; within the same active state, higher `Priority` wins.
+/// Only the `Active`/`Priority` fields of `LLMPoolMemberStatus` are consulted.
+pub fn pool_less(active_a: bool, prio_a: i64, active_b: bool, prio_b: i64) -> bool {
+    if active_a != active_b {
+        active_a
+    } else {
+        prio_a > prio_b
+    }
+}

@@ -398,3 +398,21 @@ func TestZZOracle9ah(t *testing.T) {
 		rec(t, "skillNameFromFrontmatter", []any{md}, skillNameFromFrontmatter([]byte(md)), nil)
 	}
 }
+
+func TestZZOracle9an(t *testing.T) {
+	type mm struct {
+		aa    bool
+		pa    int
+		ba    bool
+		pb    int
+	}
+	for _, c := range []mm{
+		{true, 1, false, 5}, {false, 1, true, 5}, {true, 5, true, 3},
+		{true, 3, true, 5}, {false, 1, false, 1}, {false, 9, false, 2},
+		{true, 0, false, 100}, {false, 0, false, 0}, {true, 7, true, 7},
+	} {
+		a := LLMPoolMemberStatus{Active: c.aa, Priority: c.pa}
+		b := LLMPoolMemberStatus{Active: c.ba, Priority: c.pb}
+		rec(t, "poolLess", []any{c.aa, c.pa, c.ba, c.pb}, poolLess(a, b), nil)
+	}
+}

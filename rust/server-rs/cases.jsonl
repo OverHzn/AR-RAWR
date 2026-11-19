@@ -6543,6 +6543,10 @@
 {"args":[[]],"fn":"cleanStrs","ok":[]}
 {"args":[[]],"fn":"idStrings","ok":[]}
 {"args":[[]],"fn":"stripProxyArgs","ok":[]}
+{"args":[false,0,false,0],"fn":"poolLess","ok":false}
+{"args":[false,1,false,1],"fn":"poolLess","ok":false}
+{"args":[false,1,true,5],"fn":"poolLess","ok":false}
+{"args":[false,9,false,2],"fn":"poolLess","ok":true}
 {"args":[false],"fn":"enabledWord","ok":"disabled"}
 {"args":[null,""],"fn":"coalesceStr","ok":""}
 {"args":[null,"DEF"],"fn":"coalesceStr","ok":"DEF"}
@@ -6559,4 +6563,9 @@
 {"args":[null],"fn":"keepIfMasked","ok":null}
 {"args":[null],"fn":"stringValue","ok":""}
 {"args":[null],"fn":"stripProxyArgs","ok":[]}
+{"args":[true,0,false,100],"fn":"poolLess","ok":true}
+{"args":[true,1,false,5],"fn":"poolLess","ok":true}
+{"args":[true,3,true,5],"fn":"poolLess","ok":false}
+{"args":[true,5,true,3],"fn":"poolLess","ok":true}
+{"args":[true,7,true,7],"fn":"poolLess","ok":false}
 {"args":[true],"fn":"enabledWord","ok":"enabled"}

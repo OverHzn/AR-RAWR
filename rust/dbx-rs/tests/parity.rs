@@ -150,6 +150,7 @@ fn dispatch(name: &str, args: &[Value]) -> Value {
             let (tok, np) = read_token(&arg_str(args, 0), arg_i64(args, 1) as usize);
             json!([tok, np])
         }
+        "interceptSource" => json!(intercept_source(arg_i64(args, 0), &arg_str(args, 1))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

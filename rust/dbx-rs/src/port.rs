@@ -697,3 +697,20 @@ pub fn read_token(s: &str, pos: usize) -> (String, usize) {
     }
     (String::from_utf8_lossy(&b[pos..i]).into_owned(), i)
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9am: intercept-source classifier in `db/` (reuses `isModelReason`).
+// ---------------------------------------------------------------------------
+
+/// `interceptSource` (`db/...`): classify an intercept decision's origin — `"rule"`
+/// when a rule id is set, else `"model"` when the reason is a model reason, else
+/// `"unknown"`.
+pub fn intercept_source(rule_id: i64, reason: &str) -> String {
+    if rule_id != 0 {
+        return "rule".to_string();
+    }
+    if is_model_reason(reason) {
+        return "model".to_string();
+    }
+    "unknown".to_string()
+}

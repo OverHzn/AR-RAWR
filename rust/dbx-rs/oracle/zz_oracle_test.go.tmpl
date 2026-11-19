@@ -429,3 +429,17 @@ func TestZZOracle9al(t *testing.T) {
 		rec(t, "readToken", []any{c.s, c.pos}, []any{tok, np})
 	}
 }
+
+func TestZZOracle9am(t *testing.T) {
+	type is struct {
+		id     int64
+		reason string
+	}
+	for _, c := range []is{
+		{1, ""}, {5, "[model] ctx"}, {-1, "whatever"}, {0, ""},
+		{0, "[model] context limit"}, {0, "[模型] quota"}, {0, "operator"},
+		{0, "[MODEL] case-insensitive"}, {42, "[model] exhausted"}, {0, "model"},
+	} {
+		rec(t, "interceptSource", []any{c.id, c.reason}, interceptSource(c.id, c.reason))
+	}
+}

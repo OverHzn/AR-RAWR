@@ -192,6 +192,12 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         // batch 9ah
         "csvValues" => ok(json!(csv_values(&arg_str(args, 0)))),
         "skillNameFromFrontmatter" => ok(json!(skill_name_from_frontmatter(&arg_str(args, 0)))),
+        "poolLess" => ok(json!(pool_less(
+            arg_bool(args, 0),
+            arg_i64(args, 1),
+            arg_bool(args, 2),
+            arg_i64(args, 3)
+        ))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }
