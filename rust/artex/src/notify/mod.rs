@@ -41,8 +41,10 @@ pub use notifyx_rs::port::{
 };
 
 pub mod html;
+pub mod http;
 pub mod markdown;
 pub mod mask;
+pub mod sign;
 
 use async_trait::async_trait;
 use serde_json::Value;
