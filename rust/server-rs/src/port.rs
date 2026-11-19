@@ -471,3 +471,117 @@ pub fn canonical_task_id(raw: &str) -> (String, bool) {
 fn go_parse_int(raw: &str) -> Option<i64> {
     raw.parse::<i64>().ok()
 }
+
+// ---------------------------------------------------------------------------
+// Batch 9aa: pure scalar/slice helpers in `server/`. Go-stdlib strings come from
+// `gocompat::strings` (already imported). Pointer params are modeled with `Option`.
+// ---------------------------------------------------------------------------
+
+/// `coalesceStr` (`server/...`): the pointed-to string, or `fallback` when nil.
+pub fn coalesce_str(p: Option<&str>, fallback: &str) -> String {
+    match p {
+        Some(s) => s.to_string(),
+        None => fallback.to_string(),
+    }
+}
+
+/// `stringValue` (`server/...`): the pointed-to string, or `""` when nil.
+pub fn string_value(value: Option<&str>) -> String {
+    value.unwrap_or("").to_string()
+}
+
+/// `cleanStrs` (`server/...`): trim each entry and drop the empties.
+pub fn clean_strs(input: &[String]) -> Vec<String> {
+    let mut out = Vec::with_capacity(input.len());
+    for s in input {
+        let s = go_trim_space(s);
+        if !s.is_empty() {
+            out.push(s.to_string());
+        }
+    }
+    out
+}
+
+/// `contains` (`server/...`): whether `ss` holds `v` exactly.
+pub fn contains(ss: &[String], v: &str) -> bool {
+    ss.iter().any(|s| s == v)
+}
+
+/// `containsFold` (`server/...`): whether any entry equals `name` under Go's
+/// `strings.EqualFold`.
+pub fn contains_fold(set: &[String], name: &str) -> bool {
+    set.iter()
+        .any(|s| gocompat::strings::go_equal_fold(s, name))
+}
+
+/// `cloneInt64Ptr` (`server/...`): copy a `*int64` (nil stays nil).
+pub fn clone_int64_ptr(value: Option<i64>) -> Option<i64> {
+    value
+}
+
+/// `minF` (`server/...`): the smaller of two floats.
+pub fn min_f(a: f64, b: f64) -> f64 {
+    if a < b { a } else { b }
+}
+
+/// `isHostByte` (`server/...`): a host-label byte (`.`, `-`, or alphanumeric ASCII).
+pub fn is_host_byte(c: u8) -> bool {
+    c == b'.' || c == b'-' || c.is_ascii_digit() || c.is_ascii_lowercase() || c.is_ascii_uppercase()
+}
+
+/// `sameOptionalID` (`server/...`): both nil, or both set and equal.
+pub fn same_optional_id(a: Option<i64>, b: Option<i64>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(x), Some(y)) => x == y,
+        _ => false,
+    }
+}
+
+/// `keepIfMasked` (`server/...`): drop the value when it is a masked secret,
+/// otherwise pass it through (nil stays nil).
+pub fn keep_if_masked(v: Option<&str>) -> Option<String> {
+    match v {
+        Some(s) if is_masked_secret(s) => None,
+        other => other.map(|s| s.to_string()),
+    }
+}
+
+/// `parseVersion` (`server/...`): parse `v` / `vX` / `X.Y.Z` (optionally with a
+/// `-`/`+` suffix) into three ints; `None` on a non-numeric part or >3 parts.
+pub fn parse_version(s: &str) -> Option<[i64; 3]> {
+    let s = go_trim_space(s);
+    let s = s.strip_prefix('v').unwrap_or(s);
+    // Cut at the first '-' or '+'.
+    let s = match s.find(['-', '+']) {
+        Some(i) => &s[..i],
+        None => s,
+    };
+    let parts: Vec<&str> = s.split('.').collect();
+    if parts.len() > 3 {
+        return None;
+    }
+    let mut out = [0i64; 3];
+    for (i, p) in parts.iter().enumerate() {
+        match p.parse::<i64>() {
+            Ok(n) => out[i] = n,
+            Err(_) => return None,
+        }
+    }
+    Some(out)
+}
+
+/// `versionLess` (`server/...`): component-wise `<` over parsed versions; false
+/// when either side fails to parse.
+pub fn version_less(a: &str, b: &str) -> bool {
+    let (pa, pb) = match (parse_version(a), parse_version(b)) {
+        (Some(pa), Some(pb)) => (pa, pb),
+        _ => return false,
+    };
+    for i in 0..3 {
+        if pa[i] != pb[i] {
+            return pa[i] < pb[i];
+        }
+    }
+    false
+}

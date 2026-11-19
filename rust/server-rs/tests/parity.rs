@@ -27,6 +27,40 @@ fn arg_bool(args: &[Value], i: usize) -> bool {
     args[i].as_bool().expect("bool arg")
 }
 
+fn arg_str_slice(args: &[Value], i: usize) -> Vec<String> {
+    match &args[i] {
+        Value::Array(a) => a
+            .iter()
+            .map(|v| v.as_str().expect("string element").to_string())
+            .collect(),
+        Value::Null => Vec::new(),
+        other => panic!("expected array or null, got {other}"),
+    }
+}
+fn arg_byte(args: &[Value], i: usize) -> u8 {
+    arg_i64(args, i) as u8
+}
+
+fn arg_opt_str(args: &[Value], i: usize) -> Option<String> {
+    args[i].as_str().map(|s| s.to_string())
+}
+fn arg_opt_i64(args: &[Value], i: usize) -> Option<i64> {
+    args[i].as_i64()
+}
+fn arg_f64(args: &[Value], i: usize) -> f64 {
+    args[i].as_f64().expect("float arg")
+}
+
+/// Go `json.Marshal` renders an integral float without a decimal point (`1.0` ->
+/// `1`). Emit an integer `Value` for integral floats so parity matches byte-for-byte.
+fn go_float(f: f64) -> Value {
+    if f.is_finite() && f.fract() == 0.0 && f.abs() < 9.007_199_254_740_992e15 {
+        json!(f as i64)
+    } else {
+        json!(f)
+    }
+}
+
 /// Dispatch one case to the matching port. `Ok(value)` is a normal return,
 /// `Err(message)` mirrors a Go `error` return (compared against the recorded
 /// `error` string).
@@ -96,6 +130,34 @@ fn dispatch(name: &str, args: &[Value]) -> Result<Value, String> {
         "firstLine" => ok(json!(first_line(&arg_str(args, 0), arg_i64(args, 1)))),
         "trunc" => ok(json!(trunc(&arg_str(args, 0), arg_i64(args, 1)))),
 
+        // (composite) — batch 9aa
+        "coalesceStr" => ok(json!(coalesce_str(
+            arg_opt_str(args, 0).as_deref(),
+            &arg_str(args, 1)
+        ))),
+        "stringValue" => ok(json!(string_value(arg_opt_str(args, 0).as_deref()))),
+        "cleanStrs" => ok(json!(clean_strs(&arg_str_slice(args, 0)))),
+        "contains" => ok(json!(contains(&arg_str_slice(args, 0), &arg_str(args, 1)))),
+        "containsFold" => ok(json!(contains_fold(
+            &arg_str_slice(args, 0),
+            &arg_str(args, 1)
+        ))),
+        "cloneInt64Ptr" => ok(json!(clone_int64_ptr(arg_opt_i64(args, 0)))),
+        "minF" => ok(go_float(min_f(arg_f64(args, 0), arg_f64(args, 1)))),
+        "isHostByte" => ok(json!(is_host_byte(arg_byte(args, 0)))),
+        "sameOptionalID" => ok(json!(same_optional_id(
+            arg_opt_i64(args, 0),
+            arg_opt_i64(args, 1)
+        ))),
+        "keepIfMasked" => ok(json!(keep_if_masked(arg_opt_str(args, 0).as_deref()))),
+        "parseVersion" => {
+            let v = parse_version(&arg_str(args, 0));
+            ok(match v {
+                Some(t) => json!(t),
+                None => Value::Null,
+            })
+        }
+        "versionLess" => ok(json!(version_less(&arg_str(args, 0), &arg_str(args, 1)))),
         other => panic!("no dispatcher arm for {other}"),
     }
 }

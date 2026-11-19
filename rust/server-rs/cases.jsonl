@@ -1,3 +1,23 @@
+{"args":["   ","   "],"fn":"versionLess","ok":false}
+{"args":["   ","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["   ",""],"fn":"versionLess","ok":false}
+{"args":["   ","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["   ","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["   ","1"],"fn":"versionLess","ok":false}
+{"args":["   ","1.0"],"fn":"versionLess","ok":false}
+{"args":["   ","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["   ","1.2"],"fn":"versionLess","ok":false}
+{"args":["   ","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["   ","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["   ","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["   ","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["   ","1.x"],"fn":"versionLess","ok":false}
+{"args":["   ","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["   ","2.0"],"fn":"versionLess","ok":false}
+{"args":["   ","abc"],"fn":"versionLess","ok":false}
+{"args":["   ","v"],"fn":"versionLess","ok":false}
+{"args":["   ","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["   "],"fn":"parseVersion","ok":null}
 {"args":["  ",0],"fn":"firstLine","ok":""}
 {"args":["  ",0],"fn":"preview","ok":"…"}
 {"args":["  ",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -75,6 +95,9 @@
 {"args":["  deny  "],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["  deny  "],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["  deny  "],"fn":"yamlScalar","ok":"'  deny  '"}
+{"args":["  spaced  ",""],"fn":"coalesceStr","ok":"  spaced  "}
+{"args":["  spaced  ","DEF"],"fn":"coalesceStr","ok":"  spaced  "}
+{"args":["  spaced  ","fallback"],"fn":"coalesceStr","ok":"  spaced  "}
 {"args":["  spaced  ",0],"fn":"firstLine","ok":"…"}
 {"args":["  spaced  ",0],"fn":"preview","ok":"…"}
 {"args":["  spaced  ",0],"fn":"trunc","ok":"…(truncated, 10 chars in total)"}
@@ -106,6 +129,7 @@
 {"args":["  spaced  "],"fn":"sanitizeFilename","ok":"  spaced  "}
 {"args":["  spaced  "],"fn":"shellQuote","ok":"'  spaced  '"}
 {"args":["  spaced  "],"fn":"shortQuote","ok":"spaced"}
+{"args":["  spaced  "],"fn":"stringValue","ok":"  spaced  "}
 {"args":["  spaced  "],"fn":"trimTrailingSlash","ok":"  spaced  "}
 {"args":["  spaced  "],"fn":"truncateBody","ok":"  spaced  "}
 {"args":["  spaced  "],"fn":"truncateReply","ok":"  spaced  "}
@@ -113,6 +137,26 @@
 {"args":["  spaced  "],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["  spaced  "],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["  spaced  "],"fn":"yamlScalar","ok":"'  spaced  '"}
+{"args":["  v2.5.1  ","   "],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ",""],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.0"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.2"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","1.x"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["  v2.5.1  ","2.0"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","abc"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","v"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  ","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["  v2.5.1  "],"fn":"parseVersion","ok":[2,5,1]}
 {"args":[" "],"fn":"skillPathRune","ok":true}
 {"args":[" 12"],"error":"invalid task id \" 12\"","fn":"parseTaskID"}
 {"args":[" 42 ",0],"fn":"firstLine","ok":"…"}
@@ -230,6 +274,28 @@
 {"args":[" lead space"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":[" lead space"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":[" lead space"],"fn":"yamlScalar","ok":"' lead space'"}
+{"args":["","   "],"fn":"versionLess","ok":false}
+{"args":["","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["",""],"fn":"coalesceStr","ok":""}
+{"args":["",""],"fn":"versionLess","ok":false}
+{"args":["","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["","1"],"fn":"versionLess","ok":false}
+{"args":["","1.0"],"fn":"versionLess","ok":false}
+{"args":["","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["","1.2"],"fn":"versionLess","ok":false}
+{"args":["","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["","1.x"],"fn":"versionLess","ok":false}
+{"args":["","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["","2.0"],"fn":"versionLess","ok":false}
+{"args":["","DEF"],"fn":"coalesceStr","ok":""}
+{"args":["","abc"],"fn":"versionLess","ok":false}
+{"args":["","fallback"],"fn":"coalesceStr","ok":""}
+{"args":["","v"],"fn":"versionLess","ok":false}
+{"args":["","v1.2.3"],"fn":"versionLess","ok":false}
 {"args":["",0],"fn":"firstLine","ok":""}
 {"args":["",0],"fn":"preview","ok":""}
 {"args":["",0],"fn":"trunc","ok":""}
@@ -253,15 +319,18 @@
 {"args":[""],"fn":"identity","ok":""}
 {"args":[""],"fn":"inheritedIntentResult","ok":false}
 {"args":[""],"fn":"isMaskedSecret","ok":false}
+{"args":[""],"fn":"keepIfMasked","ok":""}
 {"args":[""],"fn":"levelOf","ok":"info"}
 {"args":[""],"fn":"maskedSecret","ok":""}
 {"args":[""],"fn":"normFilter","ok":""}
 {"args":[""],"fn":"normalizeConstraintKind","ok":""}
 {"args":[""],"fn":"normalizeEvidenceText","ok":""}
+{"args":[""],"fn":"parseVersion","ok":null}
 {"args":[""],"fn":"proxyURLString","ok":""}
 {"args":[""],"fn":"sanitizeFilename","ok":""}
 {"args":[""],"fn":"shellQuote","ok":"''"}
 {"args":[""],"fn":"shortQuote","ok":""}
+{"args":[""],"fn":"stringValue","ok":""}
 {"args":[""],"fn":"trimTrailingSlash","ok":""}
 {"args":[""],"fn":"truncateBody","ok":""}
 {"args":[""],"fn":"truncateReply","ok":""}
@@ -697,8 +766,67 @@
 {"args":["0"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["0"],"fn":"yamlScalar","ok":"0"}
 {"args":["0"],"fn":"yamlScalar","ok":"0"}
+{"args":["0.0.1","   "],"fn":"versionLess","ok":false}
+{"args":["0.0.1","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["0.0.1",""],"fn":"versionLess","ok":false}
+{"args":["0.0.1","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["0.0.1","01.02.03"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.0"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.0.0"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.2"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.2.3"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.2.3+build"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.2.3-beta"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["0.0.1","1.x"],"fn":"versionLess","ok":false}
+{"args":["0.0.1","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","2.0"],"fn":"versionLess","ok":true}
+{"args":["0.0.1","abc"],"fn":"versionLess","ok":false}
+{"args":["0.0.1","v"],"fn":"versionLess","ok":false}
+{"args":["0.0.1","v1.2.3"],"fn":"versionLess","ok":true}
+{"args":["0.0.1"],"fn":"parseVersion","ok":[0,0,1]}
 {"args":["007"],"fn":"parseTaskID","ok":7}
+{"args":["01.02.03","   "],"fn":"versionLess","ok":false}
+{"args":["01.02.03","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["01.02.03",""],"fn":"versionLess","ok":false}
+{"args":["01.02.03","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.0"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.2"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","1.x"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["01.02.03","2.0"],"fn":"versionLess","ok":true}
+{"args":["01.02.03","abc"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","v"],"fn":"versionLess","ok":false}
+{"args":["01.02.03","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["01.02.03"],"fn":"parseVersion","ok":[1,2,3]}
 {"args":["0x1f"],"error":"invalid task id \"0x1f\"","fn":"parseTaskID"}
+{"args":["1","   "],"fn":"versionLess","ok":false}
+{"args":["1","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1",""],"fn":"versionLess","ok":false}
+{"args":["1","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1","01.02.03"],"fn":"versionLess","ok":true}
+{"args":["1","1"],"fn":"versionLess","ok":false}
+{"args":["1","1.0"],"fn":"versionLess","ok":false}
+{"args":["1","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1","1.2"],"fn":"versionLess","ok":true}
+{"args":["1","1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1","1.2.3+build"],"fn":"versionLess","ok":true}
+{"args":["1","1.2.3-beta"],"fn":"versionLess","ok":true}
+{"args":["1","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1","1.x"],"fn":"versionLess","ok":false}
+{"args":["1","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1","2.0"],"fn":"versionLess","ok":true}
+{"args":["1","abc"],"fn":"versionLess","ok":false}
+{"args":["1","v"],"fn":"versionLess","ok":false}
+{"args":["1","v1.2.3"],"fn":"versionLess","ok":true}
 {"args":["1",0],"fn":"firstLine","ok":"…"}
 {"args":["1",0],"fn":"firstLine","ok":"…"}
 {"args":["1",0],"fn":"preview","ok":"…"}
@@ -754,6 +882,7 @@
 {"args":["1"],"fn":"normalizeEvidenceText","ok":"1"}
 {"args":["1"],"fn":"normalizeEvidenceText","ok":"1"}
 {"args":["1"],"fn":"parseTaskID","ok":1}
+{"args":["1"],"fn":"parseVersion","ok":[1,0,0]}
 {"args":["1"],"fn":"proxyURLString","ok":"http://1"}
 {"args":["1"],"fn":"proxyURLString","ok":"http://1"}
 {"args":["1"],"fn":"sanitizeFilename","ok":"1"}
@@ -776,6 +905,186 @@
 {"args":["1"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["1"],"fn":"yamlScalar","ok":"1"}
 {"args":["1"],"fn":"yamlScalar","ok":"1"}
+{"args":["1.0","   "],"fn":"versionLess","ok":false}
+{"args":["1.0","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.0",""],"fn":"versionLess","ok":false}
+{"args":["1.0","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.0","01.02.03"],"fn":"versionLess","ok":true}
+{"args":["1.0","1"],"fn":"versionLess","ok":false}
+{"args":["1.0","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.0","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.0","1.2"],"fn":"versionLess","ok":true}
+{"args":["1.0","1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.0","1.2.3+build"],"fn":"versionLess","ok":true}
+{"args":["1.0","1.2.3-beta"],"fn":"versionLess","ok":true}
+{"args":["1.0","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.0","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.0","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.0","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.0","abc"],"fn":"versionLess","ok":false}
+{"args":["1.0","v"],"fn":"versionLess","ok":false}
+{"args":["1.0","v1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.0"],"fn":"parseVersion","ok":[1,0,0]}
+{"args":["1.0.0","   "],"fn":"versionLess","ok":false}
+{"args":["1.0.0","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.0.0",""],"fn":"versionLess","ok":false}
+{"args":["1.0.0","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","01.02.03"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","1"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","1.2"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","1.2.3+build"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","1.2.3-beta"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.0.0","abc"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","v"],"fn":"versionLess","ok":false}
+{"args":["1.0.0","v1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.0.0"],"fn":"parseVersion","ok":[1,0,0]}
+{"args":["1.2","   "],"fn":"versionLess","ok":false}
+{"args":["1.2","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.2",""],"fn":"versionLess","ok":false}
+{"args":["1.2","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.2","01.02.03"],"fn":"versionLess","ok":true}
+{"args":["1.2","1"],"fn":"versionLess","ok":false}
+{"args":["1.2","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.2","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.2","1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.2","1.2.3+build"],"fn":"versionLess","ok":true}
+{"args":["1.2","1.2.3-beta"],"fn":"versionLess","ok":true}
+{"args":["1.2","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.2","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.2","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.2","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.2","abc"],"fn":"versionLess","ok":false}
+{"args":["1.2","v"],"fn":"versionLess","ok":false}
+{"args":["1.2","v1.2.3"],"fn":"versionLess","ok":true}
+{"args":["1.2"],"fn":"parseVersion","ok":[1,2,0]}
+{"args":["1.2.3","   "],"fn":"versionLess","ok":false}
+{"args":["1.2.3","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.2.3",""],"fn":"versionLess","ok":false}
+{"args":["1.2.3","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3","abc"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","v"],"fn":"versionLess","ok":false}
+{"args":["1.2.3","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3"],"fn":"parseVersion","ok":[1,2,3]}
+{"args":["1.2.3+build","   "],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.2.3+build",""],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3+build","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3+build","abc"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","v"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3+build"],"fn":"parseVersion","ok":[1,2,3]}
+{"args":["1.2.3-beta","   "],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["1.2.3-beta",""],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3-beta","2.0"],"fn":"versionLess","ok":true}
+{"args":["1.2.3-beta","abc"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","v"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3-beta"],"fn":"parseVersion","ok":[1,2,3]}
+{"args":["1.2.3.4","   "],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4",""],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","2.0"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","abc"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","v"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.2.3.4"],"fn":"parseVersion","ok":null}
+{"args":["1.x","   "],"fn":"versionLess","ok":false}
+{"args":["1.x","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["1.x",""],"fn":"versionLess","ok":false}
+{"args":["1.x","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["1.x","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["1.x","1"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.0"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.2"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["1.x","1.x"],"fn":"versionLess","ok":false}
+{"args":["1.x","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["1.x","2.0"],"fn":"versionLess","ok":false}
+{"args":["1.x","abc"],"fn":"versionLess","ok":false}
+{"args":["1.x","v"],"fn":"versionLess","ok":false}
+{"args":["1.x","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["1.x"],"fn":"parseVersion","ok":null}
+{"args":["10.0.0","   "],"fn":"versionLess","ok":false}
+{"args":["10.0.0","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["10.0.0",""],"fn":"versionLess","ok":false}
+{"args":["10.0.0","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.0"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.2"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","1.x"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","2.0"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","abc"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","v"],"fn":"versionLess","ok":false}
+{"args":["10.0.0","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["10.0.0"],"fn":"parseVersion","ok":[10,0,0]}
 {"args":["100",0],"fn":"firstLine","ok":"…"}
 {"args":["100",0],"fn":"preview","ok":"…"}
 {"args":["100",0],"fn":"trunc","ok":"…(truncated, 3 chars in total)"}
@@ -1313,6 +1622,26 @@
 {"args":["1abc"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["1abc"],"fn":"yamlScalar","ok":"1abc"}
 {"args":["2"],"fn":"parseTaskID","ok":2}
+{"args":["2.0","   "],"fn":"versionLess","ok":false}
+{"args":["2.0","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["2.0",""],"fn":"versionLess","ok":false}
+{"args":["2.0","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["2.0","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["2.0","1"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.0"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.2"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["2.0","1.x"],"fn":"versionLess","ok":false}
+{"args":["2.0","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["2.0","2.0"],"fn":"versionLess","ok":false}
+{"args":["2.0","abc"],"fn":"versionLess","ok":false}
+{"args":["2.0","v"],"fn":"versionLess","ok":false}
+{"args":["2.0","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["2.0"],"fn":"parseVersion","ok":[2,0,0]}
 {"args":["42",0],"fn":"firstLine","ok":"…"}
 {"args":["42",0],"fn":"preview","ok":"…"}
 {"args":["42",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -1509,6 +1838,7 @@
 {"args":["ABC"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["ABC"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["ABC"],"fn":"yamlScalar","ok":"ABC"}
+{"args":["AKIAIOSFODNN7EXAMPLE"],"fn":"keepIfMasked","ok":"AKIAIOSFODNN7EXAMPLE"}
 {"args":["ALLCAPS",0],"fn":"firstLine","ok":"…"}
 {"args":["ALLCAPS",0],"fn":"preview","ok":"…"}
 {"args":["ALLCAPS",0],"fn":"trunc","ok":"…(truncated, 7 chars in total)"}
@@ -2504,6 +2834,25 @@
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"validatePassword","ok":"Password must not exceed 72 bytes"}
 {"args":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"fn":"yamlScalar","ok":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+{"args":["abc","   "],"fn":"versionLess","ok":false}
+{"args":["abc","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["abc",""],"fn":"versionLess","ok":false}
+{"args":["abc","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["abc","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["abc","1"],"fn":"versionLess","ok":false}
+{"args":["abc","1.0"],"fn":"versionLess","ok":false}
+{"args":["abc","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["abc","1.2"],"fn":"versionLess","ok":false}
+{"args":["abc","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["abc","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["abc","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["abc","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["abc","1.x"],"fn":"versionLess","ok":false}
+{"args":["abc","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["abc","2.0"],"fn":"versionLess","ok":false}
+{"args":["abc","abc"],"fn":"versionLess","ok":false}
+{"args":["abc","v"],"fn":"versionLess","ok":false}
+{"args":["abc","v1.2.3"],"fn":"versionLess","ok":false}
 {"args":["abc",0],"fn":"firstLine","ok":"…"}
 {"args":["abc",0],"fn":"firstLine","ok":"…"}
 {"args":["abc",0],"fn":"preview","ok":"…"}
@@ -2559,6 +2908,7 @@
 {"args":["abc"],"fn":"normalizeConstraintKind","ok":""}
 {"args":["abc"],"fn":"normalizeEvidenceText","ok":"abc"}
 {"args":["abc"],"fn":"normalizeEvidenceText","ok":"abc"}
+{"args":["abc"],"fn":"parseVersion","ok":null}
 {"args":["abc"],"fn":"proxyURLString","ok":"http://abc"}
 {"args":["abc"],"fn":"proxyURLString","ok":"http://abc"}
 {"args":["abc"],"fn":"sanitizeFilename","ok":"abc"}
@@ -3608,6 +3958,9 @@
 {"args":["ftp"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["ftp"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["ftp"],"fn":"yamlScalar","ok":"ftp"}
+{"args":["hello",""],"fn":"coalesceStr","ok":"hello"}
+{"args":["hello","DEF"],"fn":"coalesceStr","ok":"hello"}
+{"args":["hello","fallback"],"fn":"coalesceStr","ok":"hello"}
 {"args":["hello",0],"fn":"firstLine","ok":"…"}
 {"args":["hello",0],"fn":"preview","ok":"…"}
 {"args":["hello",0],"fn":"trunc","ok":"…(truncated, 5 chars in total)"}
@@ -3639,6 +3992,7 @@
 {"args":["hello"],"fn":"sanitizeFilename","ok":"hello"}
 {"args":["hello"],"fn":"shellQuote","ok":"'hello'"}
 {"args":["hello"],"fn":"shortQuote","ok":"hello"}
+{"args":["hello"],"fn":"stringValue","ok":"hello"}
 {"args":["hello"],"fn":"trimTrailingSlash","ok":"hello"}
 {"args":["hello"],"fn":"truncateBody","ok":"hello"}
 {"args":["hello"],"fn":"truncateReply","ok":"hello"}
@@ -4506,6 +4860,7 @@
 {"args":["plain text"],"fn":"identity","ok":"plain text"}
 {"args":["plain text"],"fn":"inheritedIntentResult","ok":false}
 {"args":["plain text"],"fn":"isMaskedSecret","ok":false}
+{"args":["plain text"],"fn":"keepIfMasked","ok":"plain text"}
 {"args":["plain text"],"fn":"levelOf","ok":"info"}
 {"args":["plain text"],"fn":"maskedSecret","ok":"__masked__"}
 {"args":["plain text"],"fn":"normFilter","ok":"plain text"}
@@ -5017,6 +5372,7 @@
 {"args":["short12c"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["short12c"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["short12c"],"fn":"yamlScalar","ok":"short12c"}
+{"args":["sk-abcdEFGHijkl"],"fn":"keepIfMasked","ok":"sk-abcdEFGHijkl"}
 {"args":["skill",0],"fn":"firstLine","ok":"…"}
 {"args":["skill",0],"fn":"preview","ok":"…"}
 {"args":["skill",0],"fn":"trunc","ok":"…(truncated, 5 chars in total)"}
@@ -5425,6 +5781,46 @@
 {"args":["under_score"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["under_score"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["under_score"],"fn":"yamlScalar","ok":"under_score"}
+{"args":["v","   "],"fn":"versionLess","ok":false}
+{"args":["v","  v2.5.1  "],"fn":"versionLess","ok":false}
+{"args":["v",""],"fn":"versionLess","ok":false}
+{"args":["v","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["v","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["v","1"],"fn":"versionLess","ok":false}
+{"args":["v","1.0"],"fn":"versionLess","ok":false}
+{"args":["v","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["v","1.2"],"fn":"versionLess","ok":false}
+{"args":["v","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["v","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["v","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["v","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["v","1.x"],"fn":"versionLess","ok":false}
+{"args":["v","10.0.0"],"fn":"versionLess","ok":false}
+{"args":["v","2.0"],"fn":"versionLess","ok":false}
+{"args":["v","abc"],"fn":"versionLess","ok":false}
+{"args":["v","v"],"fn":"versionLess","ok":false}
+{"args":["v","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["v"],"fn":"parseVersion","ok":null}
+{"args":["v1.2.3","   "],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","  v2.5.1  "],"fn":"versionLess","ok":true}
+{"args":["v1.2.3",""],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","0.0.1"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","01.02.03"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.0"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.0.0"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.2"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.2.3"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.2.3+build"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.2.3-beta"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.2.3.4"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","1.x"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","10.0.0"],"fn":"versionLess","ok":true}
+{"args":["v1.2.3","2.0"],"fn":"versionLess","ok":true}
+{"args":["v1.2.3","abc"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","v"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3","v1.2.3"],"fn":"versionLess","ok":false}
+{"args":["v1.2.3"],"fn":"parseVersion","ok":[1,2,3]}
 {"args":["warn: low disk",0],"fn":"firstLine","ok":"…"}
 {"args":["warn: low disk",0],"fn":"preview","ok":"…"}
 {"args":["warn: low disk",0],"fn":"trunc","ok":"…(truncated, 14 chars in total)"}
@@ -5539,6 +5935,10 @@
 {"args":["with-dash"],"fn":"validWorkerMessageRequestID","ok":true}
 {"args":["with-dash"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["with-dash"],"fn":"yamlScalar","ok":"with-dash"}
+{"args":["x",""],"fn":"coalesceStr","ok":"x"}
+{"args":["x","DEF"],"fn":"coalesceStr","ok":"x"}
+{"args":["x","fallback"],"fn":"coalesceStr","ok":"x"}
+{"args":["x"],"fn":"stringValue","ok":"x"}
 {"args":["{}",0],"fn":"firstLine","ok":"…"}
 {"args":["{}",0],"fn":"preview","ok":"…"}
 {"args":["{}",0],"fn":"trunc","ok":"…(truncated, 2 chars in total)"}
@@ -5853,6 +6253,12 @@
 {"args":["👍🏽 emoji"],"fn":"validWorkerMessageRequestID","ok":false}
 {"args":["👍🏽 emoji"],"fn":"validatePassword","ok":"Password must be at least 12 characters"}
 {"args":["👍🏽 emoji"],"fn":"yamlScalar","ok":"👍🏽 emoji"}
+{"args":[-1,-1],"fn":"sameOptionalID","ok":true}
+{"args":[-1,0],"fn":"sameOptionalID","ok":false}
+{"args":[-1,1],"fn":"minF","ok":-1}
+{"args":[-1,5],"fn":"sameOptionalID","ok":false}
+{"args":[-1,5],"fn":"sameOptionalID","ok":false}
+{"args":[-1,null],"fn":"sameOptionalID","ok":false}
 {"args":[-1024],"fn":"humanBytes","ok":"-1024 B"}
 {"args":[-1024],"fn":"i64s","ok":"-1024"}
 {"args":[-1048576],"fn":"humanBytes","ok":"-1048576 B"}
@@ -5860,12 +6266,22 @@
 {"args":[-1],"fn":"humanBytes","ok":"-1 B"}
 {"args":[-1],"fn":"i64s","ok":"-1"}
 {"args":[-1],"fn":"schemeForPort","ok":"http"}
+{"args":[-5],"fn":"cloneInt64Ptr","ok":-5}
 {"args":[-9223372036854775808],"fn":"humanBytes","ok":"-9223372036854775808 B"}
 {"args":[-9223372036854775808],"fn":"i64s","ok":"-9223372036854775808"}
+{"args":[0,-1],"fn":"sameOptionalID","ok":false}
+{"args":[0,0],"fn":"minF","ok":0}
+{"args":[0,0],"fn":"sameOptionalID","ok":true}
+{"args":[0,5],"fn":"sameOptionalID","ok":false}
+{"args":[0,5],"fn":"sameOptionalID","ok":false}
+{"args":[0,null],"fn":"sameOptionalID","ok":false}
+{"args":[0],"fn":"cloneInt64Ptr","ok":0}
 {"args":[0],"fn":"humanBytes","ok":"0 B"}
 {"args":[0],"fn":"i64s","ok":"0"}
 {"args":[0],"fn":"schemeForPort","ok":"http"}
 {"args":[0],"fn":"zipMethodName","ok":"Store"}
+{"args":[1,2],"fn":"minF","ok":1}
+{"args":[1.5,1.5],"fn":"minF","ok":1.5}
 {"args":[1000],"fn":"humanBytes","ok":"1000 B"}
 {"args":[1000],"fn":"i64s","ok":"1000"}
 {"args":[100],"fn":"humanBytes","ok":"100 B"}
@@ -5887,50 +6303,148 @@
 {"args":[1073741824],"fn":"i64s","ok":"1073741824"}
 {"args":[1099511627776],"fn":"humanBytes","ok":"1048576.0 MB"}
 {"args":[1099511627776],"fn":"i64s","ok":"1099511627776"}
+{"args":[122],"fn":"isHostByte","ok":true}
 {"args":[123456789],"fn":"humanBytes","ok":"117.7 MB"}
 {"args":[123456789],"fn":"i64s","ok":"123456789"}
 {"args":[12345],"fn":"schemeForPort","ok":"http"}
+{"args":[128],"fn":"isHostByte","ok":false}
 {"args":[12],"fn":"zipMethodName","ok":"bzip2"}
 {"args":[14],"fn":"zipMethodName","ok":"LZMA"}
 {"args":[1536],"fn":"humanBytes","ok":"1.5 KB"}
 {"args":[1536],"fn":"i64s","ok":"1536"}
+{"args":[1],"fn":"cloneInt64Ptr","ok":1}
 {"args":[1],"fn":"humanBytes","ok":"1 B"}
 {"args":[1],"fn":"i64s","ok":"1"}
 {"args":[1],"fn":"schemeForPort","ok":"http"}
 {"args":[1],"fn":"zipMethodName","ok":"unknown"}
+{"args":[2,1],"fn":"minF","ok":1}
 {"args":[2048],"fn":"humanBytes","ok":"2.0 KB"}
 {"args":[2048],"fn":"i64s","ok":"2048"}
 {"args":[20],"fn":"zipMethodName","ok":"Zstandard"}
 {"args":[256],"fn":"humanBytes","ok":"256 B"}
 {"args":[256],"fn":"i64s","ok":"256"}
+{"args":[3.14,2.71],"fn":"minF","ok":2.71}
+{"args":[32],"fn":"isHostByte","ok":false}
 {"args":[4096],"fn":"humanBytes","ok":"4.0 KB"}
 {"args":[4096],"fn":"i64s","ok":"4096"}
 {"args":[42],"fn":"humanBytes","ok":"42 B"}
 {"args":[42],"fn":"i64s","ok":"42"}
 {"args":[443],"fn":"schemeForPort","ok":"https"}
+{"args":[45],"fn":"isHostByte","ok":true}
+{"args":[46],"fn":"isHostByte","ok":true}
+{"args":[47],"fn":"isHostByte","ok":false}
+{"args":[48],"fn":"isHostByte","ok":true}
+{"args":[5,-1],"fn":"sameOptionalID","ok":false}
+{"args":[5,-1],"fn":"sameOptionalID","ok":false}
+{"args":[5,0],"fn":"sameOptionalID","ok":false}
+{"args":[5,0],"fn":"sameOptionalID","ok":false}
+{"args":[5,5],"fn":"sameOptionalID","ok":true}
+{"args":[5,5],"fn":"sameOptionalID","ok":true}
+{"args":[5,5],"fn":"sameOptionalID","ok":true}
+{"args":[5,5],"fn":"sameOptionalID","ok":true}
+{"args":[5,null],"fn":"sameOptionalID","ok":false}
+{"args":[5,null],"fn":"sameOptionalID","ok":false}
 {"args":[500],"fn":"humanBytes","ok":"500 B"}
 {"args":[500],"fn":"i64s","ok":"500"}
 {"args":[512],"fn":"humanBytes","ok":"512 B"}
 {"args":[512],"fn":"i64s","ok":"512"}
+{"args":[57],"fn":"isHostByte","ok":true}
 {"args":[65535],"fn":"schemeForPort","ok":"http"}
 {"args":[65535],"fn":"zipMethodName","ok":"unknown"}
 {"args":[65536],"fn":"humanBytes","ok":"64.0 KB"}
 {"args":[65536],"fn":"i64s","ok":"65536"}
+{"args":[65],"fn":"isHostByte","ok":true}
 {"args":[7],"fn":"zipMethodName","ok":"unknown"}
 {"args":[8080],"fn":"schemeForPort","ok":"http"}
 {"args":[80],"fn":"schemeForPort","ok":"http"}
 {"args":[8443],"fn":"schemeForPort","ok":"https"}
 {"args":[8],"fn":"zipMethodName","ok":"Deflate"}
+{"args":[90],"fn":"isHostByte","ok":true}
 {"args":[9223372036854775807],"fn":"humanBytes","ok":"8796093022208.0 MB"}
 {"args":[9223372036854775807],"fn":"i64s","ok":"9223372036854775807"}
 {"args":[93],"fn":"zipMethodName","ok":"Zstandard"}
+{"args":[95],"fn":"isHostByte","ok":false}
 {"args":[95],"fn":"zipMethodName","ok":"XZ"}
 {"args":[96],"fn":"zipMethodName","ok":"JPEG"}
+{"args":[97],"fn":"isHostByte","ok":true}
 {"args":[97],"fn":"zipMethodName","ok":"WavPack"}
 {"args":[98],"fn":"zipMethodName","ok":"PPMd"}
+{"args":[9999999999],"fn":"cloneInt64Ptr","ok":9999999999}
 {"args":[999],"fn":"humanBytes","ok":"999 B"}
 {"args":[999],"fn":"i64s","ok":"999"}
 {"args":[99],"fn":"zipMethodName","ok":"AES encrypted"}
 {"args":[9],"fn":"zipMethodName","ok":"Deflate64"}
+{"args":[["   only spaces   "]],"fn":"cleanStrs","ok":["only spaces"]}
+{"args":[[" spaced "]," spaced "],"fn":"contains","ok":true}
+{"args":[[" spaced "]," spaced "],"fn":"containsFold","ok":true}
+{"args":[[" spaced "],""],"fn":"contains","ok":false}
+{"args":[[" spaced "],""],"fn":"containsFold","ok":false}
+{"args":[[" spaced "],"HELLO"],"fn":"contains","ok":false}
+{"args":[[" spaced "],"HELLO"],"fn":"containsFold","ok":false}
+{"args":[[" spaced "],"a"],"fn":"contains","ok":false}
+{"args":[[" spaced "],"a"],"fn":"containsFold","ok":false}
+{"args":[[" spaced "],"d"],"fn":"contains","ok":false}
+{"args":[[" spaced "],"d"],"fn":"containsFold","ok":false}
+{"args":[[" spaced "],"hello"],"fn":"contains","ok":false}
+{"args":[[" spaced "],"hello"],"fn":"containsFold","ok":false}
+{"args":[[" spaced "],"world"],"fn":"contains","ok":false}
+{"args":[[" spaced "],"world"],"fn":"containsFold","ok":false}
+{"args":[["","  ","a"," b ","","c"]],"fn":"cleanStrs","ok":["a","b","c"]}
+{"args":[["Hello","World"]," spaced "],"fn":"contains","ok":false}
+{"args":[["Hello","World"]," spaced "],"fn":"containsFold","ok":false}
+{"args":[["Hello","World"],""],"fn":"contains","ok":false}
+{"args":[["Hello","World"],""],"fn":"containsFold","ok":false}
+{"args":[["Hello","World"],"HELLO"],"fn":"contains","ok":false}
+{"args":[["Hello","World"],"HELLO"],"fn":"containsFold","ok":true}
+{"args":[["Hello","World"],"a"],"fn":"contains","ok":false}
+{"args":[["Hello","World"],"a"],"fn":"containsFold","ok":false}
+{"args":[["Hello","World"],"d"],"fn":"contains","ok":false}
+{"args":[["Hello","World"],"d"],"fn":"containsFold","ok":false}
+{"args":[["Hello","World"],"hello"],"fn":"contains","ok":false}
+{"args":[["Hello","World"],"hello"],"fn":"containsFold","ok":true}
+{"args":[["Hello","World"],"world"],"fn":"contains","ok":false}
+{"args":[["Hello","World"],"world"],"fn":"containsFold","ok":true}
+{"args":[["\ttabbed\t","\nnewlined\n"]],"fn":"cleanStrs","ok":["tabbed","newlined"]}
+{"args":[["a","b","c"]," spaced "],"fn":"contains","ok":false}
+{"args":[["a","b","c"]," spaced "],"fn":"containsFold","ok":false}
+{"args":[["a","b","c"],""],"fn":"contains","ok":false}
+{"args":[["a","b","c"],""],"fn":"containsFold","ok":false}
+{"args":[["a","b","c"],"HELLO"],"fn":"contains","ok":false}
+{"args":[["a","b","c"],"HELLO"],"fn":"containsFold","ok":false}
+{"args":[["a","b","c"],"a"],"fn":"contains","ok":true}
+{"args":[["a","b","c"],"a"],"fn":"containsFold","ok":true}
+{"args":[["a","b","c"],"d"],"fn":"contains","ok":false}
+{"args":[["a","b","c"],"d"],"fn":"containsFold","ok":false}
+{"args":[["a","b","c"],"hello"],"fn":"contains","ok":false}
+{"args":[["a","b","c"],"hello"],"fn":"containsFold","ok":false}
+{"args":[["a","b","c"],"world"],"fn":"contains","ok":false}
+{"args":[["a","b","c"],"world"],"fn":"containsFold","ok":false}
+{"args":[[]," spaced "],"fn":"contains","ok":false}
+{"args":[[]," spaced "],"fn":"containsFold","ok":false}
+{"args":[[],""],"fn":"contains","ok":false}
+{"args":[[],""],"fn":"containsFold","ok":false}
+{"args":[[],"HELLO"],"fn":"contains","ok":false}
+{"args":[[],"HELLO"],"fn":"containsFold","ok":false}
+{"args":[[],"a"],"fn":"contains","ok":false}
+{"args":[[],"a"],"fn":"containsFold","ok":false}
+{"args":[[],"d"],"fn":"contains","ok":false}
+{"args":[[],"d"],"fn":"containsFold","ok":false}
+{"args":[[],"hello"],"fn":"contains","ok":false}
+{"args":[[],"hello"],"fn":"containsFold","ok":false}
+{"args":[[],"world"],"fn":"contains","ok":false}
+{"args":[[],"world"],"fn":"containsFold","ok":false}
+{"args":[[]],"fn":"cleanStrs","ok":[]}
 {"args":[false],"fn":"enabledWord","ok":"disabled"}
+{"args":[null,""],"fn":"coalesceStr","ok":""}
+{"args":[null,"DEF"],"fn":"coalesceStr","ok":"DEF"}
+{"args":[null,"fallback"],"fn":"coalesceStr","ok":"fallback"}
+{"args":[null,-1],"fn":"sameOptionalID","ok":false}
+{"args":[null,0],"fn":"sameOptionalID","ok":false}
+{"args":[null,5],"fn":"sameOptionalID","ok":false}
+{"args":[null,5],"fn":"sameOptionalID","ok":false}
+{"args":[null,null],"fn":"sameOptionalID","ok":true}
+{"args":[null],"fn":"cleanStrs","ok":[]}
+{"args":[null],"fn":"cloneInt64Ptr","ok":null}
+{"args":[null],"fn":"keepIfMasked","ok":null}
+{"args":[null],"fn":"stringValue","ok":""}
 {"args":[true],"fn":"enabledWord","ok":"enabled"}
