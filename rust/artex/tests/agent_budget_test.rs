@@ -155,3 +155,62 @@ fn restore_spend_counts_toward_cap() {
     let (task, _intent) = artex::agent::budget::budgets_from_env();
     assert_eq!(task.tokens, UNLIMITED, "unset budget env is unlimited");
 }
+
+fn test_node(id: i64, state: &str, payload: serde_json::Value) -> artex::db::exploration::Node {
+    artex::db::exploration::Node {
+        finding_id: 0,
+        finding_node_id: 0,
+        traffic_count: 0,
+        id,
+        kind: String::new(),
+        payload,
+        priority: 0,
+        state: state.to_string(),
+        origin: String::new(),
+        owner: String::new(),
+        blocked_reason: String::new(),
+        delete_reason: String::new(),
+        anchors: Vec::new(),
+        created_at: std::time::UNIX_EPOCH,
+        source_task_id: 0,
+        inherited: false,
+    }
+}
+
+#[test]
+fn overview_budget_and_compact_finding() {
+    use artex::agent::budget::{
+        compact_finding, related_overview_budget_for_sources, OverviewTextBudget,
+        MAX_TASK_SOURCE_COUNT, RELATED_OVERVIEW_MAX_TEXT_PER_SOURCE,
+        RELATED_OVERVIEW_TOTAL_TEXT_RUNES,
+    };
+
+    assert_eq!(
+        related_overview_budget_for_sources(1),
+        RELATED_OVERVIEW_MAX_TEXT_PER_SOURCE
+    );
+    let per = related_overview_budget_for_sources(MAX_TASK_SOURCE_COUNT);
+    assert!(per * MAX_TASK_SOURCE_COUNT <= RELATED_OVERVIEW_TOTAL_TEXT_RUNES);
+
+    let mut budget = OverviewTextBudget {
+        remaining: 5,
+        truncated: false,
+    };
+    let got = budget.take(Some(&"α".repeat(10)), 20);
+    assert_eq!(got.chars().count(), 5);
+    assert!(got.ends_with('…'));
+    assert!(budget.truncated && budget.remaining == 0);
+    assert_eq!(budget.take(Some("more"), 20), "");
+
+    let payload = serde_json::json!({
+        "summary": "SQLi on /search", "vulnclass": "sqli", "severity": "high", "status": "false_positive"
+    });
+    let node = test_node(7, "confirmed", payload);
+    let m = compact_finding(&node);
+    assert_eq!(m["state"], "confirmed");
+    assert_eq!(m["status"], "false_positive");
+    assert_eq!(m["vulnclass"], "sqli");
+
+    let plain = test_node(8, "confirmed", serde_json::json!({"summary": "x"}));
+    assert!(!compact_finding(&plain).contains_key("status"));
+}

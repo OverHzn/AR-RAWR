@@ -802,6 +802,8 @@ resume without re-deriving state.
 
 - **A-8 budget line + env (this commit):** extended `src/agent/budget.rs` with `BudgetState::line()` (planner one-liner, "unlimited" per dimension) + `budgets_from_env` (ARTEX_TASK_BUDGET_*/ARTEX_INTENT_BUDGET_*, invalid/unset -> Unlimited). Added 2 tests — dispatch stops under one worker estimate, restore-spend toward cap. artex **560 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-9 overview text budget + compact finding (this commit):** extended `src/agent/budget.rs` with `related_overview_budget_for_sources` (48k total / 8k per source, max 8 sources), `OverviewTextBudget` (rune-safe bounded `take` with ellipsis) and `compact_finding` (lean node projection id/state/summary + optional vulnclass/severity/status). Spec: 1 test — UTF-8 budget truncation + finding projection. artex **561 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

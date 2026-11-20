@@ -290,3 +290,85 @@ pub fn budgets_from_env() -> (Budget, Budget) {
         ),
     )
 }
+
+// Related-overview text budgeting + compact finding projection
+// (agent/tools.go, pure helpers).
+
+pub const RELATED_OVERVIEW_TOTAL_TEXT_RUNES: usize = 48_000;
+pub const RELATED_OVERVIEW_MAX_TEXT_PER_SOURCE: usize = 8_000;
+pub const MAX_TASK_SOURCE_COUNT: usize = 8;
+
+/// Per-source budget: total / sources, capped at 8k, with at least 1 source.
+pub fn related_overview_budget_for_sources(source_count: usize) -> usize {
+    let n = source_count.clamp(1, MAX_TASK_SOURCE_COUNT);
+    (RELATED_OVERVIEW_TOTAL_TEXT_RUNES / n).min(RELATED_OVERVIEW_MAX_TEXT_PER_SOURCE)
+}
+
+/// A bounded, rune-safe text budget shared across overview fields.
+#[derive(Debug, Clone, Default)]
+pub struct OverviewTextBudget {
+    pub remaining: usize,
+    pub truncated: bool,
+}
+
+impl OverviewTextBudget {
+    /// `take` clips a value to `field_limit` runes (with an ellipsis) and to the
+    /// budget remaining; never produces invalid UTF-8.
+    pub fn take(&mut self, value: Option<&str>, field_limit: usize) -> String {
+        let Some(value) = value else {
+            return String::new();
+        };
+        let text = value.trim();
+        if text.is_empty() {
+            return String::new();
+        }
+        if self.remaining == 0 || field_limit == 0 {
+            self.truncated = true;
+            return String::new();
+        }
+        let mut runes: Vec<char> = text.chars().collect();
+        let limit = field_limit.min(self.remaining);
+        if runes.len() > limit {
+            self.truncated = true;
+            runes = if limit == 1 {
+                vec!['…']
+            } else {
+                let mut v: Vec<char> = runes[..limit - 1].to_vec();
+                v.push('…');
+                v
+            };
+        }
+        self.remaining -= runes.len();
+        runes.into_iter().collect()
+    }
+}
+
+/// `compactFinding`: the lean map the planner sees for a finding node.
+pub fn compact_finding(
+    node: &crate::db::exploration::Node,
+) -> serde_json::Map<String, serde_json::Value> {
+    let payload = node.payload.as_object();
+    let get = |k: &str| {
+        payload
+            .and_then(|p| p.get(k))
+            .filter(|v| !v.is_null() && v.as_str() != Some(""))
+            .cloned()
+    };
+    let mut m = serde_json::Map::new();
+    m.insert("id".into(), serde_json::json!(node.id));
+    m.insert("state".into(), serde_json::json!(node.state));
+    m.insert(
+        "summary".into(),
+        get("summary").unwrap_or(serde_json::Value::Null),
+    );
+    if let Some(v) = get("vulnclass") {
+        m.insert("vulnclass".into(), v);
+    }
+    if let Some(v) = get("severity") {
+        m.insert("severity".into(), v);
+    }
+    if let Some(v) = get("status") {
+        m.insert("status".into(), v);
+    }
+    m
+}
