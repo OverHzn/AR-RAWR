@@ -82,6 +82,7 @@ pub struct TrafficStore {
     db: Mutex<Conn>,
     seq: AtomicU64,
     fts: bool,
+    incremental_vacuum: bool,
 }
 
 fn null_if_empty(s: &str) -> Value {
@@ -108,14 +109,13 @@ impl TrafficStore {
         let db = Conn::open(&index.to_string_lossy())?;
         // auto_vacuum + VACUUM must run before any table exists, on this same
         // connection, so the setting is written into the file header.
-        if !index.exists()
-            || std::fs::metadata(&index)
-                .map(|m| m.len() == 0)
-                .unwrap_or(false)
-        {
+        let tables =
+            db.query("SELECT count(*) FROM sqlite_master WHERE type='table'", &[])?[0].int(0);
+        if tables == 0 {
             db.exec("PRAGMA auto_vacuum=incremental")?;
             db.exec("VACUUM")?;
         }
+        let mode = db.query("PRAGMA auto_vacuum", &[])?[0].int(0);
         db.exec("PRAGMA busy_timeout=5000")?;
         db.exec("PRAGMA journal_mode=WAL")?;
         db.exec(INDEX_SCHEMA)?;
@@ -125,6 +125,7 @@ impl TrafficStore {
             db: Mutex::new(db),
             seq: AtomicU64::new(0),
             fts,
+            incremental_vacuum: mode == 2,
         })
     }
 
@@ -146,6 +147,10 @@ impl TrafficStore {
     }
     pub fn fts(&self) -> bool {
         self.fts
+    }
+
+    pub fn incremental_vacuum(&self) -> bool {
+        self.incremental_vacuum
     }
 
     pub fn new_exchange_id(&self, now_secs: i64) -> String {
@@ -823,7 +828,7 @@ impl TrafficStore {
         Ok((out, total))
     }
 
-    fn execute(&self, sql: &str, params: &[Value]) -> Result<u64> {
+    pub fn execute(&self, sql: &str, params: &[Value]) -> Result<u64> {
         let db = self.db.lock().unwrap();
         db.execute(sql, params)
     }

@@ -474,3 +474,31 @@ fn record_external_rejects_bad_input() {
     assert!(s.record_external(&bad).is_err());
     assert_eq!(s.count().unwrap(), 0);
 }
+
+#[test]
+fn index_init_flags_and_legacy_get_fallback() {
+    let s = TrafficStore::open_temp().unwrap();
+    assert!(
+        s.incremental_vacuum(),
+        "fresh DB should enable incremental auto_vacuum"
+    );
+    // The FTS table is available in the linked libsqlite3; if a build lacks it,
+    // the store still opens and only body search is disabled.
+    let _ = s.fts();
+
+    // A legacy row carries a non-empty path and bodies in the old on-disk tree.
+    s.execute("INSERT INTO exchanges(id,ts,host,method,url_template,url,status,content_type,req_len,resp_len,path) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        &[artex::traffic::sqlite::Value::Text("legacy-1".into()), artex::traffic::sqlite::Value::Int(1),
+          artex::traffic::sqlite::Value::Text("old.example".into()), artex::traffic::sqlite::Value::Text("GET".into()),
+          artex::traffic::sqlite::Value::Text("/x".into()), artex::traffic::sqlite::Value::Text("http://old.example/x".into()),
+          artex::traffic::sqlite::Value::Int(200), artex::traffic::sqlite::Value::Text("text/plain".into()),
+          artex::traffic::sqlite::Value::Int(0), artex::traffic::sqlite::Value::Int(0),
+          artex::traffic::sqlite::Value::Text("old.example/GET/legacy-1".into())]).unwrap();
+    let tree = s.dir().join("old.example").join("GET").join("legacy-1");
+    std::fs::create_dir_all(&tree).unwrap();
+    std::fs::write(tree.join("request.http"), b"legacy request").unwrap();
+    std::fs::write(tree.join("response.http"), b"legacy response").unwrap();
+    let (req, resp) = s.get("legacy-1").unwrap();
+    assert_eq!(req, "legacy request");
+    assert_eq!(resp, "legacy response");
+}

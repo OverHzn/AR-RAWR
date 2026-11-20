@@ -778,6 +778,8 @@ resume without re-deriving state.
 
 - **T-6 external traffic ingest (this commit):** extended `src/traffic/store.rs` with `ExternalExchange` + `record_external` — validates URL/method/header names and rejects CR/LF/NUL injection, derives host/request-URI/heads, spills bodies through the same blob/index path as proxy traffic so ingested entries are indistinguishable in search and listing. Added `validate_external_headers`. Spec: 2 tests — stores like proxy traffic (FTS/metadata/raw get) + bad input rejection. artex **538 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **T-7 initIndex parity + legacy get (this commit):** `TrafficStore::open` now checks `sqlite_master` table count (matching Go) before applying `auto_vacuum=incremental` + VACUUM, records `incremental_vacuum` flag, and exposes `execute`. Spec: 1 test — fresh DB vacuum flag + legacy row path fallback to on-disk `request.http`/`response.http`. artex **539 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
