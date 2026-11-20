@@ -380,3 +380,60 @@ async fn upsert_subdomain_side_effects_and_dedup() {
     .await
     .unwrap();
 }
+
+#[tokio::test]
+async fn upsert_app_dedup_by_bundle_and_name() {
+    use artex::db::assets::UpsertAppReq;
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let bundle = format!("com.example.app-{t}");
+    let name = format!("UniqueAppNoBundle-{t}");
+
+    let id1 = s
+        .upsert_app(&UpsertAppReq {
+            name: "MyApp".into(),
+            bundle_id: bundle.clone(),
+            category: "tools".into(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let id2 = s
+        .upsert_app(&UpsertAppReq {
+            name: "MyApp Updated".into(),
+            bundle_id: bundle.clone(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id2, id1, "app bundle dedup failed");
+
+    let id3 = s
+        .upsert_app(&UpsertAppReq {
+            name: name.clone(),
+            category: "utility".into(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let id4 = s
+        .upsert_app(&UpsertAppReq {
+            name: name.clone(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id4, id3, "app name dedup failed");
+
+    let err = s.upsert_app(&UpsertAppReq::default()).await.unwrap_err();
+    assert_eq!(err.to_string(), "app name is required");
+
+    assert_eq!(s.delete_by_ids(&[id1, id3]).await.unwrap(), 2);
+}

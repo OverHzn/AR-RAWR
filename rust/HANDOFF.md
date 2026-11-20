@@ -716,6 +716,8 @@ resume without re-deriving state.
 
 - **D-32 AssetStore UpsertSubdomain (this commit):** extended `src/db/assets.rs` with `UpsertSubdomainReq` + `upsert_subdomain` — idempotent subdomain insert/merge, root_domain auto-population + root asset side effect, A/AAAA record IPs upserted with bound domains, record_value union, company-source merge, task_ids union. Added test `upsert_subdomain_side_effects_and_dedup`. artex **479 tests** green, clippy clean, fmt clean, gate 30/30. (Same array-literal cast gotcha as D-31: `$n::text::text[]` / `::cidr`.)
 
+- **D-33 AssetStore UpsertApp (this commit):** extended `src/db/assets.rs` with `UpsertAppReq` + `upsert_app` — two SQL paths keyed by bundle_id (unique where non-null) or exact app_name (unique where bundle_id null), COALESCE merges, explicit company override vs ICP auto-attribution, task_ids union, name-required error. Added test `upsert_app_dedup_by_bundle_and_name`. artex **480 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

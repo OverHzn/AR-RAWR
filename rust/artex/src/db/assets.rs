@@ -93,6 +93,18 @@ pub struct UpsertSubdomainReq {
     pub task_id: i64,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct UpsertAppReq {
+    pub name: String,
+    pub bundle_id: String,
+    pub category: String,
+    pub description: String,
+    pub icp: String,
+    /// Explicit company override (None = auto-attribute by ICP).
+    pub company_id: Option<i64>,
+    pub task_id: i64,
+}
+
 fn task_ids_array(task_id: i64) -> Vec<i64> {
     if task_id > 0 {
         vec![task_id]
@@ -311,6 +323,115 @@ ON CONFLICT (domain, COALESCE(record_type,'')) WHERE type = 'subdomain' DO UPDAT
 RETURNING id",
             &[&domain, &root_domain, &req.record_type, &values, &ip_opt, &cseg_opt, &icp_opt, &company, &tasks],
         ).await?;
+        Ok(row.get(0))
+    }
+
+    /// `UpsertApp`: idempotent app insert/merge, keyed by bundle id when present
+    /// (otherwise by exact app name). An explicit company id wins over scope.
+    pub async fn upsert_app(&self, req: &UpsertAppReq) -> Result<i64> {
+        if req.name.is_empty() {
+            return Err(Error::msg("app name is required"));
+        }
+        let tasks = task_ids_array(req.task_id);
+        let bundle: Option<&str> = if req.bundle_id.is_empty() {
+            None
+        } else {
+            Some(&req.bundle_id)
+        };
+        let category: Option<&str> = if req.category.is_empty() {
+            None
+        } else {
+            Some(&req.category)
+        };
+        let description: Option<&str> = if req.description.is_empty() {
+            None
+        } else {
+            Some(&req.description)
+        };
+        let icp: Option<&str> = if req.icp.is_empty() {
+            None
+        } else {
+            Some(&req.icp)
+        };
+        let (company, source) = if let Some(id) = req.company_id {
+            (Some(id), "explicit")
+        } else {
+            (
+                self.db
+                    .companies()
+                    .resolve_company_with_icp("", "", &req.icp)
+                    .await?,
+                "scope",
+            )
+        };
+
+        let sql = if req.bundle_id.is_empty() {
+            "INSERT INTO assets(type, bundle_id, app_name, category, app_description, app_icp, company_id, company_source, task_ids)
+VALUES ('app', NULL, $1, $2, $3, $4, $5, $6, $7::bigint[])
+ON CONFLICT (app_name) WHERE type = 'app' AND bundle_id IS NULL DO UPDATE SET
+    category        = COALESCE(EXCLUDED.category, assets.category),
+    app_description = COALESCE(EXCLUDED.app_description, assets.app_description),
+    app_icp         = COALESCE(EXCLUDED.app_icp, assets.app_icp),
+    company_id      = CASE
+        WHEN EXCLUDED.company_source = 'explicit' THEN EXCLUDED.company_id
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source  = CASE
+        WHEN EXCLUDED.company_source = 'explicit' THEN 'explicit'
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    task_ids        = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    last_seen       = now()
+RETURNING id"
+        } else {
+            "INSERT INTO assets(type, bundle_id, app_name, category, app_description, app_icp, company_id, company_source, task_ids)
+VALUES ('app', $1, $2, $3, $4, $5, $6, $7, $8::bigint[])
+ON CONFLICT (bundle_id) WHERE type = 'app' AND bundle_id IS NOT NULL DO UPDATE SET
+    app_name        = COALESCE(EXCLUDED.app_name, assets.app_name),
+    category        = COALESCE(EXCLUDED.category, assets.category),
+    app_description = COALESCE(EXCLUDED.app_description, assets.app_description),
+    app_icp         = COALESCE(EXCLUDED.app_icp, assets.app_icp),
+    company_id      = CASE
+        WHEN EXCLUDED.company_source = 'explicit' THEN EXCLUDED.company_id
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source  = CASE
+        WHEN EXCLUDED.company_source = 'explicit' THEN 'explicit'
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    task_ids        = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    last_seen       = now()
+RETURNING id"
+        };
+        let params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = if req.bundle_id.is_empty() {
+            vec![
+                &req.name,
+                &category,
+                &description,
+                &icp,
+                &company,
+                &source,
+                &tasks,
+            ]
+        } else {
+            vec![
+                &bundle,
+                &req.name,
+                &category,
+                &description,
+                &icp,
+                &company,
+                &source,
+                &tasks,
+            ]
+        };
+        let row = self.db.query_one(sql, &params).await?;
         Ok(row.get(0))
     }
 
