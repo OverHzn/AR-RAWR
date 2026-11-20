@@ -728,6 +728,8 @@ resume without re-deriving state.
 
 - **D-38 AssetStore attribution + bound domains (this commit):** added `counts_by_type` (global) and tests `company_paging_counts_and_attribution` (counts_by_type, company attribution at insert time, 60 subdomains at 25/page) + `upsert_ip_bound_domains` (bound_domains union on repeated upsert). artex **487 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: clippy cloned_ref_to_slice_refs -> `std::slice::from_ref`.)
 
+- **D-39 archive row streaming (this commit):** new `src/db/archive_stream.rs` (pure port of `db/task_archives.go` helpers), registered in db/mod.rs. `encode_archive_rows` (JSON array assembled client-side, no 256 MiB jsonb aggregation), `write_archive_rows` (newline-delimited JSON sequence with short-write checks), `DB::query_archive_rows`/`stream_archive_rows` (SELECT row_to_json over a caller-owned SQL fragment). Spec: `tests/db_archive_stream_test.rs` (3) — ports of TestQueryArchiveRowsStreamsJSON (64K payload) + TestWriteArchiveRowsProducesJSONSequence + live PG round trip. artex **490 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

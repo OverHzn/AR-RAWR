@@ -18,6 +18,7 @@
 
 pub mod activity_outbox;
 pub mod archive_helpers;
+pub mod archive_stream;
 pub mod asset_dsl;
 pub mod asset_helpers;
 pub mod asset_intercept;
