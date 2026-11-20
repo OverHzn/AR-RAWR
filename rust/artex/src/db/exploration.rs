@@ -2258,6 +2258,195 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Main sessions + asset refs + standalone findings (port of the remaining
+// `*ExplorationStore` methods in `db/exploration.go`).
+// ---------------------------------------------------------------------------
+
+/// `MainSession`: one resettable main-agent conversation segment. Segment 0 is the
+/// implicit original session (never stored); further segments are created by
+/// "New conversation" to start the main agent on a clean transcript while the
+/// task's graph, assets and goal stay shared.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MainSession {
+    pub seq: i32,
+    pub created_at: SystemTime,
+}
+
+/// `AssetRef`: a compact exploration node (intent/fact/finding) that references an
+/// asset via an anchor — for the coverage graph's node drawer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssetRef {
+    pub id: i64,
+    pub kind: String,
+    pub state: String,
+    pub summary: String,
+    pub source_task_id: i64,
+    pub inherited: bool,
+}
+
+impl ExplorationStore {
+    /// `CurrentMainSeg`: the highest main-session segment (0 when none created yet).
+    pub async fn current_main_seg(&self) -> Result<i32> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT COALESCE(MAX(seq),0) FROM main_sessions WHERE exploration_id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `ListMainSessions`: every main-session segment newest-first, always
+    /// including the implicit original segment 0. Segment 0 carries no stored
+    /// timestamp (defaults to UNIX_EPOCH).
+    pub async fn list_main_sessions(&self) -> Result<Vec<MainSession>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT seq, created_at FROM main_sessions WHERE exploration_id=$1 ORDER BY seq DESC",
+                &[&self.exp_id],
+            )
+            .await?;
+        let mut out: Vec<MainSession> = rows
+            .iter()
+            .map(|r| MainSession {
+                seq: r.get(0),
+                created_at: r.get(1),
+            })
+            .collect();
+        // Implicit original session (oldest, no stored timestamp).
+        out.push(MainSession {
+            seq: 0,
+            created_at: UNIX_EPOCH,
+        });
+        Ok(out)
+    }
+
+    /// `NewMainSession`: create the next main-session segment (seq = current+1) and
+    /// return it. Touches only `main_sessions` — the task's graph/assets/goal are
+    /// untouched, so the new session starts clean over the same task.
+    pub async fn new_main_session(&self) -> Result<MainSession> {
+        let row = self
+            .db
+            .query_one(
+                "INSERT INTO main_sessions(exploration_id, seq) \
+             VALUES ($1, COALESCE((SELECT MAX(seq) FROM main_sessions WHERE exploration_id=$1),0)+1) \
+             RETURNING seq, created_at",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(MainSession {
+            seq: row.get(0),
+            created_at: row.get(1),
+        })
+    }
+
+    /// `AssetRefs`: the intents / facts / findings in THIS exploration anchored to
+    /// the given asset id (newest first) — what this task tested / concluded about
+    /// it. `asset_id`<=0 -> empty.
+    pub async fn asset_refs(&self, asset_id: i64) -> Result<Vec<AssetRef>> {
+        if asset_id <= 0 {
+            return Ok(Vec::new());
+        }
+        let rows = self
+            .db
+            .query(
+                "SELECT en.id, en.kind, en.state, en.payload \
+             FROM exploration_anchors ea \
+             JOIN exploration_nodes en ON en.id = ea.node_id \
+             WHERE ea.asset_id = $1 AND en.exploration_id = $2 \
+             AND en.kind IN ('intent','fact','finding') \
+             ORDER BY en.id DESC",
+                &[&asset_id, &self.exp_id],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| {
+                let payload: Value = r.get(3);
+                let summary = ["summary", "text"]
+                    .iter()
+                    .find_map(|k| {
+                        payload
+                            .get(*k)
+                            .and_then(|v| v.as_str())
+                            .filter(|s| !s.trim().is_empty())
+                            .map(|s| s.to_string())
+                    })
+                    .unwrap_or_default();
+                AssetRef {
+                    id: r.get(0),
+                    kind: r.get(1),
+                    state: r.get(2),
+                    summary,
+                    source_task_id: 0,
+                    inherited: false,
+                }
+            })
+            .collect())
+    }
+
+    /// `AddStandaloneFinding`: write a finding to the standalone findings table,
+    /// which persists across task deletion (`task_id` / `node_id` become NULL when
+    /// the task or exploration node is deleted). `task_id` and `node_id` may be 0
+    /// (stored as NULL).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn add_standalone_finding(
+        &self,
+        task_id: i64,
+        node_id: i64,
+        vulnclass: &str,
+        name: &str,
+        severity: &str,
+        summary: &str,
+        evidence: &str,
+        worker: &str,
+        asset_ids: &[i64],
+    ) -> Result<i64> {
+        self.db
+            .add_finding(
+                task_id, node_id, vulnclass, name, severity, summary, evidence, worker, asset_ids,
+            )
+            .await
+    }
+}
+
+impl DB {
+    /// `AddFinding`: insert a finding row (the standalone findings table). `task_id`
+    /// and `node_id` <= 0 are stored as NULL. `asset_ids` is serialised as a JSONB
+    /// array.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn add_finding(
+        &self,
+        task_id: i64,
+        node_id: i64,
+        vulnclass: &str,
+        name: &str,
+        severity: &str,
+        summary: &str,
+        evidence: &str,
+        worker: &str,
+        asset_ids: &[i64],
+    ) -> Result<i64> {
+        let tid: Option<i64> = if task_id > 0 { Some(task_id) } else { None };
+        let nid: Option<i64> = if node_id > 0 { Some(node_id) } else { None };
+        let aids = serde_json::json!(asset_ids);
+        let row = self
+            .query_one(
+                "INSERT INTO findings \
+             (task_id, node_id, vulnclass, name, severity, summary, evidence, worker, asset_ids) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
+                &[
+                    &tid, &nid, &vulnclass, &name, &severity, &summary, &evidence, &worker, &aids,
+                ],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
