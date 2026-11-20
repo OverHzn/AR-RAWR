@@ -57,6 +57,7 @@ pub mod seed;
 pub mod settings;
 pub mod skill_gaps;
 pub mod skill_usage;
+pub mod target_exemptions;
 pub mod target_pins;
 pub mod task_archive_aggregate;
 pub mod task_archives;
