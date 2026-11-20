@@ -18,6 +18,7 @@ pub mod mcphttp;
 pub mod notify;
 pub mod permission;
 pub mod report;
+pub mod server;
 pub mod sidequestion;
 pub mod tool;
 pub mod traffic;

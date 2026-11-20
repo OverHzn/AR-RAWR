@@ -744,6 +744,8 @@ resume without re-deriving state.
 
 - **A-3 stagnation detection (this commit):** new `src/agent/tools.rs` (slice of `agent/tools.go`) — `normalize_direction` (collapse whitespace, lowercase, digit runs -> '#') + `detect_stagnation` (group finished intents by normalized summary, 3+ repeats with no finding after the first, earliest summary/id, at most 3 directions). Spec: `tests/agent_stagnation_test.rs` (1) — port of TestDetectStagnation. artex **505 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-1 server pure JSON helpers (this commit):** new `src/server/mod.rs` + `src/server/helpers.rs` — first slice of the server layer. `decode_str_map` (JSON null/invalid/empty -> writable empty map so callers can assign env vars), `encode_json`. Spec: `tests/server_helpers_test.rs` (2) — port of TestDecodeStrMapJSONNull + encode round trip. artex **507 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
