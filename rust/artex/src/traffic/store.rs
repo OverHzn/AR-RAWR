@@ -671,6 +671,164 @@ fn walk_dir(root: &std::path::Path) -> Vec<std::path::PathBuf> {
     out
 }
 
+/// One recorded stream (WebSocket/SSE) message.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StreamMessage {
+    pub seq: i64,
+    pub ts: i64,
+    pub direction: String,
+    pub kind: i32,
+    pub event: String,
+    pub event_id: String,
+    pub retry: i32,
+    pub size: i64,
+    pub payload: Vec<u8>,
+    pub blob: String,
+    pub truncated: bool,
+}
+
+impl TrafficStore {
+    /// `spillTrace`: spill each trace line's `After` value.
+    pub fn spill_trace(
+        &self,
+        lines: &[crate::traffic::rewrite_engine::TraceLine],
+    ) -> Vec<StoredBody> {
+        lines
+            .iter()
+            .map(|l| self.spill(l.after.as_deref().unwrap_or(&[]), ""))
+            .collect()
+    }
+
+    /// `writeTrace`: persist an exchange's rewrite trace and its blob refs.
+    pub fn insert_trace(
+        &self,
+        id: &str,
+        lines: &[crate::traffic::rewrite_engine::TraceLine],
+        trace: &[StoredBody],
+    ) -> Result<()> {
+        if lines.is_empty() {
+            return Ok(());
+        }
+        let db = self.db.lock().unwrap();
+        db.exec("BEGIN")?;
+        let result = (|| -> Result<()> {
+            for b in trace {
+                if !b.hash.is_empty() {
+                    db.execute(
+                        "INSERT OR IGNORE INTO blob_refs(hash,exchange_id) VALUES(?,?)",
+                        &[Value::Text(b.hash.clone()), Value::Text(id.to_string())],
+                    )?;
+                }
+            }
+            for (i, l) in lines.iter().enumerate() {
+                let rule_id = if l.rule_id != 0 {
+                    Value::Int(l.rule_id)
+                } else {
+                    Value::Null
+                };
+                let after = if trace.get(i).map(|b| !b.inline.is_empty()).unwrap_or(false) {
+                    Value::Blob(trace[i].inline.clone())
+                } else {
+                    Value::Null
+                };
+                let t = trace.get(i).cloned().unwrap_or_default();
+                db.execute(
+                    "INSERT INTO exchange_rewrites(exchange_id,seq,phase,rule_id,rule_snapshot,action,field,outcome,reason,before_hash,after_hash,after_inline,after_blob) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    &[
+                        Value::Text(id.to_string()), Value::Int(i as i64), Value::Text(l.phase.clone()),
+                        rule_id, null_if_empty(&l.rule_snapshot), null_if_empty(&l.action),
+                        null_if_empty(&l.field), Value::Text(l.outcome.clone()), Value::Text(l.reason.clone()),
+                        null_if_empty(&l.before_hash), null_if_empty(&l.after_hash), after,
+                        null_if_empty(&t.hash),
+                    ],
+                )?;
+            }
+            Ok(())
+        })();
+        match result {
+            Ok(()) => {
+                db.exec("COMMIT")?;
+                Ok(())
+            }
+            Err(e) => {
+                let _ = db.exec("ROLLBACK");
+                Err(e)
+            }
+        }
+    }
+
+    /// `RewriteInfo`: whether any applied line exists, plus distinct rule ids.
+    pub fn rewrite_info(&self, id: &str) -> Result<(bool, Vec<i64>)> {
+        let rewritten: bool = self.query(
+            "SELECT EXISTS(SELECT 1 FROM exchange_rewrites WHERE exchange_id=? AND outcome='applied')",
+            &[Value::Text(id.to_string())],
+        )?[0].int(0) != 0;
+        if !rewritten {
+            return Ok((false, Vec::new()));
+        }
+        let rows = self.query(
+            "SELECT DISTINCT rule_id FROM exchange_rewrites WHERE exchange_id=? AND outcome='applied' AND rule_id IS NOT NULL ORDER BY rule_id",
+            &[Value::Text(id.to_string())],
+        )?;
+        Ok((true, rows.iter().map(|r| r.int(0)).collect()))
+    }
+
+    pub fn insert_stream_message(&self, id: &str, m: &StreamMessage) -> Result<()> {
+        let stored = self.spill_at(&m.payload, "", 1024 * 1024);
+        self.execute(
+            "INSERT OR REPLACE INTO stream_messages(exchange_id,seq,ts,direction,kind,event,event_id,retry,size,payload,payload_blob,truncated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            &[
+                Value::Text(id.to_string()), Value::Int(m.seq), Value::Int(m.ts),
+                Value::Text(m.direction.clone()), Value::Int(m.kind as i64),
+                Value::Text(m.event.clone()), Value::Text(m.event_id.clone()),
+                Value::Int(m.retry as i64), Value::Int(m.size), Value::Blob(stored.inline),
+                null_if_empty(&stored.hash), Value::Int(if m.truncated { 1 } else { 0 }),
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn stream_messages(
+        &self,
+        id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> Result<(Vec<StreamMessage>, i64)> {
+        let limit = limit.clamp(1, 200);
+        let total = self.query(
+            "SELECT COUNT(*) FROM stream_messages WHERE exchange_id=?",
+            &[Value::Text(id.to_string())],
+        )?[0]
+            .int(0);
+        let rows = self.query(
+            "SELECT seq,ts,direction,kind,event,event_id,retry,size,payload,payload_blob,truncated FROM stream_messages WHERE exchange_id=? ORDER BY seq LIMIT ? OFFSET ?",
+            &[Value::Text(id.to_string()), Value::Int(limit), Value::Int(offset.max(0))],
+        )?;
+        let out = rows
+            .iter()
+            .map(|r| StreamMessage {
+                seq: r.int(0),
+                ts: r.int(1),
+                direction: r.text(2),
+                kind: r.int(3) as i32,
+                event: r.text(4),
+                event_id: r.text(5),
+                retry: r.int(6) as i32,
+                size: r.int(7),
+                payload: r.blob(8),
+                blob: r.opt_text(9).unwrap_or_default(),
+                truncated: r.int(10) != 0,
+            })
+            .collect();
+        Ok((out, total))
+    }
+
+    fn execute(&self, sql: &str, params: &[Value]) -> Result<u64> {
+        let db = self.db.lock().unwrap();
+        db.execute(sql, params)
+    }
+}
+
 /// `assembleRaw`: head + blank line + body, plus a blob pointer when spilled.
 fn assemble_raw(head: &str, body: &[u8], blob: Option<String>, total: i64) -> String {
     let mut out = String::new();

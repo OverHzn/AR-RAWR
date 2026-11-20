@@ -299,3 +299,80 @@ fn delete_all_clears_index() {
         0
     );
 }
+
+#[test]
+fn rewrite_trace_persistence_and_info() {
+    use artex::traffic::rewrite_engine::{TraceLine, OUTCOME_APPLIED, OUTCOME_SKIPPED};
+
+    let s = TrafficStore::open_temp().unwrap();
+    let id = "1700000000-0100";
+    let lines = vec![
+        TraceLine {
+            phase: "request".into(),
+            rule_id: 7,
+            action: "set_header".into(),
+            field: "header:X-A".into(),
+            outcome: OUTCOME_APPLIED.into(),
+            after: Some(b"v".to_vec()),
+            ..Default::default()
+        },
+        TraceLine {
+            phase: "response".into(),
+            rule_id: 9,
+            outcome: OUTCOME_APPLIED.into(),
+            ..Default::default()
+        },
+        TraceLine {
+            phase: "request".into(),
+            rule_id: 3,
+            outcome: OUTCOME_SKIPPED.into(),
+            ..Default::default()
+        },
+    ];
+    let trace = s.spill_trace(&lines);
+    s.insert_trace(id, &lines, &trace).unwrap();
+
+    let rows = s.query(
+        "SELECT seq, outcome, after_inline FROM exchange_rewrites WHERE exchange_id=? ORDER BY seq",
+        &[artex::traffic::sqlite::Value::Text(id.to_string())],
+    ).unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].text(1), OUTCOME_APPLIED);
+    assert_eq!(rows[0].blob(2), b"v");
+    assert_eq!(rows[1].int(0), 1);
+    assert!(s.rewrite_info(id).unwrap() == (true, vec![7, 9]));
+    assert_eq!(s.rewrite_info("missing").unwrap(), (false, vec![]));
+}
+
+#[test]
+fn stream_messages_round_trip() {
+    use artex::traffic::store::StreamMessage;
+
+    let s = TrafficStore::open_temp().unwrap();
+    let id = "1700000000-0200";
+    for seq in 0..3 {
+        let m = StreamMessage {
+            seq,
+            ts: 1_700_000_000 + seq,
+            direction: "s2c".into(),
+            kind: 1,
+            event: "message".into(),
+            event_id: format!("e{seq}"),
+            retry: 0,
+            size: 5,
+            payload: b"hello".to_vec(),
+            blob: String::new(),
+            truncated: false,
+        };
+        s.insert_stream_message(id, &m).unwrap();
+    }
+    let (rows, total) = s.stream_messages(id, 0, 10).unwrap();
+    assert_eq!(total, 3);
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0].seq, 0);
+    assert_eq!(rows[2].event_id, "e2");
+    assert_eq!(rows[0].payload, b"hello");
+    let (page, _) = s.stream_messages(id, 1, 1).unwrap();
+    assert_eq!(page.len(), 1);
+    assert_eq!(page[0].seq, 1);
+}

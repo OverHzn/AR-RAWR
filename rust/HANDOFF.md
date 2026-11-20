@@ -772,6 +772,8 @@ resume without re-deriving state.
 
 - **T-3 traffic delete + blob GC (this commit):** extended `src/traffic/store.rs` with `delete_where` (tx, ordered: FTS -> bodies -> stream -> rewrites -> blob_refs -> exchanges), `delete_host` (substring), `delete_hosts_exact`, `delete_all` (VACUUM + reclaimed bytes), `index_bytes` and `gc_blobs` (live refs from blob_refs + legacy .http `@blob sha256:` pointers, deepest bucket first). Spec: 2 tests — shared blob survives host delete then collected, delete_all clears index. artex **533 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **T-4 rewrite trace + stream messages (this commit):** extended `src/traffic/store.rs` with `spill_trace`/`insert_trace` (blob refs for spilled After values + ordered `exchange_rewrites` rows), `rewrite_info` (applied flag + distinct rule ids), `StreamMessage` + `insert_stream_message`/`stream_messages` (paged, clamped limit 1..200, spill at 1 MiB). Spec: 2 tests — trace round trip/info, stream round trip/paging. artex **535 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
