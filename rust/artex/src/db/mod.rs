@@ -48,6 +48,7 @@ pub mod logs;
 pub mod migrate;
 pub mod notification;
 pub mod notification_channels;
+pub mod notification_delivery;
 pub mod publicsuffix;
 pub mod secrets;
 pub mod seed;
