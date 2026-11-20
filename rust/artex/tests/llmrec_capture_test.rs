@@ -98,3 +98,32 @@ fn parse_session_fallback_is_exploration_scoped() {
     assert_eq!(parse_session("not-a-task"), (String::new(), String::new()));
     assert_eq!(parse_session(""), (String::new(), String::new()));
 }
+
+#[test]
+fn thinking_text_concatenates_only_thinking_blocks() {
+    use artex::llm::{user_text, ContentBlock, Message, BLOCK_THINKING};
+    use artex::llmrec::thinking_text;
+
+    let msg = Message {
+        role: "assistant".into(),
+        content: vec![
+            ContentBlock {
+                block_type: BLOCK_THINKING.into(),
+                thinking: "first ".into(),
+                ..Default::default()
+            },
+            ContentBlock {
+                block_type: "text".into(),
+                text: "visible".into(),
+                ..Default::default()
+            },
+            ContentBlock {
+                block_type: BLOCK_THINKING.into(),
+                thinking: "second".into(),
+                ..Default::default()
+            },
+        ],
+    };
+    assert_eq!(thinking_text(&msg), "first second");
+    assert_eq!(thinking_text(&user_text("plain")), "");
+}

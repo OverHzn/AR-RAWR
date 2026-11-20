@@ -191,3 +191,14 @@ pub fn parse_session(s: &str) -> (String, String) {
     let worker = rest.find('-').map(|j| &rest[..j]).unwrap_or(rest);
     (task_id.to_string(), worker.to_string())
 }
+
+/// `thinkingText`: concatenate thinking blocks of a message in order.
+pub fn thinking_text(msg: &crate::llm::Message) -> String {
+    let mut out = String::new();
+    for block in &msg.content {
+        if block.block_type == crate::llm::BLOCK_THINKING && !block.thinking.is_empty() {
+            out.push_str(&block.thinking);
+        }
+    }
+    out
+}

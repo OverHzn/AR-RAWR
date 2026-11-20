@@ -736,6 +736,8 @@ resume without re-deriving state.
 
 - **E-17 llmrec parseSession (this commit):** added `parse_session` to `src/llmrec.rs` — splits `exp<N>-<role>[-suffix]` session ids into exploration id + worker role; non-session strings parse empty. Added port of TestParseSessionFallbackIsExplorationScoped. artex **498 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-18 llmrec thinkingText (this commit):** added `thinking_text` to `src/llmrec.rs` — concatenates only `BLOCK_THINKING` blocks of an `llm::Message` in order. Added test. artex **499 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
