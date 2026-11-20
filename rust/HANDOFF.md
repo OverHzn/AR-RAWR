@@ -513,6 +513,18 @@ resume without re-deriving state.
   update_goal_payload (text/vulnclass + empty-omits + non-goal rejected), delete_goal (goal
   deleted, non-goal kind guard leaves intent, already-gone errors), has_active_intent counts
   a running intent. artex **247 tests** green, clippy clean, fmt clean, gate 30/30.
+- **D-1x exploration finding reads (this commit):** `src/db/exploration.rs` extended —
+  `ExplorationStore::{finding_lineage(node_id -> (Vec<Node>, Vec<Edge>); recursive CTE
+  walking src<-dst = node + every ancestor, id-ordered; edges restricted to both-ends-in-set;
+  empty tuple when node missing), finding_intents (-> BTreeMap<finding_id,intent_id>; yields
+  edges whose dst is a finding; findings w/o producer absent), finding_intents_terminal (same
+  but producing intent must be in done|blocked|exhausted|stopped -> inherits only immutable
+  topology)}`. Spec: `tests/db_exploration_finding_test.rs` (1) — finding_intents all 4,
+  finding_intents_terminal empty then only done+blocked producers (open excluded), lineage of
+  a leaf reaches goal via producing intent + excludes sibling fact/other intents + id-ordered
+  + internal-edges-only, lone-root lineage is just itself, missing node -> empty. artex **248
+  tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: edge lineage SQL is a plain
+  string — `format!` with no interpolation trips clippy `useless_format`.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

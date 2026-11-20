@@ -1108,6 +1108,95 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Finding reads (port of the `*ExplorationStore` finding methods in
+// `db/exploration.go`): lineage + producing-intent maps.
+// ---------------------------------------------------------------------------
+
+impl ExplorationStore {
+    /// `FindingLineage`: the ancestors of `node_id` — the node itself plus every
+    /// node that can reach it via edges (walk src<-dst), in id order, together with
+    /// the edges internal to that set. Returns `(vec![], vec![])` when the node
+    /// doesn't exist (Go returns nil nodes and a nil edge slice; an empty result
+    /// carries the same "no lineage" signal to callers).
+    pub async fn finding_lineage(&self, node_id: i64) -> Result<(Vec<Node>, Vec<Edge>)> {
+        let node_sql = format!(
+            "WITH RECURSIVE anc(id) AS (\
+         SELECT $2::bigint \
+         UNION \
+         SELECT e.src_id FROM exploration_edges e \
+         JOIN anc ON e.dst_id = anc.id \
+         WHERE e.exploration_id = $1\
+         ) \
+         SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id = $1 AND id IN (SELECT id FROM anc) ORDER BY id"
+        );
+        let node_rows = self.db.query(&node_sql, &[&self.exp_id, &node_id]).await?;
+        let nodes = scan_nodes(&node_rows);
+        if nodes.is_empty() {
+            return Ok((Vec::new(), Vec::new()));
+        }
+        let edge_sql = "WITH RECURSIVE anc(id) AS (\
+             SELECT $2::bigint \
+             UNION \
+             SELECT e.src_id FROM exploration_edges e \
+             JOIN anc ON e.dst_id = anc.id \
+             WHERE e.exploration_id = $1\
+             ) \
+             SELECT src_id, rel, dst_id FROM exploration_edges \
+             WHERE exploration_id = $1 \
+             AND src_id IN (SELECT id FROM anc) \
+             AND dst_id IN (SELECT id FROM anc)";
+        let edge_rows = self.db.query(edge_sql, &[&self.exp_id, &node_id]).await?;
+        Ok((nodes, scan_edges(&edge_rows)))
+    }
+
+    /// `FindingIntents`: map each finding id to the intent that produced it (the
+    /// intent --yields--> finding edge; report_finding links it). Findings with no
+    /// producing intent are absent. Precise (JOIN, no edge-scan limit).
+    pub async fn finding_intents(&self) -> Result<std::collections::BTreeMap<i64, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT e.dst_id, e.src_id FROM exploration_edges e \
+             JOIN exploration_nodes n ON n.id = e.dst_id AND n.exploration_id = e.exploration_id \
+             WHERE e.exploration_id=$1 AND e.rel=$2 AND n.kind='finding'",
+                &[&self.exp_id, &REL_YIELDS],
+            )
+            .await?;
+        let mut out = std::collections::BTreeMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, i64>(0), r.get::<_, i64>(1));
+        }
+        Ok(out)
+    }
+
+    /// `FindingIntentsTerminal`: the inherited-history variant — a finding's
+    /// producing intent only when it has reached an immutable terminal state
+    /// (done/blocked/exhausted/stopped). Keeps a source task's live worker topology
+    /// private.
+    pub async fn finding_intents_terminal(&self) -> Result<std::collections::BTreeMap<i64, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT e.dst_id, e.src_id \
+             FROM exploration_edges e \
+             JOIN exploration_nodes finding ON finding.id=e.dst_id AND finding.exploration_id=e.exploration_id \
+             JOIN exploration_nodes intent ON intent.id=e.src_id AND intent.exploration_id=e.exploration_id \
+             WHERE e.exploration_id=$1 AND e.rel=$2 AND finding.kind='finding' \
+               AND intent.kind='intent' \
+               AND intent.state IN ('done','blocked','exhausted','stopped')",
+                &[&self.exp_id, &REL_YIELDS],
+            )
+            .await?;
+        let mut out = std::collections::BTreeMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, i64>(0), r.get::<_, i64>(1));
+        }
+        Ok(out)
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
