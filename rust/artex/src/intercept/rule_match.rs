@@ -109,3 +109,51 @@ pub fn rule_matches(r: &CompiledRule, tool_name: &str, input: &[u8]) -> bool {
     }
     subject.contains(&r.rule.pattern)
 }
+
+/// The subset of an intercept decision needed by callers of `Match`.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Decision {
+    pub rule_name: String,
+    pub action: String,
+    pub message: String,
+    pub rule_id: i64,
+    pub timeout_enabled: bool,
+    pub timeout_seconds: i32,
+    pub timeout_action: String,
+}
+
+/// `defaultMessage`: the fallback reason when a rule has no explicit message.
+pub fn default_message(action: &str, name: &str) -> String {
+    match action {
+        "deny" => format!("intercept rule [{name}] forbids executing this tool"),
+        "ask" => format!("intercept rule [{name}] requires user approval, please wait"),
+        _ => String::new(),
+    }
+}
+
+/// `Match`: first matching rule in priority order (callers pass rules already
+/// sorted by priority). `ConfigDigest` is deferred with the full audit payload.
+pub fn match_first(rules: &[CompiledRule], tool_name: &str, input: &[u8]) -> Option<Decision> {
+    let mut ordered: Vec<&CompiledRule> = rules.iter().collect();
+    ordered.sort_by_key(|r| std::cmp::Reverse(r.rule.priority));
+    for r in ordered {
+        if !r.rule.enabled || !rule_matches(r, tool_name, input) {
+            continue;
+        }
+        let message = if r.rule.message.is_empty() {
+            default_message(&r.rule.action, &r.rule.name)
+        } else {
+            r.rule.message.clone()
+        };
+        return Some(Decision {
+            rule_name: r.rule.name.clone(),
+            action: r.rule.action.clone(),
+            message,
+            rule_id: r.rule.id,
+            timeout_enabled: r.rule.timeout_enabled,
+            timeout_seconds: r.rule.timeout_seconds,
+            timeout_action: r.rule.timeout_action.clone(),
+        });
+    }
+    None
+}

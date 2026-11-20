@@ -784,6 +784,8 @@ resume without re-deriving state.
 
 - **E-24 intercept rule matching (this commit):** new `src/intercept/rule_match.rs` (pure slice of `intercept/intercept.go`) — `CompiledRule`, `compile_rule` (invalid regex/argv pattern never matches), `rule_matches` (tool_name/tool_input, string/regex/argv with denylist neutralization) + conservative simple-argv tokenizer. Full Bash `ArgvPrefix` still deferred. Spec: `tests/intercept_rule_match_test.rs` (1) — Go oracle, 9 cases. artex **543 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-25 intercept decision core (this commit):** extended `src/intercept/rule_match.rs` with `Decision` (subset), `default_message` (deny/ask fallback reason) and `match_first` (rules sorted by priority DESCENDING, first match wins, Go oracle verified). Spec: 1 test — priority order 50 > -1000 + default vs explicit message. artex **544 tests** green, clippy clean, fmt clean, gate 30/30. (Full ConfigDigest/audit payload deferred.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

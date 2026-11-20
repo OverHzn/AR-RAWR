@@ -85,3 +85,33 @@ fn rule_matches_oracle() {
         assert_eq!(rule_matches(&c, tool, input), want, "case {i}");
     }
 }
+
+#[test]
+fn match_first_priority_and_default_message() {
+    use artex::intercept::rule_match::match_first;
+
+    let mut deny = rule("tool_input", "string", "--force", "deny");
+    deny.id = 1;
+    deny.name = "no force".into();
+    deny.priority = 50;
+    let mut allow = rule("tool_input", "argv", r#"["git","push"]"#, "allow");
+    allow.id = 2;
+    allow.name = "allow git push".into();
+    allow.priority = -1000;
+    let rules: Vec<_> = [allow, deny].into_iter().filter_map(compile_rule).collect();
+
+    let force = br#"{"command":"git push --force"}"#;
+    let d = match_first(&rules, "Bash", force).unwrap();
+    assert_eq!(d.rule_id, 1);
+    assert_eq!(d.action, "deny");
+    assert_eq!(
+        d.message,
+        "intercept rule [no force] forbids executing this tool"
+    );
+
+    let plain = br#"{"command":"git push origin"}"#;
+    let d = match_first(&rules, "Bash", plain).unwrap();
+    assert_eq!(d.rule_id, 2);
+    assert_eq!(d.action, "allow");
+    assert_eq!(d.message, "");
+}
