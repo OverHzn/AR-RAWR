@@ -295,3 +295,88 @@ async fn delete_by_task_id_unlinks_shared() {
 
     assert_eq!(s.delete_by_ids(&[shared]).await.unwrap(), 1);
 }
+
+#[tokio::test]
+async fn upsert_subdomain_side_effects_and_dedup() {
+    use artex::db::assets::UpsertSubdomainReq;
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let domain = format!("sub-{t}.subdtest.com");
+    let root_domain = "subdtest.com";
+    let ip = "1.2.3.4";
+
+    let id = s
+        .upsert_subdomain(&UpsertSubdomainReq {
+            domain: domain.clone(),
+            record_type: "A".into(),
+            record_value: vec![ip.into()],
+            icp: "B99".into(),
+            task_id: 1,
+        })
+        .await
+        .unwrap();
+    assert!(id > 0);
+    d.execute(
+        "DELETE FROM assets WHERE domain=$1 OR domain=$2 OR ip=$3",
+        &[&domain, &root_domain, &ip],
+    )
+    .await
+    .unwrap();
+
+    let got = s
+        .upsert_subdomain(&UpsertSubdomainReq {
+            domain: domain.clone(),
+            record_type: "A".into(),
+            record_value: vec![ip.into()],
+            icp: "B99".into(),
+            task_id: 1,
+        })
+        .await
+        .unwrap();
+    // The first upsert's side effects were deleted, so a fresh dedup run needs
+    // to be checked on its own pair of calls.
+    let id2 = s
+        .upsert_subdomain(&UpsertSubdomainReq {
+            domain: domain.clone(),
+            record_type: "A".into(),
+            record_value: vec![ip.into()],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let id3 = s
+        .upsert_subdomain(&UpsertSubdomainReq {
+            domain: domain.clone(),
+            record_type: "A".into(),
+            record_value: vec![ip.into()],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id3, id2, "subdomain dedup failed");
+
+    let row = d
+        .query_one("SELECT root_domain FROM assets WHERE id=$1", &[&got])
+        .await
+        .unwrap();
+    let root: Option<String> = row.get(0);
+    assert_eq!(root.as_deref(), Some(root_domain));
+
+    let sub: Vec<artex::db::assets::Asset> = s.get_by_ids(&[got]).await.unwrap();
+    assert_eq!(sub.len(), 1);
+    assert_eq!(sub[0].domain, domain);
+
+    d.execute(
+        "DELETE FROM assets WHERE domain=$1 OR domain=$2 OR ip=$3",
+        &[&domain, &root_domain, &ip],
+    )
+    .await
+    .unwrap();
+}

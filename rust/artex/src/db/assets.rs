@@ -12,7 +12,7 @@ use crate::db::asset_helpers::{
     validate_asset_ip, PortService,
 };
 use crate::db::error::{Error, Result};
-use crate::db::nkey::domain_key;
+use crate::db::nkey::{domain_key, root as nkey_root};
 use crate::db::DB;
 
 /// Minimal `Asset` row (the columns these methods read).
@@ -81,6 +81,15 @@ pub struct UpsertIPReq {
     pub ip: String,
     pub bound_domains: Vec<String>,
     pub open_ports: Vec<PortService>,
+    pub task_id: i64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct UpsertSubdomainReq {
+    pub domain: String,
+    pub record_type: String,
+    pub record_value: Vec<String>,
+    pub icp: String,
     pub task_id: i64,
 }
 
@@ -204,6 +213,105 @@ WHERE type='ip' AND ip=$1",
             &[&ip, &lit],
         ).await?;
         Ok(())
+    }
+
+    /// `UpsertSubdomain`: idempotent subdomain insert/merge with side effects —
+    /// ensures the root domain exists and binds A/AAAA record IPs.
+    pub async fn upsert_subdomain(&self, req: &UpsertSubdomainReq) -> Result<i64> {
+        let domain = domain_key(&req.domain);
+        if domain.is_empty() {
+            return Err(Error::msg("domain is required"));
+        }
+        let (root_domain, _) = nkey_root(&domain);
+        let root_domain = if root_domain.is_empty() {
+            domain.clone()
+        } else {
+            root_domain
+        };
+        let mut company = self
+            .db
+            .companies()
+            .resolve_company_with_icp(&root_domain, "", &req.icp)
+            .await?;
+
+        // Side effect 1: ensure the root domain asset exists.
+        let _ = self
+            .upsert_root_domain(&UpsertRootDomainReq {
+                domain: root_domain.clone(),
+                task_id: req.task_id,
+                ..Default::default()
+            })
+            .await;
+
+        // Side effect 2: each A/AAAA record becomes an IP asset bound to the domain.
+        let mut ip_str = String::new();
+        if req.record_type == "A" || req.record_type == "AAAA" {
+            for rv in &req.record_value {
+                for part in rv.split(',') {
+                    let candidate = part.trim();
+                    if candidate.is_empty() || candidate.parse::<std::net::IpAddr>().is_err() {
+                        continue;
+                    }
+                    if ip_str.is_empty() {
+                        ip_str = candidate.to_string();
+                    }
+                    let _ = self
+                        .upsert_ip(&UpsertIPReq {
+                            ip: candidate.to_string(),
+                            bound_domains: vec![domain.clone()],
+                            task_id: req.task_id,
+                            ..Default::default()
+                        })
+                        .await;
+                }
+            }
+        }
+
+        let cseg = calc_c_segment(&ip_str);
+        let cseg_opt: Option<&str> = if cseg.is_empty() { None } else { Some(&cseg) };
+        let ip_opt: Option<&str> = if ip_str.is_empty() {
+            None
+        } else {
+            Some(&ip_str)
+        };
+        let icp_opt: Option<&str> = if req.icp.is_empty() {
+            None
+        } else {
+            Some(&req.icp)
+        };
+        if company.is_none() && !ip_str.is_empty() {
+            company = self
+                .db
+                .companies()
+                .resolve_company_with_icp("", &ip_str, "")
+                .await?;
+        }
+        let tasks = task_ids_array(req.task_id);
+        let values = marshal_string_array(&req.record_value);
+        let row = self.db.query_one(
+            "INSERT INTO assets(type, domain, root_domain, record_type, record_value, ip, c_segment, icp, company_id, company_source, task_ids)
+VALUES ('subdomain', $1, $2, $3, $4::text::text[], $5, $6::text::cidr, $7, $8, 'scope', $9::bigint[])
+ON CONFLICT (domain, COALESCE(record_type,'')) WHERE type = 'subdomain' DO UPDATE SET
+    ip           = COALESCE(EXCLUDED.ip, assets.ip),
+    c_segment    = COALESCE(EXCLUDED.c_segment, assets.c_segment),
+    icp          = COALESCE(EXCLUDED.icp, assets.icp),
+    company_id   = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    task_ids     = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    record_value = (SELECT ARRAY(SELECT DISTINCT unnest(assets.record_value || EXCLUDED.record_value))),
+    extra        = assets.extra || EXCLUDED.extra,
+    last_seen    = now()
+RETURNING id",
+            &[&domain, &root_domain, &req.record_type, &values, &ip_opt, &cseg_opt, &icp_opt, &company, &tasks],
+        ).await?;
+        Ok(row.get(0))
     }
 
     pub async fn query_by_type(&self, typ: &str, limit: i64, offset: i64) -> Result<Vec<Asset>> {
