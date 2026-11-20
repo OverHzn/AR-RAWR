@@ -1888,7 +1888,7 @@ impl Activity {
 
 /// `utf8Clean`: strip NUL bytes (Rust strings are already valid UTF-8, so Go's
 /// `ToValidUTF8` pass is a no-op here; PostgreSQL text still rejects a NUL).
-fn utf8_clean(s: &str) -> String {
+pub(crate) fn utf8_clean(s: &str) -> String {
     s.replace('\0', "")
 }
 
