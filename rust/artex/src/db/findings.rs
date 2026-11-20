@@ -766,3 +766,178 @@ impl DB {
         Ok((groups, group_total, finding_total))
     }
 }
+
+/// `FindingMeta`: the standalone-row data (id, triage state, anchored assets) the
+/// per-task view grafts onto its exploration-node findings. Deliberately lean —
+/// the task list calls [`DB::finding_meta_by_node_id`] for up to a few hundred
+/// nodes per page, so the multi-KB report body and the prose attestations are
+/// NOT loaded here (see [`DB::finding_quality_by_node_id`]).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct FindingMeta {
+    pub traffic_count: i64,
+    pub id: i64,
+    pub status: String,
+    pub asset_ids: Vec<i64>,
+}
+
+/// `FindingQuality`: the report-only view of one standalone row — the triage meta
+/// plus the proof-strength fields, the reporter-written body and the two evidence
+/// versions that decide whether that body still describes the current evidence.
+/// `verification_note`/`counterevidence`/`confidence_rationale` empty = "not
+/// given"; `report` empty = the reporter never wrote one.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct FindingQuality {
+    pub meta: FindingMeta,
+    pub poe_level: i32,
+    pub verification_status: String,
+    pub verification_note: String,
+    pub counterevidence: String,
+    pub confidence_rationale: String,
+    pub report: String,
+    pub evidence_version: i64,
+    pub report_evidence_version: i64,
+}
+
+impl FindingQuality {
+    /// `ReportStale`: the stored report predates the evidence it describes (written
+    /// against an older evidence version), so it must be read as outdated rather
+    /// than as the current claim.
+    pub fn report_stale(&self) -> bool {
+        !self.report.is_empty() && self.evidence_version != self.report_evidence_version
+    }
+}
+
+/// `findingTrafficCountCol`: per-row bound-evidence count, spelled once so both
+/// node-id lookups count the same way as `findingSelectCols`.
+const FINDING_TRAFFIC_COUNT_COL: &str =
+    "(SELECT count(*) FROM finding_traffic_bindings b WHERE b.finding_id=findings.id)";
+
+/// `ListFindingsForExport` order: severity desc, then newest (the grouping order
+/// of the "export summary report").
+const FINDING_EXPORT_ORDER: &str = "CASE f.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC, f.created_at DESC";
+
+impl DB {
+    /// `ListFindingsForExport`: findings for the export function, carrying the full
+    /// `report` body and unpaginated. When `ids` is non-empty it exports exactly
+    /// that set (ignoring the filter); otherwise it exports by filter. Ordered by
+    /// severity desc, then time desc.
+    pub async fn list_findings_for_export(
+        &self,
+        f: FindingFilter,
+        ids: &[i64],
+    ) -> Result<Vec<DBFinding>> {
+        let rows = if !ids.is_empty() {
+            let placeholders: Vec<String> = (0..ids.len()).map(|i| format!("${}", i + 1)).collect();
+            let sql = format!(
+                "SELECT {FINDING_SELECT_COLS}, COALESCE(f.report, '') FROM findings f \
+                 LEFT JOIN tasks t ON f.task_id = t.id \
+                 WHERE f.id IN ({}) ORDER BY {FINDING_EXPORT_ORDER}",
+                placeholders.join(",")
+            );
+            let refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = ids
+                .iter()
+                .map(|id| id as &(dyn tokio_postgres::types::ToSql + Sync))
+                .collect();
+            self.query(&sql, &refs).await?
+        } else {
+            let scoped = self.apply_asset_scope(f)?;
+            let (where_sql, params) = scoped.build_where();
+            let sql = format!(
+                "SELECT {FINDING_SELECT_COLS}, COALESCE(f.report, '') FROM findings f \
+                 LEFT JOIN tasks t ON f.task_id = t.id{where_sql} ORDER BY {FINDING_EXPORT_ORDER}"
+            );
+            let refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+                params.iter().map(|p| p.as_tosql()).collect();
+            self.query(&sql, &refs).await?
+        };
+        let mut out = Vec::with_capacity(rows.len());
+        for row in &rows {
+            let mut f = scan_finding_row(row);
+            f.report = row.get(22);
+            out.push(f);
+        }
+        Ok(out)
+    }
+
+    /// `FindingMetaByNodeID`: map a task's finding node ids to their standalone-row
+    /// metadata (status + anchored assets + traffic count). `task_id <= 0` -> empty.
+    pub async fn finding_meta_by_node_id(
+        &self,
+        task_id: i64,
+    ) -> Result<std::collections::HashMap<i64, FindingMeta>> {
+        let mut out = std::collections::HashMap::new();
+        if task_id <= 0 {
+            return Ok(out);
+        }
+        let rows = self
+            .query(
+                &format!(
+                    "SELECT node_id, id, COALESCE(status,'pending'), asset_ids, {FINDING_TRAFFIC_COUNT_COL} \
+                     FROM findings WHERE task_id=$1 AND node_id IS NOT NULL"
+                ),
+                &[&task_id],
+            )
+            .await?;
+        for r in &rows {
+            let nid: i64 = r.get(0);
+            let aids: serde_json::Value = r.get(3);
+            let m = FindingMeta {
+                id: r.get(1),
+                status: r.get(2),
+                asset_ids: serde_json::from_value(aids).unwrap_or_default(),
+                traffic_count: r.get(4),
+            };
+            out.insert(nid, m);
+        }
+        Ok(out)
+    }
+
+    /// `FindingQualityByNodeID`: map a task's finding node ids to everything the
+    /// report renders (triage meta, poe level, verification, the two attestations,
+    /// the reporter body and both evidence versions) in one query. `task_id <= 0`
+    /// -> empty. The column order mirrors [`DB::finding_meta_by_node_id`] then the
+    /// report-only columns.
+    pub async fn finding_quality_by_node_id(
+        &self,
+        task_id: i64,
+    ) -> Result<std::collections::HashMap<i64, FindingQuality>> {
+        let mut out = std::collections::HashMap::new();
+        if task_id <= 0 {
+            return Ok(out);
+        }
+        let rows = self
+            .query(
+                &format!(
+                    "SELECT node_id, id, COALESCE(status,'pending'), asset_ids, {FINDING_TRAFFIC_COUNT_COL}, \
+                     COALESCE(poe_level,0)::int, COALESCE(verification_status,'unverified'), \
+                     COALESCE(verification_note,''), COALESCE(counterevidence,''), COALESCE(confidence_rationale,''), \
+                     evidence_version, report_evidence_version, COALESCE(report,'') \
+                     FROM findings WHERE task_id=$1 AND node_id IS NOT NULL"
+                ),
+                &[&task_id],
+            )
+            .await?;
+        for r in &rows {
+            let nid: i64 = r.get(0);
+            let aids: serde_json::Value = r.get(3);
+            let q = FindingQuality {
+                meta: FindingMeta {
+                    id: r.get(1),
+                    status: r.get(2),
+                    asset_ids: serde_json::from_value(aids).unwrap_or_default(),
+                    traffic_count: r.get(4),
+                },
+                poe_level: r.get(5),
+                verification_status: r.get(6),
+                verification_note: r.get(7),
+                counterevidence: r.get(8),
+                confidence_rationale: r.get(9),
+                evidence_version: r.get(10),
+                report_evidence_version: r.get(11),
+                report: r.get(12),
+            };
+            out.insert(nid, q);
+        }
+        Ok(out)
+    }
+}
