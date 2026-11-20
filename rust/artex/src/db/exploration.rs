@@ -2060,6 +2060,204 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Activity trace + search (port of the `*ExplorationStore` trace methods in
+// `db/exploration.go`). These return summary-only rows (no detail/metadata) for
+// the worker-trace tools; detail is fetched separately via `activity_by_ids`.
+// ---------------------------------------------------------------------------
+
+const TRACE_COLS: &str = "id, node_id, COALESCE(worker,''), COALESCE(kind,''), \
+    COALESCE(tool,''), is_error, COALESCE(summary,'')";
+
+/// `scanTrace`: scan a batch of summary-only rows on [`TRACE_COLS`].
+fn scan_trace(rows: &[tokio_postgres::Row]) -> Vec<Activity> {
+    rows.iter()
+        .map(|r| Activity {
+            id: r.get(0),
+            node_id: r.get(1),
+            worker: r.get(2),
+            kind: r.get(3),
+            tool: r.get(4),
+            is_error: r.get(5),
+            summary: r.get(6),
+            ..Default::default()
+        })
+        .collect()
+}
+
+impl ExplorationStore {
+    /// `ActivityTrace`: list one work's steps (by intent/node id) for the trace
+    /// tools — summaries only. `thinking`/`usage` rows are dropped so the caller
+    /// sees the work's actions + observations, not the model's internal reasoning
+    /// or token-accounting noise.
+    pub async fn activity_trace(&self, node_id: i64, limit: i32) -> Result<Vec<Activity>> {
+        let limit = (if limit <= 0 { 500 } else { limit }) as i64;
+        let rows = self
+            .db
+            .query(
+                &format!(
+                    "SELECT {TRACE_COLS} FROM activity \
+                 WHERE exploration_id=$1 AND node_id=$2 \
+                 AND kind NOT IN ('thinking','usage') \
+                 ORDER BY id LIMIT $3"
+                ),
+                &[&self.exp_id, &node_id, &limit],
+            )
+            .await?;
+        Ok(scan_trace(&rows))
+    }
+
+    /// `ActivityTraceForTerminalIntent`: one inherited work trace only while its
+    /// source intent is still terminal at query time.
+    pub async fn activity_trace_for_terminal_intent(
+        &self,
+        node_id: i64,
+        limit: i32,
+    ) -> Result<Vec<Activity>> {
+        let limit = (if limit <= 0 { 500 } else { limit }) as i64;
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.worker,''), COALESCE(a.kind,''), \
+             COALESCE(a.tool,''), a.is_error, COALESCE(a.summary,'') \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND a.node_id=$2 AND n.kind='intent' \
+             AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.kind NOT IN ('thinking','usage') \
+             ORDER BY a.id LIMIT $3",
+                &[&self.exp_id, &node_id, &limit],
+            )
+            .await?;
+        Ok(scan_trace(&rows))
+    }
+
+    /// `ActivityTraceSearch`: find steps whose summary OR detail matches `q`
+    /// (case-insensitive), returning summaries only. `node_id` == Some scopes to
+    /// one work; None searches across ALL works (node_id IS NOT NULL — planner/
+    /// main steps have no node_id, so this cleanly means "worker traces").
+    pub async fn activity_trace_search(
+        &self,
+        node_id: Option<i64>,
+        q: &str,
+        limit: i32,
+    ) -> Result<Vec<Activity>> {
+        let limit = (if limit <= 0 { 100 } else { limit }) as i64;
+        let like = format!("%{q}%");
+        let rows = if let Some(nid) = node_id {
+            self.db
+                .query(
+                    &format!(
+                        "SELECT {TRACE_COLS} FROM activity \
+                     WHERE exploration_id=$1 AND node_id=$2 \
+                     AND kind NOT IN ('thinking','usage') \
+                     AND (summary ILIKE $3 OR detail ILIKE $3) ORDER BY id LIMIT $4"
+                    ),
+                    &[&self.exp_id, &nid, &like, &limit],
+                )
+                .await?
+        } else {
+            self.db
+                .query(
+                    &format!(
+                        "SELECT {TRACE_COLS} FROM activity \
+                     WHERE exploration_id=$1 AND node_id IS NOT NULL \
+                     AND kind NOT IN ('thinking','usage') \
+                     AND (summary ILIKE $2 OR detail ILIKE $2) ORDER BY id LIMIT $3"
+                    ),
+                    &[&self.exp_id, &like, &limit],
+                )
+                .await?
+        };
+        Ok(scan_trace(&rows))
+    }
+
+    /// `ActivityTraceSearchForTerminalIntent`: the scoped inherited search variant;
+    /// terminal eligibility is evaluated by the same statement that reads the rows.
+    pub async fn activity_trace_search_for_terminal_intent(
+        &self,
+        node_id: i64,
+        q: &str,
+        limit: i32,
+    ) -> Result<Vec<Activity>> {
+        let limit = (if limit <= 0 { 100 } else { limit }) as i64;
+        let like = format!("%{q}%");
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.worker,''), COALESCE(a.kind,''), \
+             COALESCE(a.tool,''), a.is_error, COALESCE(a.summary,'') \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND a.node_id=$2 AND n.kind='intent' \
+             AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.kind NOT IN ('thinking','usage') \
+             AND (a.summary ILIKE $3 OR a.detail ILIKE $3) \
+             ORDER BY a.id LIMIT $4",
+                &[&self.exp_id, &node_id, &like, &limit],
+            )
+            .await?;
+        Ok(scan_trace(&rows))
+    }
+
+    /// `ActivityTraceSearchTerminalIntents`: search inherited worker history
+    /// without exposing planner/main rows or work that is still open/running.
+    pub async fn activity_trace_search_terminal_intents(
+        &self,
+        q: &str,
+        limit: i32,
+    ) -> Result<Vec<Activity>> {
+        let limit = (if limit <= 0 { 100 } else { limit }) as i64;
+        let like = format!("%{q}%");
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.worker,''), COALESCE(a.kind,''), \
+             COALESCE(a.tool,''), a.is_error, COALESCE(a.summary,'') \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND n.kind='intent' \
+             AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.kind NOT IN ('thinking','usage') \
+             AND (a.summary ILIKE $2 OR a.detail ILIKE $2) \
+             ORDER BY a.id LIMIT $3",
+                &[&self.exp_id, &like, &limit],
+            )
+            .await?;
+        Ok(scan_trace(&rows))
+    }
+
+    /// `ActivityTraceSearchExcluding`: keyword-search every node's steps in this
+    /// exploration EXCEPT one node's own (`exclude_node_id`) — so a worker's
+    /// `search_all_worker_traces` doesn't return its own in-progress trace (which
+    /// is already in its context). `exclude_node_id`<=0 -> no exclusion.
+    pub async fn activity_trace_search_excluding(
+        &self,
+        exclude_node_id: i64,
+        q: &str,
+        limit: i32,
+    ) -> Result<Vec<Activity>> {
+        if exclude_node_id <= 0 {
+            return self.activity_trace_search(None, q, limit).await;
+        }
+        let limit = (if limit <= 0 { 100 } else { limit }) as i64;
+        let like = format!("%{q}%");
+        let rows = self
+            .db
+            .query(
+                &format!(
+                    "SELECT {TRACE_COLS} FROM activity \
+                 WHERE exploration_id=$1 AND node_id IS NOT NULL AND node_id <> $2 \
+                 AND kind NOT IN ('thinking','usage') \
+                 AND (summary ILIKE $3 OR detail ILIKE $3) ORDER BY id LIMIT $4"
+                ),
+                &[&self.exp_id, &exclude_node_id, &like, &limit],
+            )
+            .await?;
+        Ok(scan_trace(&rows))
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
