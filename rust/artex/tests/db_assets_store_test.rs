@@ -718,3 +718,123 @@ async fn upsert_endpoint_dedup_params_and_required_fields() {
     .await
     .unwrap();
 }
+
+#[tokio::test]
+async fn query_by_task_counts_and_paging() {
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let task_id = 99_999;
+    let domain = format!("taskquery-{t}.net");
+    let id = s
+        .upsert_root_domain(&UpsertRootDomainReq {
+            domain: domain.clone(),
+            task_id,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+    let found = s.query_by_task(task_id, "", 10, 0).await.unwrap();
+    assert!(found.iter().any(|a| a.id == id));
+    assert!(s.count_by_task(task_id, "").await.unwrap() >= 1);
+    assert!(
+        s.counts_by_type_for_task(task_id)
+            .await
+            .unwrap()
+            .get("root_domain")
+            .copied()
+            .unwrap_or(0)
+            >= 1
+    );
+    let n = s.count_by_task(task_id, "").await.unwrap();
+    assert!(
+        s.query_by_task(task_id, "", 10, n)
+            .await
+            .unwrap()
+            .is_empty(),
+        "offset past end must be empty"
+    );
+
+    // 60 assets, paged at 25 -> every asset seen exactly once.
+    let page_task = 99_998;
+    let mut ids = Vec::new();
+    for i in 0..60 {
+        let a = s
+            .upsert_root_domain(&UpsertRootDomainReq {
+                domain: format!("paging-{t}-{i:02}.querybytask.test"),
+                task_id: page_task,
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        ids.push(a);
+    }
+    let total = s.count_by_task(page_task, "root_domain").await.unwrap();
+    assert_eq!(total, 60, "CountByTask");
+    let mut seen = std::collections::HashSet::new();
+    let mut offset = 0;
+    while offset < total {
+        for a in s
+            .query_by_task(page_task, "root_domain", 25, offset)
+            .await
+            .unwrap()
+        {
+            assert!(seen.insert(a.id), "asset {} returned twice", a.id);
+        }
+        offset += 25;
+    }
+    assert_eq!(seen.len(), 60);
+
+    let mut all = ids;
+    all.push(id);
+    s.delete_by_ids(&all).await.unwrap();
+}
+
+#[tokio::test]
+async fn query_by_company() {
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let company = d.companies();
+    let s = d.assets();
+    let t = tag();
+    let (company_id, _) = company
+        .upsert_company(&format!("QueryByCompanyCorp-{t}"), "")
+        .await
+        .unwrap();
+    let scope = company
+        .add_scope(company_id, &[format!("qbc-{t}.io")], "test")
+        .await;
+    let _ = scope;
+    let domain = format!("qbc-{t}.io");
+    let id = s
+        .upsert_root_domain(&UpsertRootDomainReq {
+            domain: domain.clone(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    company.recompute_attribution().await.unwrap();
+
+    let rows = s
+        .query_by_company(company_id, "root_domain", 10, 0)
+        .await
+        .unwrap();
+    assert!(
+        rows.iter().any(|a| a.id == id),
+        "QueryByCompany: inserted asset not found"
+    );
+    assert!(s.count_by_company(company_id, "root_domain").await.unwrap() >= 1);
+
+    s.delete_by_ids(&[id]).await.unwrap();
+    let _ = company.delete_company(company_id).await;
+}

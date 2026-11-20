@@ -847,6 +847,120 @@ RETURNING id",
         Ok(id)
     }
 
+    /// `QueryByTask`: paged assets whose task_ids contains `task`, optionally
+    /// filtered by type. `limit <= 0` means no limit; offset past the end is empty.
+    pub async fn query_by_task(
+        &self,
+        task_id: i64,
+        typ: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Asset>> {
+        let mut sql = format!("SELECT {ASSET_COLS} FROM assets WHERE $1 = ANY(task_ids)");
+        if !typ.is_empty() {
+            sql.push_str(" AND type = $2");
+        }
+        sql.push_str(" ORDER BY last_seen DESC, id DESC");
+        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = vec![&task_id];
+        if !typ.is_empty() {
+            params.push(&typ);
+        }
+        if limit > 0 {
+            params.push(&limit);
+            sql.push_str(&format!(" LIMIT ${}", params.len()));
+        }
+        if offset > 0 {
+            params.push(&offset);
+            sql.push_str(&format!(" OFFSET ${}", params.len()));
+        }
+        let rows = self.db.query(&sql, &params).await?;
+        Ok(rows.iter().map(scan_asset).collect())
+    }
+
+    pub async fn count_by_task(&self, task_id: i64, typ: &str) -> Result<i64> {
+        let sql = if typ.is_empty() {
+            "SELECT count(*)::bigint FROM assets WHERE $1 = ANY(task_ids)".to_string()
+        } else {
+            "SELECT count(*)::bigint FROM assets WHERE $1 = ANY(task_ids) AND type = $2".to_string()
+        };
+        let params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = if typ.is_empty() {
+            vec![&task_id]
+        } else {
+            vec![&task_id, &typ]
+        };
+        Ok(self.db.query_one(&sql, &params).await?.get(0))
+    }
+
+    pub async fn counts_by_type_for_task(
+        &self,
+        task_id: i64,
+    ) -> Result<std::collections::HashMap<String, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT type, count(*)::bigint FROM assets WHERE $1 = ANY(task_ids) GROUP BY type",
+                &[&task_id],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| (r.get::<_, String>(0), r.get::<_, i64>(1)))
+            .collect())
+    }
+
+    pub async fn query_by_company(
+        &self,
+        company_id: i64,
+        typ: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Asset>> {
+        let mut sql = format!("SELECT {ASSET_COLS} FROM assets WHERE company_id = $1");
+        if !typ.is_empty() {
+            sql.push_str(" AND type = $2");
+        }
+        sql.push_str(" ORDER BY last_seen DESC, id DESC");
+        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = vec![&company_id];
+        if !typ.is_empty() {
+            params.push(&typ);
+        }
+        if limit > 0 {
+            params.push(&limit);
+            sql.push_str(&format!(" LIMIT ${}", params.len()));
+        }
+        if offset > 0 {
+            params.push(&offset);
+            sql.push_str(&format!(" OFFSET ${}", params.len()));
+        }
+        let rows = self.db.query(&sql, &params).await?;
+        Ok(rows.iter().map(scan_asset).collect())
+    }
+
+    pub async fn count_by_company(&self, company_id: i64, typ: &str) -> Result<i64> {
+        let sql = if typ.is_empty() {
+            "SELECT count(*)::bigint FROM assets WHERE company_id = $1".to_string()
+        } else {
+            "SELECT count(*)::bigint FROM assets WHERE company_id = $1 AND type = $2".to_string()
+        };
+        let params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = if typ.is_empty() {
+            vec![&company_id]
+        } else {
+            vec![&company_id, &typ]
+        };
+        Ok(self.db.query_one(&sql, &params).await?.get(0))
+    }
+
+    pub async fn count_by_type(&self, typ: &str) -> Result<i64> {
+        Ok(self
+            .db
+            .query_one(
+                "SELECT count(*)::bigint FROM assets WHERE type = $1",
+                &[&typ],
+            )
+            .await?
+            .get(0))
+    }
+
     pub async fn query_by_type(&self, typ: &str, limit: i64, offset: i64) -> Result<Vec<Asset>> {
         let rows = self
             .db

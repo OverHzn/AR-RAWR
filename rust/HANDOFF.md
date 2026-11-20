@@ -724,6 +724,8 @@ resume without re-deriving state.
 
 - **D-36 AssetStore UpsertEndpoint (this commit):** extended `src/db/assets.rs` with `UpsertEndpointReq` + `upsert_endpoint` — keyed by (normalized URL, uppercased method), params merged by DISTINCT ON (location, name), derived domain/port/root-domain, IP validation & C segment, host side effects (root domain, subdomain, bound IP). Added test `upsert_endpoint_dedup_params_and_required_fields`. artex **483 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-37 AssetStore query/count slice (this commit):** extended `src/db/assets.rs` with `query_by_task`, `count_by_task`, `counts_by_type_for_task`, `query_by_company`, `count_by_company`, `count_by_type` — optional type filter, paged (LIMIT/OFFSET only when >0), ordered by last_seen/id desc so pages are disjoint. Added tests `query_by_task_counts_and_paging` (60 assets at 25/page) + `query_by_company` (scope attribution). artex **485 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
