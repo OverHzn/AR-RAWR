@@ -640,13 +640,26 @@ pub struct IntentCleanup {
     pub activities: i64,
 }
 
-/// One per-worker token aggregate (the 4 token counters of Go's `TokenUsage`).
-#[derive(Debug, Clone, Copy, Default)]
-struct TokenUsage {
-    input: i64,
-    output: i64,
-    cache_read: i64,
-    cache_write: i64,
+/// `TokenUsage`: one token aggregate (Go's `TokenUsage`) — the worker label plus
+/// the 4 token counters. `worker` is empty for the rollup / whole-task totals.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TokenUsage {
+    pub worker: String,
+    pub input: i64,
+    pub output: i64,
+    pub cache_read: i64,
+    pub cache_write: i64,
+}
+
+/// `SessionTokenUsage`: one session's token aggregate (Go's `SessionTokenUsage`) —
+/// a session key (`main:<seg>` / `plan` / `intent:<id>`) plus the 4 counters.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SessionTokenUsage {
+    pub session: String,
+    pub input: i64,
+    pub output: i64,
+    pub cache_read: i64,
+    pub cache_write: i64,
 }
 
 /// A day's rolled-up token usage (keyed by UTC day-number since the epoch).
@@ -693,6 +706,7 @@ async fn intent_token_rollup(
         if kind == "usage" {
             if has_current {
                 pending = TokenUsage {
+                    worker: String::new(),
                     input: input.unwrap_or(0) as i64,
                     output: output.unwrap_or(0) as i64,
                     cache_read: read.unwrap_or(0) as i64,
@@ -709,6 +723,7 @@ async fn intent_token_rollup(
             // Preserve a partially populated legacy terminal row by filling only
             // its missing dimensions from the latest cumulative usage frame.
             let mut current = TokenUsage {
+                worker: String::new(),
                 input: input.unwrap_or(0) as i64,
                 output: output.unwrap_or(0) as i64,
                 cache_read: read.unwrap_or(0) as i64,
@@ -728,14 +743,14 @@ async fn intent_token_rollup(
                     current.cache_write = pending.cache_write;
                 }
             }
-            add_usage(&mut by_day, created_at, current);
+            add_usage(&mut by_day, created_at, &current);
         } else if has_pending {
-            add_usage(&mut by_day, created_at, pending);
+            add_usage(&mut by_day, created_at, &pending);
         }
         has_pending = false;
     }
     if has_pending {
-        add_usage(&mut by_day, pending_at, pending);
+        add_usage(&mut by_day, pending_at, &pending);
     }
 
     Ok(by_day
@@ -749,7 +764,7 @@ async fn intent_token_rollup(
 fn add_usage(
     by_day: &mut std::collections::BTreeMap<i64, TokenUsage>,
     at: SystemTime,
-    usage: TokenUsage,
+    usage: &TokenUsage,
 ) {
     if usage.input == 0 && usage.output == 0 && usage.cache_read == 0 && usage.cache_write == 0 {
         return;
@@ -1370,6 +1385,120 @@ impl ExplorationStore {
             ERR_INTENT_CLAIM_LOST,
             format!("{ERR_INTENT_CLAIM_LOST}: result write for intent {id} rejected"),
         ))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Stats + token aggregation (port of the `*ExplorationStore` stat methods in
+// `db/exploration.go`): dashboard node counts and whole-task / per-worker /
+// per-session token totals (all from the `kind='result'` activity rows).
+// ---------------------------------------------------------------------------
+
+impl ExplorationStore {
+    /// `Stats`: node counts grouped by kind (for the dashboard).
+    pub async fn stats(&self) -> Result<std::collections::HashMap<String, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT kind, count(*) FROM exploration_nodes \
+             WHERE exploration_id=$1 GROUP BY kind",
+                &[&self.exp_id],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, String>(0), r.get::<_, i64>(1));
+        }
+        Ok(out)
+    }
+
+    /// `TokenTotal`: sum token usage across ALL workers for this exploration
+    /// (the whole-task total). Same source as
+    /// [`token_stats_by_worker`](Self::token_stats_by_worker) (`kind='result'`
+    /// rows), just ungrouped.
+    pub async fn token_total(&self) -> Result<TokenUsage> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT \
+             COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), \
+             COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_write_tokens),0) \
+             FROM activity WHERE exploration_id=$1 AND kind='result'",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(TokenUsage {
+            worker: String::new(),
+            input: row.get(0),
+            output: row.get(1),
+            cache_read: row.get(2),
+            cache_write: row.get(3),
+        })
+    }
+
+    /// `TokenStatsByWorker`: sum token usage per worker for this exploration (from
+    /// the `kind='result'` records that carry usage), ordered by worker. Used by
+    /// the per-agent token display.
+    pub async fn token_stats_by_worker(&self) -> Result<Vec<TokenUsage>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT COALESCE(worker,''), \
+             COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), \
+             COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_write_tokens),0) \
+             FROM activity WHERE exploration_id=$1 AND kind='result' \
+             GROUP BY worker ORDER BY worker",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| TokenUsage {
+                worker: r.get(0),
+                input: r.get(1),
+                output: r.get(2),
+                cache_read: r.get(3),
+                cache_write: r.get(4),
+            })
+            .collect())
+    }
+
+    /// `TokenStatsBySession`: aggregate every persisted completed run, independent
+    /// of activity-history pagination. Main/planner use fixed keys (`main:<seg>` /
+    /// `plan`); worker executions use their intent node id (`intent:<id>`), even
+    /// when a different `work#N` process handled a retry.
+    pub async fn token_stats_by_session(&self) -> Result<Vec<SessionTokenUsage>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT \
+             CASE \
+                 WHEN COALESCE(a.worker,'')='mainagent' THEN 'main:' || COALESCE(a.main_seg,0)::text \
+                 WHEN COALESCE(a.worker,'')='planner' THEN 'plan' \
+                 WHEN n.id IS NOT NULL THEN 'intent:' || n.id::text \
+                 ELSE '' \
+             END AS session_key, \
+             COALESCE(SUM(a.input_tokens),0), COALESCE(SUM(a.output_tokens),0), \
+             COALESCE(SUM(a.cache_read_tokens),0), COALESCE(SUM(a.cache_write_tokens),0) \
+             FROM activity a \
+             LEFT JOIN exploration_nodes n \
+               ON n.id=a.node_id AND n.exploration_id=a.exploration_id AND n.kind='intent' \
+             WHERE a.exploration_id=$1 AND a.kind='result' \
+               AND (COALESCE(a.worker,'') IN ('mainagent','planner') OR n.id IS NOT NULL) \
+             GROUP BY session_key ORDER BY session_key",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| SessionTokenUsage {
+                session: r.get(0),
+                input: r.get(1),
+                output: r.get(2),
+                cache_read: r.get(3),
+                cache_write: r.get(4),
+            })
+            .collect())
     }
 }
 

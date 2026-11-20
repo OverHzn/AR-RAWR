@@ -542,6 +542,19 @@ resume without re-deriving state.
   empty-reason->empty, state-conflict branch (token kept but forced paused), claim_paused_intent_token
   paused->running fresh token + second call empty. artex **249 tests** green, clippy clean, fmt
   clean, gate 30/30.
+- **D-1z exploration stats + token aggregation (this commit):** `src/db/exploration.rs` extended
+  — `ExplorationStore::{stats (-> HashMap<kind,i64>; node counts by kind), token_total (->
+  TokenUsage; whole-task SUM over kind='result'), token_stats_by_worker (-> Vec<TokenUsage>;
+  grouped ORDER BY worker), token_stats_by_session (-> Vec<SessionTokenUsage>; session keys
+  main:<seg> / plan / intent:<id> via LEFT JOIN intent node, ORDER BY session_key)}`. Made
+  `TokenUsage` **pub** (+ `pub worker: String` field, now `Clone`/`PartialEq` not `Copy`) and
+  added `pub struct SessionTokenUsage {session,input,output,cache_read,cache_write}`; updated the
+  2 rollup struct literals + `add_usage` now takes `&TokenUsage` (borrow, was by-value Copy).
+  Spec: `tests/db_exploration_stats_test.rs` (1) — stats counts (goal/intent/fact), token_total
+  (327/137/48/29 incl. two w1 rows, non-result note row excluded), by_worker grouping+order (mainagent 300/..,
+  w1 14/.. from intent+fact rows), by_session (main:1/main:2/plan/intent:<a>/intent:<b>, fact-row
+  excluded, no empty key) + ordered. artex **250 tests** green, clippy clean, fmt clean, gate 30/30.
+  (Gotcha: activity token cols are INTEGER/int4 → seed token values bind `as i32`.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
