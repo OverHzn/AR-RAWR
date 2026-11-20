@@ -525,6 +525,23 @@ resume without re-deriving state.
   + internal-edges-only, lone-root lineage is just itself, missing node -> empty. artex **248
   tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: edge lineage SQL is a plain
   string — `format!` with no interpolation trips clippy `useless_format`.)
+- **D-1y exploration intent claim lifecycle (this commit):** `src/db/exploration.rs` extended —
+  `ExplorationStore::{claim_intent(id,owner -> bool), claim_intent_token(id,owner -> token;
+  open->running + owner + fresh 32-hex unclaim_token + last_heartbeat_at, ""=not claimable),
+  claim_paused_intent_token(id -> token; paused->running same cols as CAS + fresh token),
+  heartbeat_intent_claim(id,token (running AND unclaim_token=token; else ERR_INTENT_CLAIM_LOST),
+  settle_intent_claim(id,token,state -> fenced; terminal stamps completed_at; token freed; 0-row
+  -> settle_intent_claim_result), settle_intent_claim_blocked(id,token,reason -> blocked +
+  NULLIF(reason,'') + completed_at, same fence)}` + private `new_unclaim_token` (16 OsRng bytes
+  hex) + `settle_intent_claim_result(id,token,affected)` (1->Ok; else re-read unclaim_token:
+  still-matches->ERR_INTENT_STATE_CONFLICT, otherwise ERR_INTENT_CLAIM_LOST) + `pub const
+  ERR_INTENT_CLAIM_LOST`. Spec: `tests/db_exploration_intent_claim_test.rs` (1) — claim sets
+  running/owner/32-hex-token, double-claim no-op, heartbeat ok / stale->claim-lost, stale settle
+  ->claim-lost + unchanged, good settle->done+completed_at+token-freed, exhausted->reopen->re-claim
+  ->non-terminal-settle clears completed_at, settle_blocked records reason + completed_at +
+  empty-reason->empty, state-conflict branch (token kept but forced paused), claim_paused_intent_token
+  paused->running fresh token + second call empty. artex **249 tests** green, clippy clean, fmt
+  clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

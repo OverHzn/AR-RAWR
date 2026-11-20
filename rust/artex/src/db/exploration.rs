@@ -255,6 +255,11 @@ pub const INTENT_CLAIM_TTL_SECS: f64 = 90.0;
 /// race with a concurrent state change (callers map it to HTTP 409).
 pub const ERR_INTENT_STATE_CONFLICT: &str = "intent state changed concurrently";
 
+/// `ErrIntentClaimLost`: a fenced claim write (heartbeat / settle) found the
+/// caller's unclaim token no longer current — the claim was taken over, or the
+/// lease expired and another worker claimed the intent.
+pub const ERR_INTENT_CLAIM_LOST: &str = "intent claim lost";
+
 /// An intent is terminal (stamps `completed_at`) in these states; reopening
 /// (open/running/paused) clears it. Mirrors Go's inline check.
 fn is_terminal_intent_state(state: &str) -> bool {
@@ -1194,6 +1199,177 @@ impl ExplorationStore {
             out.insert(r.get::<_, i64>(0), r.get::<_, i64>(1));
         }
         Ok(out)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Intent claim lifecycle (port of the `*ExplorationStore` claim methods in
+// `db/exploration.go`): the worker claim boundary — claim open/paused intent,
+// renew its lease, and settle its result, all fenced by a fresh unclaim token.
+// ---------------------------------------------------------------------------
+
+/// `newUnclaimToken`: 16 random bytes hex-encoded (a 32-char hex token), the
+/// fencing token a worker must present to heartbeat / settle its claim.
+fn new_unclaim_token() -> String {
+    use rand::RngCore;
+    let mut b = [0u8; 16];
+    rand::rngs::OsRng.fill_bytes(&mut b);
+    let mut out = String::with_capacity(32);
+    for byte in b {
+        out.push_str(&format!("{byte:02x}"));
+    }
+    out
+}
+
+impl ExplorationStore {
+    /// `ClaimIntent`: claim an open intent for `owner` (true when claimed). Thin
+    /// wrapper over [`claim_intent_token`](Self::claim_intent_token).
+    pub async fn claim_intent(&self, id: i64, owner: &str) -> Result<bool> {
+        let token = self.claim_intent_token(id, owner).await?;
+        Ok(!token.is_empty())
+    }
+
+    /// `ClaimIntentToken`: claim an open intent for `owner`, returning the claim's
+    /// unclaim token ("" when it was not claimable). Every claim gets a fresh
+    /// random token and starts its lease (`last_heartbeat_at`) in the same
+    /// statement; the claimer must present the token to
+    /// [`heartbeat_intent_claim`](Self::heartbeat_intent_claim) and the
+    /// [`settle_intent_claim*`](Self::settle_intent_claim) writes.
+    pub async fn claim_intent_token(&self, id: i64, owner: &str) -> Result<String> {
+        let token = new_unclaim_token();
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+             SET state='running', owner=$1, unclaim_token=$4, last_heartbeat_at=now() \
+             WHERE id=$2 AND exploration_id=$3 AND kind='intent' AND state='open'",
+                &[&owner, &id, &self.exp_id, &token],
+            )
+            .await?;
+        if n != 1 {
+            return Ok(String::new());
+        }
+        Ok(token)
+    }
+
+    /// `ClaimPausedIntentToken`: the paused->running counterpart of
+    /// [`claim_intent_token`](Self::claim_intent_token) (the human-message path,
+    /// which never goes through 'open'). Same column updates as a paused->running
+    /// CAS plus a fresh token. Returns "" when the intent is no longer paused.
+    pub async fn claim_paused_intent_token(&self, id: i64) -> Result<String> {
+        let token = new_unclaim_token();
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+             SET state='running', blocked_reason=NULL, content_version=content_version+1, \
+                 completed_at=NULL, unclaim_token=$3, last_heartbeat_at=now() \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent' AND state='paused'",
+                &[&id, &self.exp_id, &token],
+            )
+            .await?;
+        if n != 1 {
+            return Ok(String::new());
+        }
+        Ok(token)
+    }
+
+    /// `HeartbeatIntentClaim`: renew the lease of the claim identified by `token`.
+    /// Touches the row only while `token` is the running intent's current unclaim
+    /// token; otherwise returns [`ERR_INTENT_CLAIM_LOST`] and writes nothing.
+    pub async fn heartbeat_intent_claim(&self, id: i64, token: &str) -> Result<()> {
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes SET last_heartbeat_at=now() \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent' \
+             AND state='running' AND unclaim_token=$3",
+                &[&id, &self.exp_id, &token],
+            )
+            .await?;
+        if n != 1 {
+            return Err(Error::sentinel(
+                ERR_INTENT_CLAIM_LOST,
+                format!("{ERR_INTENT_CLAIM_LOST}: heartbeat for intent {id} rejected"),
+            ));
+        }
+        Ok(())
+    }
+
+    /// `SettleIntentClaim`: the fenced write of a worker's intent result — move the
+    /// running intent to `state` and release the claim, but only while `token` is
+    /// still the current unclaim token. A worker whose claim was taken over gets
+    /// [`ERR_INTENT_CLAIM_LOST`]; a still-owned token on an intent that left
+    /// 'running' concurrently gets [`ERR_INTENT_STATE_CONFLICT`].
+    pub async fn settle_intent_claim(&self, id: i64, token: &str, state: &str) -> Result<()> {
+        let terminal = is_terminal_intent_state(state);
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+             SET state=$1, blocked_reason=NULL, content_version=content_version+1, \
+                 completed_at = CASE WHEN $5 THEN now() ELSE NULL END, unclaim_token=NULL \
+             WHERE id=$2 AND exploration_id=$3 AND kind='intent' \
+             AND state='running' AND unclaim_token=$4",
+                &[&state, &id, &self.exp_id, &token, &terminal],
+            )
+            .await?;
+        self.settle_intent_claim_result(id, token, n).await
+    }
+
+    /// `SettleIntentClaimBlocked`: the fenced counterpart of `SetIntentBlockedReason`
+    /// — settle the running intent as blocked with `reason` under the same token
+    /// check as [`settle_intent_claim`](Self::settle_intent_claim).
+    pub async fn settle_intent_claim_blocked(
+        &self,
+        id: i64,
+        token: &str,
+        reason: &str,
+    ) -> Result<()> {
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+             SET state='blocked', blocked_reason=NULLIF($1,''), completed_at=now(), unclaim_token=NULL \
+             WHERE id=$2 AND exploration_id=$3 AND kind='intent' \
+             AND state='running' AND unclaim_token=$4",
+                &[&reason, &id, &self.exp_id, &token],
+            )
+            .await?;
+        self.settle_intent_claim_result(id, token, n).await
+    }
+
+    /// `settleIntentClaimResult`: turn a fenced settle that matched no row into the
+    /// explicit rejection — claim lost unless the token is still the current one (in
+    /// which case the intent merely left 'running', a state conflict).
+    async fn settle_intent_claim_result(&self, id: i64, token: &str, affected: u64) -> Result<()> {
+        if affected == 1 {
+            return Ok(());
+        }
+        let current: Option<String> = match self
+            .db
+            .query_opt(
+                "SELECT unclaim_token FROM exploration_nodes \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent'",
+                &[&id, &self.exp_id],
+            )
+            .await?
+        {
+            Some(r) => r.get::<_, Option<String>>(0),
+            None => None,
+        };
+        if current.as_deref() == Some(token) {
+            return Err(Error::sentinel(
+                ERR_INTENT_STATE_CONFLICT,
+                format!(
+                    "{ERR_INTENT_STATE_CONFLICT}: intent {id} is no longer in the running state"
+                ),
+            ));
+        }
+        Err(Error::sentinel(
+            ERR_INTENT_CLAIM_LOST,
+            format!("{ERR_INTENT_CLAIM_LOST}: result write for intent {id} rejected"),
+        ))
     }
 }
 
