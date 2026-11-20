@@ -104,3 +104,58 @@ fn decode_body_cap_and_response_helpers() {
     assert_eq!(err.status, 400);
     assert_eq!(err.body, br#"{"error":"bad request"}"#);
 }
+
+#[test]
+fn password_change_wait_blocks_by_ip_and_token() {
+    use artex::server::login_limit::{
+        password_change_reset, password_change_wait, LoginLimiter, LOGIN_MAX_ATTEMPTS,
+    };
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::Duration;
+
+    let clock = std::sync::Arc::new(AtomicU64::new(0));
+    let c = clock.clone();
+    let limiter = LoginLimiter::new(Box::new(move || {
+        Duration::from_secs(c.load(Ordering::SeqCst))
+    }));
+    const TOK: &str = "stolen-session";
+
+    for _ in 0..LOGIN_MAX_ATTEMPTS {
+        assert_eq!(
+            password_change_wait(&limiter, "192.0.2.50:40000", TOK),
+            Duration::ZERO
+        );
+    }
+    assert!(password_change_wait(&limiter, "192.0.2.50:40000", TOK) > Duration::ZERO);
+
+    let clock2 = clock.clone();
+    let limiter2 = LoginLimiter::new(Box::new(move || {
+        Duration::from_secs(clock2.load(Ordering::SeqCst))
+    }));
+    for i in 0..LOGIN_MAX_ATTEMPTS {
+        assert_eq!(
+            password_change_wait(&limiter2, &format!("198.51.100.{i}:40000"), TOK),
+            Duration::ZERO
+        );
+    }
+    assert!(
+        password_change_wait(&limiter2, "203.0.113.9:40000", TOK) > Duration::ZERO,
+        "stolen token still allowed after rotating the client IP"
+    );
+
+    let limiter3 = LoginLimiter::new(Box::new({
+        let c = clock.clone();
+        move || Duration::from_secs(c.load(Ordering::SeqCst))
+    }));
+    for _ in 0..LOGIN_MAX_ATTEMPTS {
+        assert_eq!(
+            password_change_wait(&limiter3, "192.0.2.51:40000", TOK),
+            Duration::ZERO
+        );
+    }
+    password_change_reset(&limiter3, "192.0.2.51:40000", TOK);
+    assert_eq!(
+        password_change_wait(&limiter3, "192.0.2.51:40000", TOK),
+        Duration::ZERO
+    );
+}

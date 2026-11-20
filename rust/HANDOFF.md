@@ -808,6 +808,8 @@ resume without re-deriving state.
 
 - **S-5 server decode/response helpers (this commit):** extended `src/server/helpers.rs` with `DECODE_MAX_BYTES` (32 MiB), `is_multipart`, `decode_json_body` (TooLarge vs InvalidJson, multipart bypass) and `JsonResponse`/`write_json`/`write_err`. Spec: 1 test — small body, cap, invalid JSON, multipart, JSON/error responses. artex **565 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-6 login/password-change limiter (this commit):** new `src/server/login_limit.rs` — port of `server/login_limit.go` + `passwordChangeWait`. Per-IP (never per-account) attempt counting with 10-attempt window, 1m -> 15m exponential block, idle sweep + 10k entry cap, injectable clock; password change tracks BOTH IP and token prefix, reset clears both. Spec: 1 test — same IP+token block, rotated IP still blocked by token, reset. artex **566 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
