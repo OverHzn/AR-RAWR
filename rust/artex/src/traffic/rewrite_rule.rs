@@ -68,13 +68,13 @@ pub struct Rule {
     pub note: String,
 }
 
-fn valid_token(s: &str) -> bool {
+pub(crate) fn valid_token(s: &str) -> bool {
     !s.is_empty()
         && s.bytes()
             .all(|c| c.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&c))
 }
 
-fn canonical_header_key(s: &str) -> String {
+pub(crate) fn canonical_header_key(s: &str) -> String {
     s.split('-')
         .map(|part| {
             let mut chars = part.chars();
@@ -88,12 +88,13 @@ fn canonical_header_key(s: &str) -> String {
 }
 
 #[allow(dead_code)]
-struct StatusRange {
-    lo: i32,
-    hi: i32,
+#[derive(Clone)]
+pub(crate) struct StatusRange {
+    pub(crate) lo: i32,
+    pub(crate) hi: i32,
 }
 
-fn parse_status(s: &str) -> Option<StatusRange> {
+pub(crate) fn parse_status(s: &str) -> Option<StatusRange> {
     let s = s.trim().to_lowercase();
     let b = s.as_bytes();
     if b.len() != 3 || !(b'1'..=b'5').contains(&b[0]) {
@@ -107,11 +108,11 @@ fn parse_status(s: &str) -> Option<StatusRange> {
     Some(StatusRange { lo: n, hi: n + 1 })
 }
 
-fn body_allowed_for_status(status: i32) -> bool {
+pub(crate) fn body_allowed_for_status(status: i32) -> bool {
     !(100..=199).contains(&status) && status != 204 && status != 304
 }
 
-fn compile_host(h: &str) -> Result<(String, bool)> {
+pub(crate) fn compile_host(h: &str) -> Result<(String, bool)> {
     let mut h = h.trim().to_lowercase();
     let mut glob = false;
     if h.starts_with("*.") {
@@ -155,14 +156,14 @@ fn required_pattern(expr: &str) -> Result<regex::Regex> {
     compile_pattern("regex", expr)?.ok_or_else(|| Error::msg("regex cannot be empty"))
 }
 
-fn header_value(v: &str) -> Result<()> {
+pub(crate) fn header_value(v: &str) -> Result<()> {
     if v.contains(['\r', '\n', '\0']) {
         return Err(Error::msg("value contains a line break or a NUL byte"));
     }
     Ok(())
 }
 
-fn header_target(name: &str) -> Result<String> {
+pub(crate) fn header_target(name: &str) -> Result<String> {
     if !valid_token(name) {
         return Err(Error::msg("invalid header name"));
     }
@@ -185,13 +186,13 @@ fn header_target(name: &str) -> Result<String> {
     Ok(c)
 }
 
-fn parse_path_query(s: &str) -> bool {
+pub(crate) fn parse_path_query(s: &str) -> bool {
     // Go uses url.ParseRequestURI: an absolute path (+ optional query), no raw
     // control characters or spaces.
     s.starts_with('/') && !s.chars().any(|c| c.is_control() || c == ' ')
 }
 
-fn action_class(typ: &str) -> i32 {
+pub(crate) fn action_class(typ: &str) -> i32 {
     match typ {
         ACTION_SET_METHOD | ACTION_SET_PATH_QUERY | ACTION_REPLACE_URL => 0,
         ACTION_DELETE_HEADER => 1,
@@ -201,7 +202,7 @@ fn action_class(typ: &str) -> i32 {
     }
 }
 
-fn compile_action(phase: &str, a: &Action) -> Result<()> {
+pub(crate) fn compile_action(phase: &str, a: &Action) -> Result<()> {
     if a.value.len() > MAX_VALUE_SIZE {
         return Err(Error::msg(format!(
             "value longer than {MAX_VALUE_SIZE} bytes"
