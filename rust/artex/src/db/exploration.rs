@@ -2901,3 +2901,128 @@ impl ExplorationStore {
         Ok(out)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Admission rollback + operator constraints (port of `db/intent_admission.go`
+// `DiscardOpenIntent` and `db/constraints.go`: Constraint / ListConstraints /
+// AddConstraint / UpdateConstraint / DeleteConstraint). `created_at` is carried as
+// RFC3339 text (`::text`), matching the other struct ports.
+// ---------------------------------------------------------------------------
+
+/// `Constraint`: one operator-authored operation constraint for a task
+/// (`kind=allow` permitted ops / `kind=deny` forbidden ops, free text).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Constraint {
+    pub id: i64,
+    pub kind: String,
+    pub text: String,
+    pub origin: String,
+    pub created_at: String,
+}
+
+impl ExplorationStore {
+    /// `DiscardOpenIntent`: compensate a follow-up creation when task admission
+    /// fails. Deletes the node's activity, then the open intent node itself;
+    /// errors unless exactly one open intent was removed. Edges/anchors cascade.
+    pub async fn discard_open_intent(&self, id: i64) -> Result<()> {
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "DELETE FROM activity WHERE exploration_id=$1 AND node_id=$2",
+            &[&self.exp_id, &id],
+        )
+        .await?;
+        let removed = tx
+            .execute(
+                "DELETE FROM exploration_nodes \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent' AND state='open'",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        if removed != 1 {
+            return Err(Error::msg(format!(
+                "open intent {id} was not available for admission rollback"
+            )));
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// `ListConstraints`: this exploration's constraints, allow before deny,
+    /// oldest first within each group (stable render order).
+    pub async fn list_constraints(&self) -> Result<Vec<Constraint>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT id, kind, text, COALESCE(origin,''), created_at::text \
+             FROM task_constraints WHERE exploration_id=$1 \
+             ORDER BY (kind='deny'), id",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| Constraint {
+                id: r.get(0),
+                kind: r.get(1),
+                text: r.get(2),
+                origin: r.get(3),
+                created_at: r.get(4),
+            })
+            .collect())
+    }
+
+    /// `AddConstraint`: insert one constraint (`kind` must be allow|deny; empty
+    /// `origin` defaults to "system") and return its id.
+    pub async fn add_constraint(&self, kind: &str, text: &str, origin: &str) -> Result<i64> {
+        if kind != "allow" && kind != "deny" {
+            return Err(Error::msg("kind must be allow or deny"));
+        }
+        let origin = if origin.is_empty() { "system" } else { origin };
+        let row = self
+            .db
+            .query_one(
+                "INSERT INTO task_constraints(exploration_id, kind, text, origin) \
+             VALUES ($1, $2, $3, $4) RETURNING id",
+                &[&self.exp_id, &kind, &text, &origin],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `UpdateConstraint`: rewrite a constraint's kind + text (scoped to this
+    /// exploration); errors when no such constraint exists.
+    pub async fn update_constraint(&self, id: i64, kind: &str, text: &str) -> Result<()> {
+        if kind != "allow" && kind != "deny" {
+            return Err(Error::msg("kind must be allow or deny"));
+        }
+        let n = self
+            .db
+            .execute(
+                "UPDATE task_constraints SET kind=$1, text=$2, updated_at=now() \
+             WHERE id=$3 AND exploration_id=$4",
+                &[&kind, &text, &id, &self.exp_id],
+            )
+            .await?;
+        if n == 0 {
+            return Err(Error::msg("constraint does not exist"));
+        }
+        Ok(())
+    }
+
+    /// `DeleteConstraint`: remove a constraint (scoped to this exploration);
+    /// errors when no such constraint exists.
+    pub async fn delete_constraint(&self, id: i64) -> Result<()> {
+        let n = self
+            .db
+            .execute(
+                "DELETE FROM task_constraints WHERE id=$1 AND exploration_id=$2",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        if n == 0 {
+            return Err(Error::msg("constraint does not exist"));
+        }
+        Ok(())
+    }
+}
