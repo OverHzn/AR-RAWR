@@ -65,10 +65,14 @@ impl ExplorationStore {
 // `db/exploration.go`). The node/edge methods grow here as the group is ported.
 // ---------------------------------------------------------------------------
 
-use crate::db::constants::{KIND_FACT, KIND_INTENT};
+use crate::db::constants::{
+    KIND_FACT, KIND_FINDING, KIND_GOAL, KIND_INTENT, REL_DERIVED_FROM, REL_YIELDS, STATE_ORIGIN,
+};
 use crate::db::error::Error;
+use crate::db::gotime;
 use serde_json::Value;
-use std::time::SystemTime;
+use std::collections::{HashMap, HashSet};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// `Node`: one typed reasoning-graph node. `scanNode` populates the core columns;
 /// the finding-aware fields (finding_id/finding_node_id/traffic_count/anchors/
@@ -431,6 +435,330 @@ impl ExplorationStore {
         tx.commit().await?;
         Ok(summary)
     }
+
+    /// `CancelIntent`: physically delete an intent plus all exclusively-owned
+    /// descendant nodes "supported only by that intent" — nodes reachable
+    /// downward along yields/derived_from whose every parent lies inside the
+    /// deletion set. Goals and origin facts are never deleted; shared nodes still
+    /// referenced outside the set are kept, so other branches stay intact. Each
+    /// deleted intent gets a token rollup first (preserving irreversible
+    /// metering), then has its activity + side sessions cleaned; a deleted finding
+    /// has its `findings` row removed first (node_id FK is ON DELETE SET NULL).
+    /// Edges CASCADE with the nodes; the whole cleanup is one transaction. The
+    /// caller must stop any running worker first. Errors "intent not found" when
+    /// the id is not an intent of this exploration (idempotent after deletion),
+    /// and "intent cleanup changed concurrently" if the node set shifted.
+    pub async fn cancel_intent(&self, id: i64) -> Result<IntentCleanup> {
+        let mut out = IntentCleanup::default();
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+
+        // Lock the intent row to confirm it exists (idempotent: already gone ->
+        // not found). State is not checked — hard deletion is valid for any state.
+        let exists = tx
+            .query_opt(
+                "SELECT 1 FROM exploration_nodes \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent' FOR UPDATE",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        if exists.is_none() {
+            return Err(Error::msg("intent not found"));
+        }
+
+        // Load the whole graph's nodes (to decide protected) and edges (for
+        // downward reachability + the parent sets). The graph is small for real
+        // tasks.
+        let mut kind: HashMap<i64, String> = HashMap::new();
+        let mut protected: HashSet<i64> = HashSet::new();
+        let nrows = tx
+            .query(
+                "SELECT id, kind, state FROM exploration_nodes WHERE exploration_id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        for r in &nrows {
+            let nid: i64 = r.get(0);
+            let k: String = r.get(1);
+            let st: String = r.get(2);
+            if k == KIND_GOAL || (k == KIND_FACT && st == STATE_ORIGIN) {
+                protected.insert(nid); // goals + task root facts are never deleted
+            }
+            kind.insert(nid, k);
+        }
+
+        let mut parents_of: HashMap<i64, Vec<i64>> = HashMap::new();
+        let mut down_of: HashMap<i64, Vec<i64>> = HashMap::new();
+        let erows = tx
+            .query(
+                "SELECT src_id, rel, dst_id FROM exploration_edges WHERE exploration_id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        for r in &erows {
+            let src: i64 = r.get(0);
+            let rel: String = r.get(1);
+            let dst: i64 = r.get(2);
+            parents_of.entry(dst).or_default().push(src); // any rel counts as a parent
+            if rel == REL_YIELDS || rel == REL_DERIVED_FROM {
+                down_of.entry(src).or_default().push(dst);
+            }
+        }
+
+        // Exclusive cascade: expand downward from the intent; a node joins the
+        // deletion set iff it is unprotected and every parent is already in the
+        // set. Iterate to a fixed point.
+        let mut del: HashSet<i64> = HashSet::new();
+        del.insert(id);
+        loop {
+            let mut changed = false;
+            let sources: Vec<i64> = del.iter().copied().collect();
+            for src in sources {
+                if let Some(dsts) = down_of.get(&src) {
+                    for &dst in dsts {
+                        if del.contains(&dst) || protected.contains(&dst) {
+                            continue;
+                        }
+                        let exclusive = parents_of
+                            .get(&dst)
+                            .is_none_or(|ps| ps.iter().all(|p| del.contains(p)));
+                        if exclusive {
+                            del.insert(dst);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+
+        // Bucket by kind.
+        let mut ids: Vec<i64> = Vec::with_capacity(del.len());
+        let mut intent_ids: Vec<i64> = Vec::new();
+        let mut finding_ids: Vec<i64> = Vec::new();
+        for &nid in &del {
+            ids.push(nid);
+            match kind.get(&nid).map(String::as_str) {
+                Some(KIND_INTENT) => {
+                    intent_ids.push(nid);
+                    out.intents += 1;
+                }
+                Some(KIND_FACT) => out.facts += 1,
+                Some(KIND_FINDING) => {
+                    finding_ids.push(nid);
+                    out.findings += 1;
+                }
+                _ => {}
+            }
+        }
+
+        // Each deleted intent: token rollup (preserve irreversible metering), then
+        // clear activity. The rollup row's node_id is NULL, so the node_id-based
+        // deletion below does not hit it.
+        for iid in &intent_ids {
+            let buckets = intent_token_rollup(&tx, self.exp_id, *iid).await?;
+            let n = tx
+                .execute(
+                    "DELETE FROM activity WHERE exploration_id=$1 AND node_id=$2",
+                    &[&self.exp_id, iid],
+                )
+                .await?;
+            out.activities += n as i64;
+            for bucket in buckets {
+                let metadata = serde_json::json!({
+                    "cancelled_intent_id": iid,
+                    "token_day": gotime::civil_date_from_days(bucket.day),
+                    "token_rollup": true,
+                });
+                let created_at = UNIX_EPOCH + Duration::from_secs((bucket.day * 86_400) as u64);
+                tx.execute(
+                    "INSERT INTO activity(exploration_id, worker, kind, summary, metadata, \
+                 input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, created_at) \
+                 VALUES ($1,'token-ledger','result',$2,$3,$4,$5,$6,$7,$8)",
+                    &[
+                        &self.exp_id,
+                        &format!("Token metering for cancelled intent #{iid}"),
+                        &metadata,
+                        &(bucket.usage.input as i32),
+                        &(bucket.usage.output as i32),
+                        &(bucket.usage.cache_read as i32),
+                        &(bucket.usage.cache_write as i32),
+                        &created_at,
+                    ],
+                )
+                .await?;
+            }
+            tx.execute(
+                "DELETE FROM side_question_sessions WHERE intent_id=$1",
+                &[iid],
+            )
+            .await?;
+        }
+
+        // Delete the findings-table row before deleting the finding node (else a
+        // node_id=NULL orphan is left behind).
+        for fid in &finding_ids {
+            tx.execute("DELETE FROM findings WHERE node_id=$1", &[fid])
+                .await?;
+        }
+
+        // Delete the nodes (edges CASCADE). Delete one by one and verify row
+        // counts to guard against concurrent changes.
+        let mut removed: i64 = 0;
+        for nid in &ids {
+            let n = tx
+                .execute(
+                    "DELETE FROM exploration_nodes WHERE id=$1 AND exploration_id=$2",
+                    &[nid, &self.exp_id],
+                )
+                .await?;
+            removed += n as i64;
+        }
+        if removed != ids.len() as i64 {
+            return Err(Error::msg("intent cleanup changed concurrently"));
+        }
+        tx.commit().await?;
+        Ok(out)
+    }
+}
+
+/// `IntentCleanup`: summary of the blackboard records removed when a user
+/// cancels one worker intent. Global assets and traffic are deliberately not
+/// part of this operation; anchors disappear only because their owning nodes do.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct IntentCleanup {
+    pub intents: i64,
+    pub facts: i64,
+    pub findings: i64,
+    pub activities: i64,
+}
+
+/// One per-worker token aggregate (the 4 token counters of Go's `TokenUsage`).
+#[derive(Debug, Clone, Copy, Default)]
+struct TokenUsage {
+    input: i64,
+    output: i64,
+    cache_read: i64,
+    cache_write: i64,
+}
+
+/// A day's rolled-up token usage (keyed by UTC day-number since the epoch).
+struct TokenUsageBucket {
+    day: i64,
+    usage: TokenUsage,
+}
+
+/// `intentTokenRollup`: exactly-once usage grouped by its original UTC day. Each
+/// `result` row terminates one run — a result carrying usage is authoritative; an
+/// older error/cancel result without usage falls back to the latest cumulative
+/// `usage` frame since the previous result. A trailing `usage` frame with no
+/// following result represents a run interrupted before its terminal result was
+/// persisted. Buckets come back sorted by day ascending.
+async fn intent_token_rollup(
+    tx: &deadpool_postgres::Transaction<'_>,
+    exploration_id: i64,
+    intent_id: i64,
+) -> Result<Vec<TokenUsageBucket>> {
+    let rows = tx
+        .query(
+            "SELECT kind, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, \
+         created_at FROM activity \
+         WHERE exploration_id=$1 AND node_id=$2 AND kind IN ('usage','result') ORDER BY id",
+            &[&exploration_id, &intent_id],
+        )
+        .await?;
+
+    // day-number (UTC days since epoch) -> summed usage.
+    let mut by_day: std::collections::BTreeMap<i64, TokenUsage> = std::collections::BTreeMap::new();
+    let mut pending = TokenUsage::default();
+    let mut pending_at = UNIX_EPOCH;
+    let mut has_pending = false;
+
+    for r in &rows {
+        let kind: String = r.get(0);
+        let input: Option<i32> = r.get(1);
+        let output: Option<i32> = r.get(2);
+        let read: Option<i32> = r.get(3);
+        let write: Option<i32> = r.get(4);
+        let created_at: SystemTime = r.get(5);
+
+        let has_current = input.is_some() || output.is_some() || read.is_some() || write.is_some();
+        if kind == "usage" {
+            if has_current {
+                pending = TokenUsage {
+                    input: input.unwrap_or(0) as i64,
+                    output: output.unwrap_or(0) as i64,
+                    cache_read: read.unwrap_or(0) as i64,
+                    cache_write: write.unwrap_or(0) as i64,
+                };
+                pending_at = created_at;
+                has_pending = true;
+            }
+            continue;
+        }
+
+        // A terminal 'result' row.
+        if has_current {
+            // Preserve a partially populated legacy terminal row by filling only
+            // its missing dimensions from the latest cumulative usage frame.
+            let mut current = TokenUsage {
+                input: input.unwrap_or(0) as i64,
+                output: output.unwrap_or(0) as i64,
+                cache_read: read.unwrap_or(0) as i64,
+                cache_write: write.unwrap_or(0) as i64,
+            };
+            if has_pending {
+                if input.is_none() {
+                    current.input = pending.input;
+                }
+                if output.is_none() {
+                    current.output = pending.output;
+                }
+                if read.is_none() {
+                    current.cache_read = pending.cache_read;
+                }
+                if write.is_none() {
+                    current.cache_write = pending.cache_write;
+                }
+            }
+            add_usage(&mut by_day, created_at, current);
+        } else if has_pending {
+            add_usage(&mut by_day, created_at, pending);
+        }
+        has_pending = false;
+    }
+    if has_pending {
+        add_usage(&mut by_day, pending_at, pending);
+    }
+
+    Ok(by_day
+        .into_iter()
+        .map(|(day, usage)| TokenUsageBucket { day, usage })
+        .collect())
+}
+
+/// Fold one usage frame into its UTC-day bucket (zero-usage frames are ignored,
+/// mirroring Go's early return).
+fn add_usage(
+    by_day: &mut std::collections::BTreeMap<i64, TokenUsage>,
+    at: SystemTime,
+    usage: TokenUsage,
+) {
+    if usage.input == 0 && usage.output == 0 && usage.cache_read == 0 && usage.cache_write == 0 {
+        return;
+    }
+    let secs = at
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or(Duration::ZERO)
+        .as_secs() as i64;
+    let day = secs.div_euclid(86_400);
+    let e = by_day.entry(day).or_default();
+    e.input += usage.input;
+    e.output += usage.output;
+    e.cache_read += usage.cache_read;
+    e.cache_write += usage.cache_write;
 }
 
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with

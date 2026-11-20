@@ -158,6 +158,14 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
     (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
+/// Format a UTC calendar day, given as a whole number of days since the Unix
+/// epoch, as `YYYY-MM-DD` — Go's `t.UTC().Format("2006-01-02")` for the UTC day
+/// containing `t`. Used for the cancelled-intent token-rollup `token_day`.
+pub fn civil_date_from_days(days: i64) -> String {
+    let (year, month, day) = civil_from_days(days);
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -458,8 +458,29 @@ resume without re-deriving state.
   completed_at, side-session cleanup (seeded via task_id+exploration_id+intent_id to
   satisfy the sessions XOR CHECK), done-state conflict guard leaves node untouched,
   paused deletable, missing id → not-found. artex **244 tests** green, clippy clean, fmt
-  clean, gate 30/30. (Next: CancelIntent + intentTokenRollup — the hard-delete graph
-  cascade; needs a TokenUsage type + activity token rollup.)
+  clean, gate 30/30.
+- **D-1u CancelIntent + intentTokenRollup (this commit):** `src/db/exploration.rs`
+  extended — `ExplorationStore::cancel_intent(id) -> Result<IntentCleanup>` (one tx:
+  lock intent row FOR UPDATE → "intent not found" if gone; load all nodes (kind+state,
+  goal/origin-fact = protected) + edges (parentsOf any-rel, downOf along
+  yields/derived_from); exclusive downward cascade to a fixed point — a node joins iff
+  unprotected and every parent already in the set, so shared branches survive; bucket by
+  kind; per deleted intent run `intent_token_rollup` then DELETE activity + side
+  sessions, inserting a `token-ledger`/`result` activity row per UTC-day bucket; DELETE
+  findings rows before their nodes; DELETE nodes one-by-one with a removed==len guard ->
+  "intent cleanup changed concurrently"). `pub struct IntentCleanup {intents,facts,
+  findings,activities}` (PartialEq). Private `intent_token_rollup` (usage/result frames
+  → per-UTC-day sums; a result with no usage falls back to the latest cumulative usage
+  frame; partial legacy results fill only missing dims; trailing usage frame handled;
+  zero-usage frames ignored; BTreeMap → day-ascending) + `TokenUsage`/`TokenUsageBucket`
+  + `add_usage`. `gotime::civil_date_from_days(days)` added for the `token_day`
+  YYYY-MM-DD string. Spec: `tests/db_exploration_intent_cancel_test.rs` (1) — cascade
+  (exclusive f1/f2 + finding deleted; shared fact + sibling intent + goal + origin kept),
+  findings row removed (not orphaned), 3-day token rollup (10,5,1,2 / 100,50,4,8 /
+  7,7,7,7 with token_day metadata), cleanup counts {1,2,1,5}, idempotent second cancel
+  -> not-found. artex **245 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha:
+  activity token cols are INTEGER/int4 → bind token rollup values `as i32`, else
+  tokio-postgres "error serializing parameter" on the i64→int4 mismatch.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
