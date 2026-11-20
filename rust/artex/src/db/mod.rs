@@ -69,6 +69,7 @@ pub mod task_archives;
 pub mod task_categories;
 pub mod task_context;
 pub mod task_credentials;
+pub mod task_helpers;
 pub mod task_intercept;
 pub mod task_outcome;
 pub mod task_templates;
