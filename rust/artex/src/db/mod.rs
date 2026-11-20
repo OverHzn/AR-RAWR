@@ -40,6 +40,7 @@ pub mod finding_retests;
 pub mod finding_verification;
 pub mod findings;
 pub mod gotime;
+pub mod intercept_store;
 pub mod lessons;
 pub mod llm_usage;
 pub mod llmhealth;
