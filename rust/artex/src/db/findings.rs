@@ -625,14 +625,11 @@ pub struct FindingGroup {
 }
 
 impl DB {
-    /// `applyAssetScope`: resolve `asset_scope` into the concrete `asset_*` filter
-    /// fields. Empty scope = no asset filtering; `__none__` = the unlinked-assets
-    /// bucket. **Deferred:** a node key (`a:` / `c:` / `r:`) requires the asset
-    /// tree (`buildFindingAssetTree`, not yet ported) to collect its subtree ids, so
-    /// that case returns an explicit "not yet available" error rather than silently
-    /// degrading into no filtering.
-    pub(crate) fn apply_asset_scope(&self, mut f: FindingFilter) -> Result<FindingFilter> {
-        let scope = f.asset_scope.trim();
+    /// `applyAssetScope`: resolve a node key into the asset ids of its whole
+    /// subtree. Empty scope = no filtering; `__none__` = unlinked bucket; a node
+    /// key no longer under the filter -> `asset_miss` (empty result, never no-filter).
+    pub async fn apply_asset_scope(&self, mut f: FindingFilter) -> Result<FindingFilter> {
+        let scope = f.asset_scope.trim().to_string();
         f.asset_ids = Vec::new();
         f.asset_none = false;
         f.asset_miss = false;
@@ -643,9 +640,48 @@ impl DB {
             f.asset_none = true;
             return Ok(f);
         }
-        Err(Error::msg(
-            "asset-scope node resolution requires the asset tree (not yet ported)",
-        ))
+        // No truncation: dropped endpoints must still take part in id collection.
+        let tree = self.build_finding_asset_tree_capped(&f, 0).await?;
+        let mut children: std::collections::HashMap<
+            String,
+            Vec<crate::db::finding_assets::FindingAssetNode>,
+        > = std::collections::HashMap::new();
+        let mut by_key: std::collections::HashMap<
+            String,
+            crate::db::finding_assets::FindingAssetNode,
+        > = std::collections::HashMap::new();
+        for n in &tree.nodes {
+            children
+                .entry(n.parent.clone())
+                .or_default()
+                .push(n.clone());
+            by_key.insert(n.key.clone(), n.clone());
+        }
+        if !by_key.contains_key(&scope) {
+            f.asset_miss = true;
+            return Ok(f);
+        }
+        let mut seen = std::collections::HashSet::new();
+        seen.insert(scope.clone());
+        let mut queue = vec![scope];
+        while let Some(key) = queue.pop() {
+            if let Some(n) = by_key.get(&key) {
+                if n.asset_id > 0 {
+                    f.asset_ids.push(n.asset_id);
+                }
+            }
+            if let Some(kids) = children.get(&key) {
+                for kid in kids {
+                    if seen.insert(kid.key.clone()) {
+                        queue.push(kid.key.clone());
+                    }
+                }
+            }
+        }
+        if f.asset_ids.is_empty() {
+            f.asset_miss = true;
+        }
+        Ok(f)
     }
 
     /// `ListFindingsPage`: one page of findings matching the filter, plus the total
@@ -658,7 +694,7 @@ impl DB {
     ) -> Result<(Vec<DBFinding>, i64)> {
         let page = if page <= 0 { 1 } else { page };
         let page_size = if page_size <= 0 { 20 } else { page_size };
-        let f = self.apply_asset_scope(f)?;
+        let f = self.apply_asset_scope(f).await?;
         let (where_sql, params) = f.build_where();
 
         let count_sql = format!(
@@ -706,7 +742,7 @@ impl DB {
     ) -> Result<(Vec<FindingGroup>, i64, i64)> {
         let page = if page <= 0 { 1 } else { page };
         let page_size = if page_size <= 0 { 10 } else { page_size };
-        let f = self.apply_asset_scope(f)?;
+        let f = self.apply_asset_scope(f).await?;
         let (where_sql, params) = f.build_where();
         let grouped = format!(
             " FROM findings f LEFT JOIN tasks t ON f.task_id=t.id{where_sql} \
@@ -845,7 +881,7 @@ impl DB {
                 .collect();
             self.query(&sql, &refs).await?
         } else {
-            let scoped = self.apply_asset_scope(f)?;
+            let scoped = self.apply_asset_scope(f).await?;
             let (where_sql, params) = scoped.build_where();
             let sql = format!(
                 "SELECT {FINDING_SELECT_COLS}, COALESCE(f.report, '') FROM findings f \

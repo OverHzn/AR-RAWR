@@ -199,7 +199,7 @@ async fn list_finding_groups_buckets_and_counts() {
 }
 
 #[tokio::test]
-async fn apply_asset_scope_none_and_node_deferral() {
+async fn apply_asset_scope_none_and_missing_node() {
     let Some(dsn) = base_dsn() else {
         eprintln!("skipping: ARTEX_PG_DSN unset");
         return;
@@ -223,16 +223,19 @@ async fn apply_asset_scope_none_and_node_deferral() {
     assert_eq!(total, 1, "unlinked bucket matches the asset-less finding");
     assert_eq!(rows.len(), 1);
 
-    // A node-key scope (not __none__/empty) -> apply_asset_scope defers with an error.
+    // A node-key scope (not __none__/empty) resolves via the asset tree. A key
+    // that no longer exists under the filter yields no rows (asset_miss), NOT an
+    // error and NOT an unfiltered result.
     let f = FindingFilter {
-        asset_scope: "r:example".to_string(),
+        asset_scope: "r:example-does-not-exist".to_string(),
         ..FindingFilter::default()
     };
-    let err = d
+    let (rows, total) = d
         .list_findings_page(f, 1, 10)
         .await
-        .expect_err("node-key scope deferred");
-    assert!(err.to_string().contains("asset tree"), "got {err}");
+        .expect("node-key scope resolves");
+    assert_eq!(total, 0, "missing node -> empty result");
+    assert!(rows.is_empty());
 
     // Cleanup.
     let _ = d
