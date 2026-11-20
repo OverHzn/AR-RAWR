@@ -780,6 +780,8 @@ resume without re-deriving state.
 
 - **T-7 initIndex parity + legacy get (this commit):** `TrafficStore::open` now checks `sqlite_master` table count (matching Go) before applying `auto_vacuum=incremental` + VACUUM, records `incremental_vacuum` flag, and exposes `execute`. Spec: 1 test — fresh DB vacuum flag + legacy row path fallback to on-disk `request.http`/`response.http`. artex **539 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-23 replay pure validation (this commit):** new `src/traffic/replay.rs` — `ReplayRequest`/`ReplayHeader`, `validate_replay_request` (method/URL/userinfo/limits/header injection/Upgrade/Host checks, hop-by-hop + Connection-named header dropping, empty User-Agent insertion) and `replay_recorded` (passthrough-aware). HTTP dial deferred. Spec: `tests/traffic_replay_test.rs` (3) — ports of TestReplayRejectsInvalidRequests (13 cases) + hop-by-hop filtering + TestReplayRecordedHelper. artex **542 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: url crate normalizes `http:///x` to `http://x/`; Go rejects empty authority — check before parsing.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
