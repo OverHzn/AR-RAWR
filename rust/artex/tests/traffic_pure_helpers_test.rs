@@ -74,3 +74,76 @@ fn validate_proxy_url_cases() {
         );
     }
 }
+
+#[test]
+fn body_and_name_helpers_oracle() {
+    use artex::traffic::pure_helpers::{binary_tag, is_binary_body, sanitize, truncate_utf8};
+
+    assert!(is_binary_body("image/png", b""));
+    assert!(!is_binary_body("TEXT/PLAIN; charset=utf-8", b"hello"));
+    assert!(is_binary_body("application/json", b"a\0b"));
+    let mut long = vec![0u8; 600];
+    long.push(0);
+    assert!(is_binary_body("text/html", &long));
+
+    assert_eq!(
+        binary_tag("", &[0x89, b'P', b'N', b'G', 1, 2]),
+        "[binary application/octet-stream, 6 bytes, magic=89504e47]"
+    );
+    assert_eq!(
+        binary_tag(" image/jpeg ", &[0xff, 0xd8]),
+        "[binary image/jpeg, 2 bytes, magic=ffd8]"
+    );
+
+    assert_eq!(truncate_utf8("héllo".as_bytes(), 3), "hé");
+    assert_eq!(truncate_utf8("你好世界".as_bytes(), 5), "你");
+    assert_eq!(truncate_utf8(b"abc", 10), "abc");
+
+    assert_eq!(sanitize(""), "root");
+    assert_eq!(sanitize("_"), "root");
+    assert_eq!(sanitize("a/b\\c:d?e*f\"g<h>i|j"), "a_b_c_d_e_f_g_h_i_j");
+    assert_eq!(sanitize(&"x".repeat(200)).len(), 120);
+}
+
+#[test]
+fn header_lines_and_applied_rules_oracle() {
+    use artex::traffic::pure_helpers::{applied_rules, header_lines};
+    use artex::traffic::rewrite_engine::{TraceLine, OUTCOME_APPLIED, OUTCOME_SKIPPED};
+
+    let mut h = std::collections::BTreeMap::new();
+    h.insert("X-A".to_string(), vec!["1".to_string()]);
+    h.insert("X-B".to_string(), vec!["2".to_string(), "3".to_string()]);
+    let lines = header_lines(&h);
+    let mut got: Vec<&str> = lines.lines().collect();
+    got.sort();
+    assert_eq!(got, vec!["X-A: 1", "X-B: 2", "X-B: 3"]);
+
+    let trace = vec![
+        TraceLine {
+            rule_id: 1,
+            outcome: OUTCOME_APPLIED.into(),
+            ..Default::default()
+        },
+        TraceLine {
+            rule_id: 2,
+            outcome: OUTCOME_SKIPPED.into(),
+            ..Default::default()
+        },
+        TraceLine {
+            rule_id: 3,
+            outcome: OUTCOME_APPLIED.into(),
+            ..Default::default()
+        },
+        TraceLine {
+            rule_id: 3,
+            outcome: OUTCOME_APPLIED.into(),
+            ..Default::default()
+        },
+        TraceLine {
+            rule_id: 0,
+            outcome: OUTCOME_APPLIED.into(),
+            ..Default::default()
+        },
+    ];
+    assert_eq!(applied_rules(&trace), (true, vec![1, 3]));
+}
