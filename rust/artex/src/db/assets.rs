@@ -94,6 +94,16 @@ pub struct UpsertSubdomainReq {
 }
 
 #[derive(Debug, Clone, Default)]
+pub struct UpsertOtherServiceReq {
+    pub domain: String,
+    pub ip: String,
+    pub port: i32,
+    pub service_name: String,
+    pub auth: Vec<Json>,
+    pub task_id: i64,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct UpsertHTTPServiceReq {
     pub url: String,
     pub technologies: Vec<String>,
@@ -584,6 +594,130 @@ RETURNING id",
                     bound_domains: bound,
                     open_ports: ports,
                     task_id: req.task_id,
+                })
+                .await;
+        }
+        Ok(id)
+    }
+
+    /// `UpsertOtherService`: idempotent non-HTTP service insert/merge keyed by
+    /// (domain, ip, port, service_name), with auth array append and IP side effect.
+    pub async fn upsert_other_service(&self, req: &UpsertOtherServiceReq) -> Result<i64> {
+        if req.domain.is_empty() && req.ip.is_empty() {
+            return Err(Error::msg("domain or ip is required"));
+        }
+        validate_asset_ip(&req.ip)?;
+        if req.port == 0 {
+            return Err(Error::msg("port is required"));
+        }
+        if req.service_name.is_empty() {
+            return Err(Error::msg("service_name is required"));
+        }
+        let service_name = req.service_name.trim().to_lowercase();
+        let domain = domain_key(&req.domain);
+        let root_domain = if domain.is_empty() {
+            String::new()
+        } else {
+            let (r, _) = nkey_root(&domain);
+            if r.is_empty() {
+                domain.clone()
+            } else {
+                r
+            }
+        };
+        let cseg = calc_c_segment(&req.ip);
+        let company = self
+            .db
+            .companies()
+            .resolve_company_with_icp(&root_domain, &req.ip, "")
+            .await?;
+        let tasks = task_ids_array(req.task_id);
+        let auth = marshal_jsonb_array(&req.auth)?;
+        let domain_opt: Option<&str> = if domain.is_empty() {
+            None
+        } else {
+            Some(&domain)
+        };
+        let root_opt: Option<&str> = if root_domain.is_empty() {
+            None
+        } else {
+            Some(&root_domain)
+        };
+        let ip_opt: Option<&str> = if req.ip.is_empty() {
+            None
+        } else {
+            Some(&req.ip)
+        };
+        let cseg_opt: Option<&str> = if cseg.is_empty() { None } else { Some(&cseg) };
+
+        let row = self.db.query_one(
+            "INSERT INTO assets(
+    type, service_type, service_name, domain, ip, port, root_domain,
+    c_segment, auth, company_id, company_source, task_ids
+)
+VALUES ('service', 'other', $1, $2, $3, $4, $5, $6::text::cidr, $7::text::jsonb[], $8, 'scope', $9::bigint[])
+ON CONFLICT (COALESCE(domain,''), COALESCE(ip,''), port, service_name) WHERE type = 'service' AND service_type = 'other' DO UPDATE SET
+    domain     = COALESCE(EXCLUDED.domain,     assets.domain),
+    ip         = COALESCE(EXCLUDED.ip,         assets.ip),
+    c_segment  = COALESCE(EXCLUDED.c_segment,  assets.c_segment),
+    auth       = (
+        SELECT ARRAY(
+            SELECT DISTINCT ON (elem::text) elem
+            FROM unnest(assets.auth || EXCLUDED.auth) AS elem
+        )
+    ),
+    task_ids   = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    company_id = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    last_seen  = now()
+RETURNING id",
+            &[&service_name, &domain_opt, &ip_opt, &req.port, &root_opt, &cseg_opt, &auth, &company, &tasks],
+        ).await?;
+        let id: i64 = row.get(0);
+
+        if !req.ip.is_empty() && req.port > 0 {
+            let bound = if domain.is_empty() {
+                Vec::new()
+            } else {
+                vec![domain.clone()]
+            };
+            let _ = self
+                .upsert_ip(&UpsertIPReq {
+                    ip: req.ip.clone(),
+                    bound_domains: bound,
+                    open_ports: vec![PortService {
+                        port: req.port,
+                        service: service_name,
+                    }],
+                    task_id: req.task_id,
+                })
+                .await;
+        }
+        if !root_domain.is_empty() {
+            let _ = self
+                .upsert_root_domain(&UpsertRootDomainReq {
+                    domain: root_domain.clone(),
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        if !domain.is_empty()
+            && domain != root_domain
+            && domain.parse::<std::net::IpAddr>().is_err()
+        {
+            let _ = self
+                .upsert_subdomain(&UpsertSubdomainReq {
+                    domain,
+                    task_id: req.task_id,
+                    ..Default::default()
                 })
                 .await;
         }

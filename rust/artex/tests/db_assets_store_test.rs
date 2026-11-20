@@ -544,3 +544,102 @@ async fn upsert_http_service_merge_and_auth() {
     .await
     .unwrap();
 }
+
+#[tokio::test]
+async fn upsert_other_service_dedup_auth_and_side_effect() {
+    use artex::db::assets::UpsertOtherServiceReq;
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let ip = format!(
+        "172.16.{}.{}",
+        (t.as_bytes()[0] % 200) as u32 + 1,
+        (t.as_bytes()[1] % 200) as u32 + 1
+    );
+
+    let id1 = s
+        .upsert_other_service(&UpsertOtherServiceReq {
+            ip: ip.clone(),
+            port: 22,
+            service_name: "SSH".into(),
+            task_id: 1,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert!(id1 > 0);
+    let id2 = s
+        .upsert_other_service(&UpsertOtherServiceReq {
+            ip: ip.clone(),
+            port: 22,
+            service_name: "ssh".into(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id2, id1, "other service dedup failed");
+
+    // IP side effect: open_ports got the 22/ssh entry.
+    let cnt: i64 = d
+        .query_one(
+            "SELECT cardinality(open_ports)::bigint FROM assets WHERE type='ip' AND ip=$1",
+            &[&ip],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert!(cnt > 0, "side-effect IP open_ports not populated");
+
+    // Auth append on a separate row.
+    let auth_ip = format!(
+        "10.5.{}.{}",
+        (t.as_bytes()[2] % 200) as u32 + 1,
+        (t.as_bytes()[3] % 200) as u32 + 1
+    );
+    let a1 = s
+        .upsert_other_service(&UpsertOtherServiceReq {
+            ip: auth_ip.clone(),
+            port: 3306,
+            service_name: "mysql".into(),
+            auth: vec![serde_json::json!({"username": "admin", "password": "secret"})],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let a2 = s
+        .upsert_other_service(&UpsertOtherServiceReq {
+            ip: auth_ip.clone(),
+            port: 3306,
+            service_name: "mysql".into(),
+            auth: vec![serde_json::json!({"username": "root", "password": "root"})],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(a2, a1);
+    let auth_cnt: i64 = d
+        .query_one(
+            "SELECT cardinality(auth)::bigint FROM assets WHERE id=$1",
+            &[&a1],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(auth_cnt, 2, "auth append");
+
+    let err = s
+        .upsert_other_service(&UpsertOtherServiceReq::default())
+        .await
+        .unwrap_err();
+    assert_eq!(err.to_string(), "domain or ip is required");
+
+    d.execute("DELETE FROM assets WHERE ip=$1 OR ip=$2", &[&ip, &auth_ip])
+        .await
+        .unwrap();
+}
