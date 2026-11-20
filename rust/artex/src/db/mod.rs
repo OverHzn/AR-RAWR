@@ -41,6 +41,7 @@ pub mod task_categories;
 pub mod task_credentials;
 pub mod task_outcome;
 pub mod task_templates;
+pub mod tasks;
 pub mod tool_usage;
 
 /// Serde adapter module path alias used by `SkillStat`'s `#[serde(with = …)]`.
