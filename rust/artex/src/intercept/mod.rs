@@ -1,5 +1,6 @@
 //! Intercept layer — port of `intercept/` (slice by slice).
 pub mod argv_allow;
+pub mod block_message;
 pub mod closed_judge;
 pub mod prompt;
 pub mod prompt_text;
