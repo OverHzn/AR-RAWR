@@ -19,7 +19,7 @@ pub const ERR_LLM_PROFILE_NOT_FOUND: &str = "LLM profile not found";
 /// target pins are revoked on deletion (Go `target_pins.go`).
 pub const TARGET_PIN_REVOKED_CONVERSATION_DELETE: &str = "conversation_deleted";
 
-const CONV_COLS: &str =
+pub(crate) const CONV_COLS: &str =
     "id, agent_key, title, llm_profile_id, pinned_at, created_at, updated_at, target_gate";
 
 /// `ConvTokenSummary`: one conversation's token total (sum of its `kind='result'`
@@ -73,7 +73,7 @@ pub struct ConversationPatch {
     pub target_gate: Option<bool>,
 }
 
-fn scan_conv(row: &tokio_postgres::Row) -> Conversation {
+pub(crate) fn scan_conv(row: &tokio_postgres::Row) -> Conversation {
     let pinned_at: Option<SystemTime> = row.get(4);
     Conversation {
         id: row.get(0),

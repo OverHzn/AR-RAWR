@@ -92,3 +92,64 @@ fn snapshot_json(s: &Snapshot) -> serde_json::Value {
     }
     serde_json::Value::Object(map)
 }
+
+/// `SetFindingStatusTx`: change one finding's triage status (+ node payload mirror)
+/// and register a status-change notification event, all in the caller's tx.
+/// Returns `(from, found, changed, notified)`. No event is written when the status
+/// did not actually change (idempotent replays must not produce push noise).
+#[allow(dead_code)]
+pub(crate) async fn set_finding_status_tx(
+    ctx: &crate::llm::Context,
+    tx: &deadpool_postgres::Transaction<'_>,
+    id: i64,
+    status: &str,
+) -> Result<(String, bool, bool, bool)> {
+    let row = tx
+        .query_opt(
+            "SELECT vulnclass, name, severity, summary, task_id, asset_ids, status, node_id \
+             FROM findings WHERE id=$1 FOR UPDATE",
+            &[&id],
+        )
+        .await?;
+    let Some(row) = row else {
+        return Ok((String::new(), false, false, false));
+    };
+    let vulnclass: String = row.get(0);
+    let name: String = row.get(1);
+    let severity: String = row.get(2);
+    let summary: String = row.get(3);
+    let task_id: Option<i64> = row.get(4);
+    let assets: serde_json::Value = row.get(5);
+    let from: String = row.get(6);
+    let node_id: Option<i64> = row.get(7);
+    if from == status {
+        return Ok((from, true, false, false));
+    }
+    tx.execute("UPDATE findings SET status=$2 WHERE id=$1", &[&id, &status])
+        .await?;
+    if let Some(nid) = node_id {
+        tx.execute(
+            "UPDATE exploration_nodes SET payload = jsonb_set(payload, '{status}', to_jsonb($1::text)) WHERE id = $2",
+            &[&status, &nid],
+        )
+        .await?;
+    }
+    let asset_ids: Vec<i64> = serde_json::from_value(assets).unwrap_or_default();
+    let snap = Snapshot {
+        kind: crate::notify::EVENT_FINDING_STATUS_CHANGED.to_string(),
+        finding_id: id,
+        task_id: task_id.unwrap_or(0),
+        vulnclass,
+        name,
+        severity,
+        summary,
+        asset_ids,
+        from_status: from.clone(),
+        to_status: status.to_string(),
+    };
+    let notified =
+        record_notification_event_tx(tx, crate::notify::EVENT_FINDING_STATUS_CHANGED, id, &snap)
+            .await;
+    let _ = ctx; // ctx-free path in Go; kept for signature symmetry with the callers.
+    Ok((from, true, true, notified))
+}

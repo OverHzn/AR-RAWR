@@ -30,6 +30,7 @@ pub mod error;
 pub mod exploration;
 pub mod exploration_sources;
 pub mod finding_evidence;
+pub mod finding_retests;
 pub mod findings;
 pub mod gotime;
 pub mod lessons;
