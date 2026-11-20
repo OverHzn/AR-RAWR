@@ -73,6 +73,8 @@ pub struct ExchangeMeta {
     pub content_type: String,
     pub req_len: i64,
     pub resp_len: i64,
+    /// Non-empty only for legacy rows whose bodies live on disk.
+    pub path: String,
 }
 
 pub struct TrafficStore {
@@ -341,6 +343,172 @@ impl TrafficStore {
         let resp =
             std::fs::read_to_string(self.dir.join(&rel).join("response.http")).unwrap_or_default();
         Ok((req, resp))
+    }
+}
+
+/// Optional filters for `page` (all combined with AND).
+#[derive(Debug, Clone)]
+pub struct PageQuery {
+    pub host: String,
+    pub method: String,
+    pub query: String,
+    pub body: String,
+    pub path: String,
+    pub status: String,
+    /// -1 skips the bound.
+    pub resp_min: i64,
+    /// -1 skips the bound.
+    pub resp_max: i64,
+    pub sort: String,
+    pub order: String,
+}
+
+impl Default for PageQuery {
+    fn default() -> Self {
+        PageQuery {
+            host: String::new(),
+            method: String::new(),
+            query: String::new(),
+            body: String::new(),
+            path: String::new(),
+            status: String::new(),
+            resp_min: -1,
+            resp_max: -1,
+            sort: String::new(),
+            order: String::new(),
+        }
+    }
+}
+
+fn scan_meta(r: &crate::traffic::sqlite::Row) -> ExchangeMeta {
+    ExchangeMeta {
+        id: r.text(0),
+        ts: r.int(1),
+        host: r.text(2),
+        method: r.text(3),
+        url_template: r.text(4),
+        url: r.text(5),
+        status: r.int(6) as i32,
+        content_type: r.text(7),
+        resp_len: r.int(8),
+        path: r.text(9),
+        req_len: 0,
+    }
+}
+
+impl TrafficStore {
+    /// `search`: legacy host-filtered newest-first listing.
+    pub fn search(&self, host: &str, page: i64, size: i64) -> Result<Vec<ExchangeMeta>> {
+        let size = if size <= 0 || size > 500 { 100 } else { size };
+        let db = self.db.lock().unwrap();
+        let (sql, params): (&str, Vec<Value>) = if host.is_empty() {
+            ("SELECT id,ts,host,method,url_template,url,status,content_type,resp_len,path FROM exchanges ORDER BY ts DESC LIMIT ? OFFSET ?",
+             vec![Value::Int(size), Value::Int(page * size)])
+        } else {
+            ("SELECT id,ts,host,method,url_template,url,status,content_type,resp_len,path FROM exchanges WHERE host=? ORDER BY ts DESC LIMIT ? OFFSET ?",
+             vec![Value::Text(host.to_string()), Value::Int(size), Value::Int(page * size)])
+        };
+        Ok(db.query(sql, &params)?.iter().map(scan_meta).collect())
+    }
+
+    /// `page`: filtered, sorted, stable pagination with a total count.
+    pub fn page(&self, f: &PageQuery, page: i64, size: i64) -> Result<(Vec<ExchangeMeta>, i64)> {
+        let size = if size <= 0 || size > 500 { 100 } else { size };
+        let page = page.max(0);
+        let mut conds: Vec<String> = Vec::new();
+        let mut args: Vec<Value> = Vec::new();
+        let mut add = |cond: &str, vs: Vec<Value>| {
+            conds.push(cond.to_string());
+            args.extend(vs);
+        };
+        if let Some(h) = Some(f.host.trim()).filter(|s| !s.is_empty()) {
+            add("host LIKE ?", vec![Value::Text(format!("%{h}%"))]);
+        }
+        if let Some(m) = Some(f.method.trim()).filter(|s| !s.is_empty()) {
+            add("method=?", vec![Value::Text(m.to_uppercase())]);
+        }
+        if let Some(p) = Some(f.path.trim()).filter(|s| !s.is_empty()) {
+            add("url_template LIKE ?", vec![Value::Text(format!("%{p}%"))]);
+        }
+        if let Some((cond, vs)) = crate::traffic::query_helpers::status_filter(&f.status) {
+            add(cond, vs.into_iter().map(|v| Value::Int(v as i64)).collect());
+        }
+        if f.resp_min >= 0 {
+            add("resp_len>=?", vec![Value::Int(f.resp_min)]);
+        }
+        if f.resp_max >= 0 {
+            add("resp_len<=?", vec![Value::Int(f.resp_max)]);
+        }
+
+        const META: &str = "host LIKE ? OR url LIKE ? OR url_template LIKE ? OR method LIKE ? OR content_type LIKE ? OR CAST(status AS TEXT) LIKE ?";
+        if let Some(s) = Some(f.query.trim()).filter(|s| !s.is_empty()) {
+            let like = Value::Text(format!("%{s}%"));
+            if let Some((cond, arg)) = crate::traffic::query_helpers::fts_filter(self.fts, s) {
+                let mut vs = vec![like.clone(); 6];
+                vs.push(Value::Text(arg));
+                add(&format!("(({META}) OR {cond})"), vs);
+            } else {
+                add(&format!("({META})"), vec![like; 6]);
+            }
+        }
+        if let Some(b) = Some(f.body.trim()).filter(|s| !s.is_empty()) {
+            if let Some((cond, arg)) = crate::traffic::query_helpers::fts_filter(self.fts, b) {
+                add(&cond, vec![Value::Text(arg)]);
+            }
+        }
+        let where_sql = if conds.is_empty() {
+            String::new()
+        } else {
+            format!(" WHERE {}", conds.join(" AND "))
+        };
+
+        let db = self.db.lock().unwrap();
+        let total =
+            db.query(&format!("SELECT COUNT(*) FROM exchanges{where_sql}"), &args)?[0].int(0);
+        let col = crate::traffic::query_helpers::sort_column(&f.sort.to_lowercase());
+        let dir = if f.order.trim().eq_ignore_ascii_case("asc") {
+            "ASC"
+        } else {
+            "DESC"
+        };
+        let mut qargs = args;
+        qargs.push(Value::Int(size));
+        qargs.push(Value::Int(page * size));
+        let sql = format!(
+            "SELECT id,ts,host,method,url_template,url,status,content_type,resp_len,path FROM exchanges{where_sql} ORDER BY {col} {dir}, id DESC LIMIT ? OFFSET ?"
+        );
+        let rows = db.query(&sql, &qargs)?.iter().map(scan_meta).collect();
+        Ok((rows, total))
+    }
+
+    /// `BlobRange`: read a bounded slice of a content-addressed blob.
+    pub fn blob_range(&self, hash: &str, offset: i64, length: i64) -> Result<(Vec<u8>, i64)> {
+        let path = self
+            .blob_path(hash)
+            .ok_or_else(|| Error::msg(format!("blob {hash:?} not found")))?;
+        let size = std::fs::metadata(&path)
+            .map_err(|e| Error::msg(e.to_string()))?
+            .len() as i64;
+        let (off, n, empty) = crate::traffic::pure_helpers::clamp_blob_range(offset, length, size);
+        if empty {
+            return Ok((Vec::new(), size));
+        }
+        use std::io::{Read, Seek, SeekFrom};
+        let mut f = std::fs::File::open(&path).map_err(|e| Error::msg(e.to_string()))?;
+        f.seek(SeekFrom::Start(off as u64))
+            .map_err(|e| Error::msg(e.to_string()))?;
+        let mut buf = vec![0u8; n as usize];
+        let mut read = 0usize;
+        while read < buf.len() {
+            let k = f
+                .read(&mut buf[read..])
+                .map_err(|e| Error::msg(e.to_string()))?;
+            if k == 0 {
+                break;
+            }
+            read += k;
+        }
+        Ok((buf[..read].to_vec(), size))
     }
 }
 
