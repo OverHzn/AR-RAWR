@@ -776,6 +776,8 @@ resume without re-deriving state.
 
 - **T-5 staged host delete + reclaim (this commit):** extended `src/traffic/store.rs` with `HostDeleteStage` (count-at-stage, deferred delete on commit, no-op rollback, duplicate host dedup) + `stage_delete_hosts_exact` and `reclaim(n)` (FTS optimize/merge, bounded incremental_vacuum with caller-owned integer, WAL TRUNCATE). Spec: 1 test — stage count/rollback/commit + reclaim. artex **536 tests** green, clippy clean, fmt clean, gate 30/30. (Note: filesystem tree staging/journal recovery from the Go version is not yet ported.)
 
+- **T-6 external traffic ingest (this commit):** extended `src/traffic/store.rs` with `ExternalExchange` + `record_external` — validates URL/method/header names and rejects CR/LF/NUL injection, derives host/request-URI/heads, spills bodies through the same blob/index path as proxy traffic so ingested entries are indistinguishable in search and listing. Added `validate_external_headers`. Spec: 2 tests — stores like proxy traffic (FTS/metadata/raw get) + bad input rejection. artex **538 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

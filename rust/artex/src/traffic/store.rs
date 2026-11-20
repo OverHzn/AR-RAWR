@@ -904,6 +904,128 @@ impl TrafficStore {
     }
 }
 
+/// Externally captured exchange (browser-extension ingest).
+#[derive(Debug, Clone, Default)]
+pub struct ExternalExchange {
+    pub method: String,
+    pub url: String,
+    pub status: i32,
+    pub request_headers: std::collections::BTreeMap<String, String>,
+    pub request_body: String,
+    pub response_headers: std::collections::BTreeMap<String, String>,
+    pub response_body: String,
+}
+
+impl TrafficStore {
+    /// `RecordExternal`: store an externally captured pair through the same
+    /// spill/blob/index path as proxy traffic.
+    pub fn record_external(&self, e: &ExternalExchange) -> Result<()> {
+        let u =
+            url::Url::parse(&e.url).map_err(|_| Error::msg(format!("invalid url {:?}", e.url)))?;
+        if u.host_str().unwrap_or("").is_empty() {
+            return Err(Error::msg(format!("invalid url {:?}", e.url)));
+        }
+        let method = e.method.trim().to_uppercase();
+        if method.is_empty() {
+            return Err(Error::msg(format!("empty method for {:?}", e.url)));
+        }
+        if !crate::traffic::query_helpers::valid_header_name(&method) {
+            return Err(Error::msg(format!("invalid method {:?}", e.method)));
+        }
+        validate_external_headers(&e.request_headers)?;
+        validate_external_headers(&e.response_headers)?;
+        let status = if e.status == 0 { 200 } else { e.status };
+
+        let host = u.host_str().unwrap_or("").to_string();
+        let uri = {
+            let mut s = u.path().to_string();
+            if u.query().is_some() {
+                s.push('?');
+                s.push_str(u.query().unwrap_or(""));
+            }
+            if s.is_empty() {
+                s.push('/');
+            }
+            s
+        };
+        let to_lines = |h: &std::collections::BTreeMap<String, String>| -> std::collections::BTreeMap<String, Vec<String>> {
+            h.iter().map(|(k, v)| (k.clone(), vec![v.clone()])).collect()
+        };
+        let req_head = format!(
+            "{} {} HTTP/1.1\n{}",
+            method,
+            uri,
+            crate::traffic::pure_helpers::header_lines(&to_lines(&e.request_headers))
+        );
+        let resp_head = format!(
+            "HTTP {status}\n{}",
+            crate::traffic::pure_helpers::header_lines(&to_lines(&e.response_headers))
+        );
+        let resp_ct = e
+            .response_headers
+            .get("content-type")
+            .cloned()
+            .unwrap_or_default();
+        let req_ct = e
+            .request_headers
+            .get("content-type")
+            .cloned()
+            .unwrap_or_default();
+
+        let req_b = self.spill(e.request_body.as_bytes(), &req_ct);
+        let resp_b = self.spill(e.response_body.as_bytes(), &resp_ct);
+        let id = self.new_exchange_id(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
+        );
+        let template = crate::db::nkey::template_path(u.path());
+        let meta = ExchangeMeta {
+            id,
+            ts: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
+            host,
+            method,
+            url_template: template,
+            url: u.to_string(),
+            status,
+            content_type: resp_ct,
+            req_len: e.request_body.len() as i64,
+            resp_len: e.response_body.len() as i64,
+            path: String::new(),
+        };
+        let fts = format!(
+            "{}\n{}\n{}\n{}\n{}",
+            meta.url, req_head, req_b.index, resp_head, resp_b.index
+        );
+        self.insert_exchange(
+            &meta,
+            &req_head,
+            &req_b,
+            &resp_head,
+            &resp_b,
+            e.request_body.len(),
+            e.response_body.len(),
+            &fts,
+        )
+    }
+}
+
+fn validate_external_headers(h: &std::collections::BTreeMap<String, String>) -> Result<()> {
+    for (k, v) in h {
+        if !crate::traffic::query_helpers::valid_header_name(k) {
+            return Err(Error::msg(format!("invalid header name {k:?}")));
+        }
+        if v.contains(['\r', '\n', '\0']) {
+            return Err(Error::msg(format!("header {k} contains a line break")));
+        }
+    }
+    Ok(())
+}
+
 /// `assembleRaw`: head + blank line + body, plus a blob pointer when spilled.
 fn assemble_raw(head: &str, body: &[u8], blob: Option<String>, total: i64) -> String {
     let mut out = String::new();

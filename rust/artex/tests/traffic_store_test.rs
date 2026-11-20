@@ -410,3 +410,67 @@ fn staged_delete_commit_and_rollback() {
 
     let _ = s.reclaim(10).unwrap();
 }
+
+#[test]
+fn record_external_stores_like_proxy_traffic() {
+    use artex::traffic::store::ExternalExchange;
+
+    let s = TrafficStore::open_temp().unwrap();
+    let mut rh = std::collections::BTreeMap::new();
+    rh.insert("content-type".to_string(), "application/json".to_string());
+    rh.insert("authorization".to_string(), "Bearer xyz".to_string());
+    let mut sh = std::collections::BTreeMap::new();
+    sh.insert("content-type".to_string(), "application/json".to_string());
+    let e = ExternalExchange {
+        method: "POST".into(),
+        url: "https://api.example.com/v1/login".into(),
+        status: 200,
+        request_headers: rh,
+        request_body: r#"{"user":"u1","password":"p1"}"#.into(),
+        response_headers: sh,
+        response_body: r#"{"token":"tok"}"#.into(),
+    };
+    s.record_external(&e).unwrap();
+    assert_eq!(s.count().unwrap(), 1);
+    let rows = s
+        .page(
+            &artex::traffic::store::PageQuery {
+                query: "login".into(),
+                ..Default::default()
+            },
+            0,
+            10,
+        )
+        .unwrap();
+    assert_eq!(rows.1, 1);
+    let (req, resp) = s.get(&rows.0[0].id).unwrap();
+    assert!(
+        req.contains("POST /v1/login")
+            && req.contains("Bearer xyz")
+            && req.contains("\"user\":\"u1\"")
+    );
+    assert!(resp.contains(r#"{"token":"tok"}"#));
+}
+
+#[test]
+fn record_external_rejects_bad_input() {
+    use artex::traffic::store::ExternalExchange;
+
+    let s = TrafficStore::open_temp().unwrap();
+    let mut bad = ExternalExchange {
+        method: "GET".into(),
+        url: "not a url".into(),
+        ..Default::default()
+    };
+    assert!(s.record_external(&bad).is_err());
+    bad.url = "https://example.com/".into();
+    bad.method = String::new();
+    assert!(s.record_external(&bad).is_err());
+    bad.method = "GE T".into();
+    assert!(s.record_external(&bad).is_err());
+    bad.method = "GET".into();
+    bad.request_headers
+        .insert("X-Bad".into(), "a\r\nInjected: 1".into());
+    assert!(s.record_external(&bad).is_err());
+    assert_eq!(s.count().unwrap(), 0);
+}
