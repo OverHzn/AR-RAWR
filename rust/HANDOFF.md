@@ -758,6 +758,8 @@ resume without re-deriving state.
 
 - **E-19 traffic body/name pure helpers (this commit):** extended `src/traffic/pure_helpers.rs` with `is_binary_body` (binary content types + NUL in first 512 bytes), `binary_tag` (magic bytes), `truncate_utf8` (rune-safe preview), `sanitize` (filesystem-safe name, "root" fallback, 120-byte cap), `header_lines`, `applied_rules` (rewritten flag + distinct applied rule ids). Spec: 2 tests with Go oracle values. artex **519 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-20 argv pattern + arity helpers (this commit):** new `src/intercept/argv.rs` (pure slice of `intercept/argv.go`), registered in intercept/mod.rs. `argv_prefix_len`/`argv_prefix_of` (code-owned arity table, longest match wins, default 1), `parse_argv_pattern` (1-8 token JSON array, no flags/metacharacters/whitespace) + `check_argv_token`. Full Bash parser (`ArgvPrefix`) still deferred. Spec: `tests/intercept_argv_pattern_test.rs` (2) — ports of TestArgvArityTable (13 cases) + TestParseArgvPattern (19 invalid cases). artex **521 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
