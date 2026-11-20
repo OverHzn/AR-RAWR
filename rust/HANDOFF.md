@@ -786,6 +786,8 @@ resume without re-deriving state.
 
 - **E-25 intercept decision core (this commit):** extended `src/intercept/rule_match.rs` with `Decision` (subset), `default_message` (deny/ask fallback reason) and `match_first` (rules sorted by priority DESCENDING, first match wins, Go oracle verified). Spec: 1 test — priority order 50 > -1000 + default vs explicit message. artex **544 tests** green, clippy clean, fmt clean, gate 30/30. (Full ConfigDigest/audit payload deferred.)
 
+- **A-4 context window helpers (this commit):** extended `src/agent/provider.rs` with `compaction_window` (32K floor) and `context_window_tokens` (no floor, 1M cap) — port of `Config::{CompactionWindow,ContextWindowTokens}`. Spec: `tests/agent_provider_helpers_test.rs` (1) — 9-case table. artex **545 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

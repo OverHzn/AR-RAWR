@@ -92,3 +92,28 @@ pub fn normalize_ollama_base_url(raw: &str) -> String {
     }
     b
 }
+
+pub const DEFAULT_WINDOW_K: i64 = 200;
+pub const MIN_WINDOW_K: i64 = 32;
+pub const MAX_WINDOW_K: i64 = 1000;
+
+/// `CompactionWindow`: window in tokens with a 32K floor (compaction math).
+pub fn compaction_window(context_window_k: i64) -> i64 {
+    let k = if context_window_k <= 0 {
+        DEFAULT_WINDOW_K
+    } else {
+        context_window_k
+    };
+    k.clamp(MIN_WINDOW_K, MAX_WINDOW_K) * 1000
+}
+
+/// `ContextWindowTokens`: actual configured window (no compaction floor), for
+/// pre-filtering and side-question budgets.
+pub fn context_window_tokens(context_window_k: i64) -> i64 {
+    let k = if context_window_k <= 0 {
+        DEFAULT_WINDOW_K
+    } else {
+        context_window_k
+    };
+    k.min(MAX_WINDOW_K) * 1000
+}

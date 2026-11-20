@@ -87,3 +87,31 @@ fn config_string_helpers() {
         "http://x:11434/v1"
     );
 }
+
+#[test]
+fn context_window_tokens_no_compaction_floor() {
+    use artex::agent::provider::{compaction_window, context_window_tokens};
+    let cases: &[(i64, i64, i64)] = &[
+        (0, 200_000, 200_000),
+        (-1, 200_000, 200_000),
+        (8, 8_000, 32_000),
+        (16, 16_000, 32_000),
+        (31, 31_000, 32_000),
+        (32, 32_000, 32_000),
+        (200, 200_000, 200_000),
+        (1000, 1_000_000, 1_000_000),
+        (2000, 1_000_000, 1_000_000),
+    ];
+    for (k, want_tokens, want_compaction) in cases {
+        assert_eq!(
+            context_window_tokens(*k),
+            *want_tokens,
+            "ContextWindowK={k}"
+        );
+        assert_eq!(
+            compaction_window(*k),
+            *want_compaction,
+            "ContextWindowK={k}"
+        );
+    }
+}
