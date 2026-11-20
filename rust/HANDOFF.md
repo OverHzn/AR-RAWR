@@ -742,6 +742,8 @@ resume without re-deriving state.
 
 - **A-2 agent provider pure helpers (this commit):** new `src/agent/provider.rs` (slice of `agent/provider.go`). `is_quota_exhausted_message` (explicit balance/billing/quota signals rotate providers; auth/5xx and transient rate limits never do), `validate_user_agent` (trim, 256-byte cap, reject all control chars), `is_falsy` (0/false/off/no), `normalize_ollama_base_url` (strip /chat/completions, default, append /v1). Spec: `tests/agent_provider_helpers_test.rs` (3) — full quota classification table + UA cases + config string helpers. artex **504 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-3 stagnation detection (this commit):** new `src/agent/tools.rs` (slice of `agent/tools.go`) — `normalize_direction` (collapse whitespace, lowercase, digit runs -> '#') + `detect_stagnation` (group finished intents by normalized summary, 3+ repeats with no finding after the first, earliest summary/id, at most 3 directions). Spec: `tests/agent_stagnation_test.rs` (1) — port of TestDetectStagnation. artex **505 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
