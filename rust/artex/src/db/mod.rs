@@ -20,6 +20,7 @@ pub mod asset_intercept;
 pub mod asset_intercept_match;
 pub mod browser_mcp;
 pub mod chat_mentions;
+pub mod companies;
 pub mod constants;
 pub mod error;
 pub mod exploration;
