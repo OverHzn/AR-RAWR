@@ -688,6 +688,8 @@ resume without re-deriving state.
 
 - **E-8 target resolve pure helpers (this commit):** new `src/intercept/target_resolve.rs` (pure slice of `intercept/target_resolve.go`), registered in `src/intercept/mod.rs`. `canonical_ips` (IPv4-mapped unmapped, sorted, deduped — Rust IpAddr has no zone) + `subset` (every resolved address pinned; empty answer -> false). Spec: `tests/intercept_target_resolve_test.rs` (2) — port of TestSubset (9 cases) + canonical IP normalization. artex **413 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-9 always-allow argv denylist pure slice (this commit):** new `src/intercept/argv_allow.rs` (pure slice of `intercept/alwaysallow_denylist.go`), registered in `src/intercept/mod.rs`. Code-owned denylist (5 groups: interpreters/launchers/package managers/orchestration/destructive), `argv_program_name` (basename, lowercase, strip trailing version digits/dots after a letter, mkfs.* -> mkfs), `argv_allow_denied`, `check_argv_allow`. `AlwaysAllowPrefix` deferred (needs `ArgvPrefix` from argv.go shell parser). Spec: `tests/intercept_argv_allow_test.rs` (3) — port of TestArgvAllowDenylist (denied + allowed lists) + program-name normalization + check error. artex **416 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
