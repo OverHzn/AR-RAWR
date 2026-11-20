@@ -18,7 +18,7 @@
 
 use std::time::SystemTime;
 
-use crate::db::error::Result;
+use crate::db::error::{Error, Result};
 use crate::db::DB;
 
 // Finding triage states (`findings.status`).
@@ -599,5 +599,170 @@ impl FindingFilter {
             return (String::new(), args);
         }
         (format!(" WHERE {}", conds.join(" AND ")), args)
+    }
+}
+
+/// `FindingGroup`: one task-level bucket in the global findings view. `task_id` is
+/// `None` for findings that never had a task and findings retained after their task
+/// was deleted; those share one "unassigned/deleted" bucket.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FindingGroup {
+    pub task_id: Option<i64>,
+    pub task_name: String,
+    pub task_description: String,
+    pub task_status: String,
+    pub count: i64,
+    pub critical: i64,
+    pub high: i64,
+    pub medium: i64,
+    pub low: i64,
+    pub last_found_at: SystemTime,
+}
+
+impl DB {
+    /// `applyAssetScope`: resolve `asset_scope` into the concrete `asset_*` filter
+    /// fields. Empty scope = no asset filtering; `__none__` = the unlinked-assets
+    /// bucket. **Deferred:** a node key (`a:` / `c:` / `r:`) requires the asset
+    /// tree (`buildFindingAssetTree`, not yet ported) to collect its subtree ids, so
+    /// that case returns an explicit "not yet available" error rather than silently
+    /// degrading into no filtering.
+    pub(crate) fn apply_asset_scope(&self, mut f: FindingFilter) -> Result<FindingFilter> {
+        let scope = f.asset_scope.trim();
+        f.asset_ids = Vec::new();
+        f.asset_none = false;
+        f.asset_miss = false;
+        if scope.is_empty() {
+            return Ok(f);
+        }
+        if scope == FINDING_UNASSIGNED_ASSET {
+            f.asset_none = true;
+            return Ok(f);
+        }
+        Err(Error::msg(
+            "asset-scope node resolution requires the asset tree (not yet ported)",
+        ))
+    }
+
+    /// `ListFindingsPage`: one page of findings matching the filter, plus the total
+    /// match count (for the pager). `page` is 1-based; `page_size <= 0` -> 20.
+    pub async fn list_findings_page(
+        &self,
+        f: FindingFilter,
+        page: i32,
+        page_size: i32,
+    ) -> Result<(Vec<DBFinding>, i64)> {
+        let page = if page <= 0 { 1 } else { page };
+        let page_size = if page_size <= 0 { 20 } else { page_size };
+        let f = self.apply_asset_scope(f)?;
+        let (where_sql, params) = f.build_where();
+
+        let count_sql = format!(
+            "SELECT COUNT(*) FROM findings f LEFT JOIN tasks t ON f.task_id = t.id{where_sql}"
+        );
+        let count_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+            params.iter().map(|p| p.as_tosql()).collect();
+        let total: i64 = self.query_one(&count_sql, &count_refs).await?.get(0);
+        // Once the requested page is beyond the exact count, no data query is needed.
+        let total_pages = (total - 1) / page_size as i64 + 1;
+        if total == 0 || (page as i64) > total_pages {
+            return Ok((Vec::new(), total));
+        }
+
+        let order = if f.sort == "severity" {
+            "CASE f.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC, f.created_at DESC, f.id DESC"
+        } else {
+            "f.created_at DESC, f.id DESC"
+        };
+        let limit = page_size as i64;
+        let offset = (page - 1) as i64 * page_size as i64;
+        let n = params.len();
+        let mut refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+            params.iter().map(|p| p.as_tosql()).collect();
+        refs.push(&limit);
+        refs.push(&offset);
+        let sql = format!(
+            "SELECT {FINDING_SELECT_COLS} FROM findings f LEFT JOIN tasks t ON f.task_id = t.id{where_sql} \
+             ORDER BY {order} LIMIT ${} OFFSET ${}",
+            n + 1,
+            n + 2
+        );
+        let rows = self.query(&sql, &refs).await?;
+        Ok((rows.iter().map(scan_finding_row).collect(), total))
+    }
+
+    /// `ListFindingGroups`: a page of task-level groups matching the same filters.
+    /// Returns `(groups, group_total, finding_total)` — the group and finding totals
+    /// are independent so clients can page groups without losing the exact count.
+    pub async fn list_finding_groups(
+        &self,
+        f: FindingFilter,
+        page: i32,
+        page_size: i32,
+    ) -> Result<(Vec<FindingGroup>, i64, i64)> {
+        let page = if page <= 0 { 1 } else { page };
+        let page_size = if page_size <= 0 { 10 } else { page_size };
+        let f = self.apply_asset_scope(f)?;
+        let (where_sql, params) = f.build_where();
+        let grouped = format!(
+            " FROM findings f LEFT JOIN tasks t ON f.task_id=t.id{where_sql} \
+             GROUP BY t.id, t.name, t.description, t.status, t.paused, t.queued"
+        );
+
+        let count_sql = format!(
+            "SELECT COUNT(*), COALESCE(SUM(finding_count),0)::bigint FROM (\
+             SELECT COUNT(*) AS finding_count{grouped}) grouped_findings"
+        );
+        let count_refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+            params.iter().map(|p| p.as_tosql()).collect();
+        let totals = self.query_one(&count_sql, &count_refs).await?;
+        let group_total: i64 = totals.get(0);
+        let finding_total: i64 = totals.get(1);
+        let group_pages = (group_total - 1) / page_size as i64 + 1;
+        if group_total == 0 || (page as i64) > group_pages {
+            return Ok((Vec::new(), group_total, finding_total));
+        }
+
+        let order = if f.sort == "severity" {
+            "MAX(CASE f.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END) DESC, MAX(f.created_at) DESC, t.id DESC NULLS LAST"
+        } else {
+            "MAX(f.created_at) DESC, t.id DESC NULLS LAST"
+        };
+        let limit = page_size as i64;
+        let offset = (page - 1) as i64 * page_size as i64;
+        let n = params.len();
+        let mut refs: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> =
+            params.iter().map(|p| p.as_tosql()).collect();
+        refs.push(&limit);
+        refs.push(&offset);
+        let query = format!(
+            "SELECT t.id, COALESCE(t.name,''), COALESCE(t.description,''), COALESCE(\
+             CASE WHEN t.status IN ('done','failed','timeout') THEN t.status \
+             WHEN t.queued THEN 'queued' WHEN t.paused THEN 'paused' ELSE t.status END, ''), \
+             COUNT(*), \
+             COUNT(*) FILTER (WHERE f.severity='critical'), \
+             COUNT(*) FILTER (WHERE f.severity='high'), \
+             COUNT(*) FILTER (WHERE f.severity='medium'), \
+             COUNT(*) FILTER (WHERE f.severity='low'), \
+             MAX(f.created_at){grouped} ORDER BY {order} LIMIT ${} OFFSET ${}",
+            n + 1,
+            n + 2
+        );
+        let rows = self.query(&query, &refs).await?;
+        let mut groups = Vec::with_capacity(rows.len());
+        for r in &rows {
+            groups.push(FindingGroup {
+                task_id: r.get::<_, Option<i64>>(0),
+                task_name: r.get(1),
+                task_description: r.get(2),
+                task_status: r.get(3),
+                count: r.get(4),
+                critical: r.get(5),
+                high: r.get(6),
+                medium: r.get(7),
+                low: r.get(8),
+                last_found_at: r.get(9),
+            });
+        }
+        Ok((groups, group_total, finding_total))
     }
 }
