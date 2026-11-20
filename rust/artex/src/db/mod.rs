@@ -17,6 +17,7 @@
 //! byte-identical to the Go binary and cannot drift.
 
 pub mod activity_outbox;
+pub mod asset_dsl;
 pub mod asset_intercept;
 pub mod asset_intercept_match;
 pub mod browser_mcp;
