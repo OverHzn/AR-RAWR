@@ -788,6 +788,8 @@ resume without re-deriving state.
 
 - **A-4 context window helpers (this commit):** extended `src/agent/provider.rs` with `compaction_window` (32K floor) and `context_window_tokens` (no floor, 1M cap) — port of `Config::{CompactionWindow,ContextWindowTokens}`. Spec: `tests/agent_provider_helpers_test.rs` (1) — 9-case table. artex **545 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **G-1 guard core (this commit):** new `src/guard.rs` (port of `guard/guard.go` pure core) — `HookEvent`/`HookResult`/`AuditEntry`, `InterceptDecider` trait (+ NullDecider), `Guard::{new,target_only,full}`, `pre_tool_use`: audit (except target-only), built-in deny for target-only, rules-before-judge for full guard, deny/allow/ask handling, capped audit ring. Spec: `tests/guard_core_test.rs` (3) — passthrough+audit, target-only skips rules/judge, rule match doesn't call judge. artex **548 tests** green, clippy clean, fmt clean, gate 30/30. (Planned by subagent; gate stage + 3-pass loop in G-2.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
