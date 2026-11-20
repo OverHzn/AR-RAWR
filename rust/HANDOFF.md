@@ -798,6 +798,8 @@ resume without re-deriving state.
 
 - **A-6 prompt rendering (this commit):** new `src/agent/prompt.rs` — `Vars`, strict mini template renderer (`{{.Field}}`, `{{if .X}}…{{else}}…{{end}}`, unknown key = error) and `render_system` (DB override → render → fallback to code default on error). Port of `agent/prompt.go:renderSystem`/`renderTmpl`. Spec: `tests/agent_prompt_test.rs` (2) — override/fallback + conditionals. artex **555 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-7 hierarchical run budgets (this commit):** new `src/agent/budget.rs` — port of `agent/budget.go`: `Budget`/`Spend`, `NewBudget` (<=0 -> Unlimited), `EffectiveBudget` (child <= parent), `Budget::remaining`, `WrapupMargin` (5%/20k tokens, 2 turns), `BudgetLedger` (Record/RestoreSpend/State/BeginWrapup once), `IntentMeter` (Record/Remaining/Exhausted/Finish with per-worker average) and `BudgetWrapupBlocks` write-back allowlist. Spec: `tests/agent_budget_test.rs` (3) — effective budget table, margin+dispatch+wrapup-once, unset passthrough. artex **558 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
