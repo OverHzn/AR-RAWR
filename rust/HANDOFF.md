@@ -710,6 +710,8 @@ resume without re-deriving state.
 
 - **D-29 jsonbClean sanitizer (this commit):** new `src/db/jsonb_clean.rs` (pure port of `db/exploration.go:jsonbClean`), registered in db/mod.rs. Strips genuine `\u0000` JSON escapes that PostgreSQL jsonb rejects (SQLSTATE 22P05), preserving literal `\\u0000` (even backslash run). Spec: `tests/db_jsonb_clean_test.rs` (2) — port of TestJsonbClean + backslash-parity edge cases. artex **470 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: clippy manual_is_multiple_of -> `bs.is_multiple_of(2)`.)
 
+- **D-30 pure archive helpers (this commit):** new `src/db/archive_helpers.rs` (slice of `db/task_archives_restore.go` + `db/task_archives.go`), registered in db/mod.rs. `json_int64` (no fractional floats), `raw_row_count`, `first_archive_row`, `decode_archive_rows`, `archive_defaults`/`fill_archive_defaults` (older archives predating a NOT NULL column: findings.report_state, side sessions.memory, requests.context_info), `merge_json_task_id` (positive unique ids + task id), `nil_if_empty_string`. Foundation for archive restore. Spec: `tests/db_archive_helpers_test.rs` (3) — oracle captured live from Go. artex **473 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
