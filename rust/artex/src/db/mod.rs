@@ -33,6 +33,7 @@ pub mod llmhealth;
 pub mod llmretry;
 pub mod logs;
 pub mod migrate;
+pub mod notification;
 pub mod secrets;
 pub mod seed;
 pub mod settings;

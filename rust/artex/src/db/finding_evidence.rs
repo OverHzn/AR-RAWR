@@ -636,3 +636,111 @@ impl DB {
         }
     }
 }
+
+impl DB {
+    /// `FindingIDByNodeID`: the standalone finding id anchored to `node_id`
+    /// (ErrNoRows-style error when the node has no finding row).
+    pub async fn finding_id_by_node_id(&self, node_id: i64) -> Result<i64> {
+        let row = self
+            .query_opt("SELECT id FROM findings WHERE node_id=$1", &[&node_id])
+            .await?;
+        match row {
+            Some(r) => Ok(r.get::<_, i64>(0)),
+            None => Err(Error::msg("no rows in result set")),
+        }
+    }
+
+    /// `SetFindingReportVersionByNodeID`: write a report body onto the finding
+    /// anchored to `node_id`, under the evidence lock + optimistic version guard.
+    /// The `report_evidence_version` pins the body to the evidence it describes:
+    /// `version` (when given) is asserted equal, else the body is marked against
+    /// the current evidence (`0` if none, `-1` if evidence changed since).
+    /// Returns rows affected (0 when the node has no finding).
+    pub async fn set_finding_report_version_by_node_id(
+        &self,
+        node_id: i64,
+        report: &str,
+        version: Option<i64>,
+    ) -> Result<i64> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let result = async {
+            let id = tx
+                .query_opt("SELECT id FROM findings WHERE node_id=$1", &[&node_id])
+                .await?;
+            let Some(id) = id else {
+                return Ok(0);
+            };
+            let id: i64 = id.get(0);
+            lock_finding_evidence_tx(&tx, id, version).await?;
+            let n = tx
+                .execute(
+                    "UPDATE findings SET report=$2,\
+                     report_evidence_version=COALESCE($3::bigint,CASE WHEN evidence_version=0 THEN 0 ELSE -1 END) \
+                     WHERE id=$1",
+                    &[&id, &report, &version],
+                )
+                .await?;
+            Ok(n as i64)
+        }
+        .await;
+        match result {
+            Ok(n) => {
+                tx.commit().await?;
+                Ok(n)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `PopulateFindingTrafficIDs`: enrich already-visible finding nodes with their
+    /// standalone-row finding id + traffic-binding count. No discovery; the legacy
+    /// node id is left unchanged.
+    pub async fn populate_finding_traffic_ids(
+        &self,
+        nodes: &mut [crate::db::exploration::Node],
+    ) -> Result<()> {
+        // Collect the distinct finding-node ids in one IN list.
+        let mut ids: Vec<i64> = Vec::new();
+        let mut seen: std::collections::HashSet<i64> = std::collections::HashSet::new();
+        for n in nodes.iter() {
+            if n.kind == crate::db::constants::KIND_FINDING && seen.insert(n.id) {
+                ids.push(n.id);
+            }
+        }
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let rows = self
+            .query(
+                "SELECT f.id,f.node_id,(SELECT count(*) FROM finding_traffic_bindings b WHERE b.finding_id=f.id) \
+                 FROM findings f WHERE f.node_id = ANY($1::bigint[])",
+                &[&ids],
+            )
+            .await?;
+        // Index nodes by id for O(1) lookup.
+        let mut by_id: std::collections::HashMap<i64, usize> = std::collections::HashMap::new();
+        for (i, n) in nodes.iter().enumerate() {
+            by_id.insert(n.id, i);
+        }
+        for r in &rows {
+            let finding_id: i64 = r.get(0);
+            let node_id: i64 = r.get(1);
+            let count: i64 = r.get(2);
+            if let Some(&i) = by_id.get(&node_id) {
+                nodes[i].finding_id = finding_id;
+                nodes[i].finding_node_id = node_id;
+                nodes[i].traffic_count = count;
+            }
+        }
+        Ok(())
+    }
+}
