@@ -800,6 +800,8 @@ resume without re-deriving state.
 
 - **A-7 hierarchical run budgets (this commit):** new `src/agent/budget.rs` — port of `agent/budget.go`: `Budget`/`Spend`, `NewBudget` (<=0 -> Unlimited), `EffectiveBudget` (child <= parent), `Budget::remaining`, `WrapupMargin` (5%/20k tokens, 2 turns), `BudgetLedger` (Record/RestoreSpend/State/BeginWrapup once), `IntentMeter` (Record/Remaining/Exhausted/Finish with per-worker average) and `BudgetWrapupBlocks` write-back allowlist. Spec: `tests/agent_budget_test.rs` (3) — effective budget table, margin+dispatch+wrapup-once, unset passthrough. artex **558 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-8 budget line + env (this commit):** extended `src/agent/budget.rs` with `BudgetState::line()` (planner one-liner, "unlimited" per dimension) + `budgets_from_env` (ARTEX_TASK_BUDGET_*/ARTEX_INTENT_BUDGET_*, invalid/unset -> Unlimited). Added 2 tests — dispatch stops under one worker estimate, restore-spend toward cap. artex **560 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

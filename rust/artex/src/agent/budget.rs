@@ -249,3 +249,44 @@ pub fn budget_wrapup_blocks(tool: &str) -> bool {
             | "record_coverage"
     )
 }
+
+impl BudgetState {
+    /// One-line remaining budget shown to the planner and logged.
+    pub fn line(&self) -> String {
+        let of = |rem: i64, cap: i64| {
+            if cap == UNLIMITED {
+                "unlimited".to_string()
+            } else {
+                format!("{rem} of {cap}")
+            }
+        };
+        format!(
+            "[Task budget] remaining: tokens {}, turns {} (wrap-up reserve: {} tokens, {} turns)",
+            of(self.remaining.tokens, self.task.tokens),
+            of(self.remaining.turns, self.task.turns),
+            self.margin.tokens,
+            self.margin.turns,
+        )
+    }
+}
+
+/// `BudgetsFromEnv`: ARTEX_TASK_BUDGET_{TOKENS,TURNS} and
+/// ARTEX_INTENT_BUDGET_{TOKENS,TURNS}. Unset / 0 / invalid -> Unlimited.
+pub fn budgets_from_env() -> (Budget, Budget) {
+    let get = |k: &str| {
+        std::env::var(k)
+            .ok()
+            .and_then(|s| s.trim().parse::<i64>().ok())
+            .unwrap_or(0)
+    };
+    (
+        Budget::new(
+            get("ARTEX_TASK_BUDGET_TOKENS"),
+            get("ARTEX_TASK_BUDGET_TURNS"),
+        ),
+        Budget::new(
+            get("ARTEX_INTENT_BUDGET_TOKENS"),
+            get("ARTEX_INTENT_BUDGET_TURNS"),
+        ),
+    )
+}

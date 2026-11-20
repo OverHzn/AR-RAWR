@@ -120,3 +120,38 @@ fn unset_budget_is_passthrough() {
     assert!(!budget_wrapup_blocks("record_fact"));
     assert!(!budget_wrapup_blocks("insert_assets"));
 }
+
+#[test]
+fn dispatch_stops_under_one_worker_estimate_and_line() {
+    let l = BudgetLedger::new(Budget::new(100_000, 10), Budget::new(100_000, 5)).unwrap();
+    // First worker finishes with a large average estimate.
+    let mut w = l.start_intent();
+    w.record(&usage(60_000));
+    w.finish();
+    let st = l.state();
+    assert_eq!(st.estimate.tokens, 60_000);
+    assert!(!st.dispatch, "40k left cannot afford a 60k worker estimate");
+    let line = st.line();
+    assert!(line.contains("[Task budget] remaining: tokens"));
+    assert!(line.contains("wrap-up reserve: 20000 tokens"));
+
+    // Spend past the reserve: dispatch stops.
+    l.record(&usage(70_000));
+    let st = l.state();
+    assert!(!st.dispatch);
+    assert!(st.at_margin);
+}
+
+#[test]
+fn restore_spend_counts_toward_cap() {
+    let l = BudgetLedger::new(Budget::new(100, 10), Budget::new(100, 5)).unwrap();
+    l.restore_spend(Spend {
+        tokens: 95,
+        turns: 0,
+    });
+    let st = l.state();
+    assert_eq!(st.remaining.tokens, 5);
+    assert_eq!(st.spent.tokens, 95);
+    let (task, _intent) = artex::agent::budget::budgets_from_env();
+    assert_eq!(task.tokens, UNLIMITED, "unset budget env is unlimited");
+}
