@@ -754,6 +754,8 @@ resume without re-deriving state.
 
 - **D-43 archive restore relation/scope/profile/intercept helpers (this commit):** extended `src/db/task_archives_restore.rs` with `restore_task_relations_tx`/`restore_task_scopes_tx`/`restore_task_llm_profiles_tx` (skip deleted global objects with warnings, insert in FK-safe order) + `restore_intercept_rows_tx` (legacy decision_source inference rule/model/unknown, decided_by default, pending -> timeout with audit rewrite, awaiting_result -> unknown) and public DB wrappers. Added 2 tests. artex **516 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-44 full task archive restore (this commit):** added `TaskArchiveSnapshot` + `DB::restore_task_archive` — the complete manifest restore in one tx: format/streamed-table validation, advisory lock coordination, archive identity/state check, asset restore + id remap, exploration/task stub refresh with deleted-global-reference cleanup, FK-ordered inserts, relation/scope/profile restores, side-question/finding/evidence restore, usage rows, intercept normalization, final phase/progress update. Added Deserialize for TrafficEvidenceSnapshot (RFC3339 created_at). Spec: `tests/db_archive_restore_test.rs` (1) — format mismatch, state mismatch, happy path. artex **517 tests** green, clippy clean, fmt clean, gate 30/30. (Streamed LLM record packages not supported yet.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

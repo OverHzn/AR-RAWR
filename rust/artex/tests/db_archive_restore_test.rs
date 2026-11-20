@@ -517,3 +517,106 @@ async fn restore_task_relation_scope_profile_warnings() {
 
     let _ = d.delete_task(task.id).await;
 }
+
+#[tokio::test]
+async fn restore_task_archive_validation_and_happy_path() {
+    use artex::db::task_archives_restore::{
+        TaskArchiveSnapshot, ERR_TASK_ARCHIVE_FORMAT_MISMATCH, ERR_TASK_ARCHIVE_STATE, RESTORING,
+    };
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let t = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+    let task = d
+        .create_task(&format!("full-restore-{t}"), "goal", None, 0, 0)
+        .await
+        .unwrap();
+
+    let task_row: Json = d
+        .query_one(
+            "SELECT row_to_json(a)::jsonb FROM tasks a WHERE id=$1",
+            &[&task.id],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    let exp_row: Json = d
+        .query_one(
+            "SELECT row_to_json(a)::jsonb FROM explorations a WHERE id=$1",
+            &[&task.exploration_id],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    let archive_id: i64 = d.query_one(
+        "INSERT INTO task_archives(task_id,state,phase,format_version) VALUES($1,'restoring','restoring',3) RETURNING id",
+        &[&task.id],
+    ).await.unwrap().get(0);
+
+    let mut tables = std::collections::BTreeMap::new();
+    tables.insert("tasks".to_string(), json!([task_row]));
+    tables.insert("explorations".to_string(), json!([exp_row]));
+    let snap = TaskArchiveSnapshot {
+        format_version: 3,
+        task_id: task.id,
+        exploration_id: task.exploration_id,
+        tables,
+        ..TaskArchiveSnapshot::default()
+    };
+
+    // Bad format version is rejected before touching the database.
+    let mut bad = snap.clone();
+    bad.format_version = 0;
+    let err = d
+        .restore_task_archive(archive_id, &bad, 0)
+        .await
+        .unwrap_err();
+    assert!(err.is(ERR_TASK_ARCHIVE_FORMAT_MISMATCH), "got {err}");
+
+    // Wrong state is rejected after the archive row is locked.
+    d.execute(
+        "UPDATE task_archives SET state='ready' WHERE id=$1",
+        &[&archive_id],
+    )
+    .await
+    .unwrap();
+    let err = d
+        .restore_task_archive(archive_id, &snap, 0)
+        .await
+        .unwrap_err();
+    assert!(err.is(ERR_TASK_ARCHIVE_STATE), "got {err}");
+
+    // Happy path.
+    d.execute(
+        "UPDATE task_archives SET state=$1 WHERE id=$2",
+        &[&RESTORING, &archive_id],
+    )
+    .await
+    .unwrap();
+    let warnings = d.restore_task_archive(archive_id, &snap, 0).await.unwrap();
+    assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+    let phase: String = d
+        .query_one(
+            "SELECT phase FROM task_archives WHERE id=$1",
+            &[&archive_id],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(phase, "database_restored");
+
+    d.execute("DELETE FROM task_archives WHERE id=$1", &[&archive_id])
+        .await
+        .unwrap();
+    let _ = d.delete_task(task.id).await;
+}

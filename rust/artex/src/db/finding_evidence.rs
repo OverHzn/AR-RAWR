@@ -83,7 +83,7 @@ pub fn normalize_traffic_refs(refs: &[TrafficRef]) -> Result<Vec<TrafficRef>> {
 /// `TrafficEvidenceSnapshot`: one immutable captured request/response snapshot.
 /// Text head columns are sealed (encrypted) at rest; `traffic_snapshot_id` hashes
 /// the cleartext normalized form.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
 pub struct TrafficEvidenceSnapshot {
     pub id: String,
     pub source_traffic_id: String,
@@ -99,7 +99,16 @@ pub struct TrafficEvidenceSnapshot {
     pub req_len: i64,
     pub resp_len: i64,
     /// epoch when zero (Go `time.Time{}`); RFC3339 when read back.
+    #[serde(deserialize_with = "de_created_at")]
     pub created_at: std::time::SystemTime,
+}
+
+fn de_created_at<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> std::result::Result<std::time::SystemTime, D::Error> {
+    let s = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(s.and_then(|s| crate::db::gotime::parse_rfc3339(&s))
+        .unwrap_or(std::time::UNIX_EPOCH))
 }
 
 impl Default for TrafficEvidenceSnapshot {
