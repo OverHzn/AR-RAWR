@@ -97,6 +97,8 @@ pub const FINDING_UNASSIGNED_ASSET: &str = "__none__";
 #[derive(Debug, Clone, PartialEq)]
 pub struct DBFinding {
     pub traffic_count: i64,
+    /// Bound traffic bindings (populated only for export; the report renders them).
+    pub traffic_bindings: Vec<crate::db::finding_evidence::FindingTrafficBinding>,
     pub evidence_version: i64,
     pub report_evidence_version: i64,
     pub id: i64,
@@ -132,6 +134,7 @@ impl Default for DBFinding {
     fn default() -> Self {
         DBFinding {
             traffic_count: 0,
+            traffic_bindings: Vec::new(),
             evidence_version: 0,
             report_evidence_version: 0,
             id: 0,
@@ -174,6 +177,7 @@ f.counterevidence, f.confidence_rationale, \
 fn scan_finding_row(row: &tokio_postgres::Row) -> DBFinding {
     let aids: serde_json::Value = row.get(9);
     DBFinding {
+        traffic_bindings: Vec::new(),
         id: row.get(0),
         task_id: row.get(1),
         node_id: row.get(2),
