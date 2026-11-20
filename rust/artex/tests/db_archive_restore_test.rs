@@ -373,3 +373,54 @@ async fn restore_leaves_domain_and_ip_urls_untouched() {
         .await
         .unwrap();
 }
+
+#[test]
+fn remap_archive_asset_references_cases() {
+    use artex::db::archive_helpers::remap_archive_asset_references;
+    use std::collections::{BTreeMap, HashMap};
+
+    let mut tables = BTreeMap::new();
+    tables.insert(
+        "exploration_anchors".to_string(),
+        json!([{"asset_id": 11}, {"asset_id": 99}]),
+    );
+    tables.insert("task_asset_links".to_string(), json!([{"asset_id": 22}]));
+    tables.insert(
+        "exploration_nodes".to_string(),
+        json!([{
+            "payload": {"asset_ids": [11, 22, 99]}
+        }]),
+    );
+    tables.insert("findings".to_string(), json!([{"asset_ids": [22, 99, 11]}]));
+    tables.insert("other".to_string(), json!([{"asset_id": 11}]));
+    let mapping: HashMap<i64, i64> = [(11, 101), (22, 202)].into_iter().collect();
+
+    let out = remap_archive_asset_references(&tables, &mapping);
+    assert_eq!(
+        out["exploration_anchors"],
+        json!([{"asset_id": 101}, {"asset_id": 99}])
+    );
+    assert_eq!(out["task_asset_links"], json!([{"asset_id": 202}]));
+    assert_eq!(
+        out["exploration_nodes"][0]["payload"]["asset_ids"],
+        json!([101, 202, 99])
+    );
+    assert_eq!(out["findings"][0]["asset_ids"], json!([202, 99, 101]));
+    assert_eq!(out["other"], tables["other"], "unrelated tables untouched");
+}
+
+#[tokio::test]
+async fn insert_archive_rows_allowlist_and_empty() {
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    d.insert_archive_rows("findings", &json!([])).await.unwrap();
+    let err = d
+        .insert_archive_rows("assets", &json!([]))
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("not allowed"), "got {err}");
+}

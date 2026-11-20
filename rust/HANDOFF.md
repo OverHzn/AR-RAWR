@@ -750,6 +750,8 @@ resume without re-deriving state.
 
 - **D-41 task archive asset restore (this commit):** new `src/db/task_archives_restore.rs` (first slice of `db/task_archives_restore.go`), registered in db/mod.rs. `DB::restore_archive_assets` (tx): archived asset rows -> company-deletion warnings, URL normalization scoped to service/endpoint only (drops credentials from old archives), natural-key reuse (root_domain/ip/subdomain/app/service/endpoint), task_ids union, id-collision remap via sequence, ON CONFLICT fallback; returns old->new id mapping + warnings. Spec: `tests/db_archive_restore_test.rs` (4) — full port of `task_archives_restore_url_test.go`. artex **512 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: bind owned String params via Vec to avoid temporaries; `row_to_json(a)::jsonb` for serde Value scans.)
 
+- **D-42 archive remap + insert (this commit):** extended `src/db/archive_helpers.rs` with `remap_archive_asset_references` (old->new ids in anchors/links and asset_ids arrays of node payloads/findings; unrelated tables untouched) and `src/db/task_archives_restore.rs` with `DB::insert_archive_rows` (allowlisted tables only, fillArchiveDefaults for older archives, json_populate_recordset insert). Added 2 tests. artex **514 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

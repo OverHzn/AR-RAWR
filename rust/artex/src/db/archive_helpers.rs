@@ -98,3 +98,64 @@ pub fn nil_if_empty_string(value: &str) -> Option<&str> {
         Some(value)
     }
 }
+
+/// `remapArchiveAssetReferences`: rewrite old asset ids to their restored ids
+/// in anchor/link rows and in `asset_ids` arrays (node payloads, findings).
+pub fn remap_archive_asset_references(
+    tables: &std::collections::BTreeMap<String, Json>,
+    mapping: &std::collections::HashMap<i64, i64>,
+) -> std::collections::BTreeMap<String, Json> {
+    let mut out = tables.clone();
+    for table in ["exploration_anchors", "task_asset_links"] {
+        let Some(rows) = tables.get(table).and_then(|v| v.as_array()) else {
+            continue;
+        };
+        let mut rows = rows.clone();
+        for row in &mut rows {
+            if let Some(obj) = row.as_object_mut() {
+                if let Some(old) = obj.get("asset_id").and_then(json_int64) {
+                    if let Some(new) = mapping.get(&old) {
+                        obj.insert(
+                            "asset_id".to_string(),
+                            Json::Number(serde_json::Number::from(*new)),
+                        );
+                    }
+                }
+            }
+        }
+        out.insert(table.to_string(), Json::Array(rows));
+    }
+    for table in ["exploration_nodes", "findings"] {
+        let Some(rows) = tables.get(table).and_then(|v| v.as_array()) else {
+            continue;
+        };
+        let mut rows = rows.clone();
+        for row in &mut rows {
+            let Some(obj) = row.as_object_mut() else {
+                continue;
+            };
+            let container = if table == "exploration_nodes" {
+                match obj.get_mut("payload").and_then(|v| v.as_object_mut()) {
+                    Some(p) => p,
+                    None => continue,
+                }
+            } else {
+                obj
+            };
+            if let Some(values) = container
+                .get_mut("asset_ids")
+                .and_then(|v| v.as_array_mut())
+            {
+                for value in values {
+                    if let Some(old) = json_int64(value) {
+                        if let Some(new) = mapping.get(&old) {
+                            *value = Json::Number(serde_json::Number::from(*new));
+                        }
+                    }
+                }
+            }
+        }
+        out.insert(table.to_string(), Json::Array(rows));
+    }
+    out
+}

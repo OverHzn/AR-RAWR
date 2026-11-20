@@ -199,3 +199,45 @@ impl DB {
         Ok((mapping, warnings))
     }
 }
+
+const INSERTABLE_ARCHIVE_TABLES: &[&str] = &[
+    "exploration_nodes",
+    "exploration_edges",
+    "exploration_anchors",
+    "task_constraints",
+    "activity",
+    "task_asset_links",
+    "findings",
+    "llm_records",
+    "llm_usage",
+    "skill_usage",
+    "tool_usage",
+    "side_question_sessions",
+    "side_question_requests",
+];
+
+impl DB {
+    /// `insertArchiveRows`: insert rows of one allowlisted archive table with
+    /// defaults restored for columns older archives predate.
+    pub async fn insert_archive_rows(&self, table: &str, raw: &Json) -> Result<()> {
+        if !INSERTABLE_ARCHIVE_TABLES.contains(&table) {
+            return Err(Error::msg(format!(
+                "archive restore table {table:?} is not allowed"
+            )));
+        }
+        let filled =
+            crate::db::archive_helpers::fill_archive_defaults(table, raw).map_err(Error::msg)?;
+        if crate::db::archive_helpers::raw_row_count(&filled) == 0 {
+            return Ok(());
+        }
+        let body = serde_json::to_string(&filled).map_err(|e| Error::msg(e.to_string()))?;
+        self.execute(
+            &format!(
+                "INSERT INTO {table} SELECT * FROM json_populate_recordset(NULL::{table},$1::json)"
+            ),
+            &[&body],
+        )
+        .await?;
+        Ok(())
+    }
+}
