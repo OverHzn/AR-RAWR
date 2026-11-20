@@ -708,6 +708,8 @@ resume without re-deriving state.
 
 - **E-15 pure traffic helpers slice (this commit):** new `src/traffic/pure_helpers.rs` (slice of `traffic/traffic.go`), registered in traffic/mod.rs. `clamp_blob_range` (blob range with length<=0 meaning rest), `host_only` (strip :port, bare IPv6 unchanged), `proxy_addr` (bare :port -> loopback URL), `validate_proxy_url` (http/https/socks5 + host only). Spec: `tests/traffic_pure_helpers_test.rs` (4) — ports of TestClampBlobRange (9 cases)/TestHostOnly/TestValidateProxyURL/TestProxyAddr. artex **468 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-29 jsonbClean sanitizer (this commit):** new `src/db/jsonb_clean.rs` (pure port of `db/exploration.go:jsonbClean`), registered in db/mod.rs. Strips genuine `\u0000` JSON escapes that PostgreSQL jsonb rejects (SQLSTATE 22P05), preserving literal `\\u0000` (even backslash run). Spec: `tests/db_jsonb_clean_test.rs` (2) — port of TestJsonbClean + backslash-parity edge cases. artex **470 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: clippy manual_is_multiple_of -> `bs.is_multiple_of(2)`.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
