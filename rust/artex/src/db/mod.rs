@@ -25,6 +25,7 @@ pub mod commands;
 pub mod companies;
 pub mod company_scope;
 pub mod config_agents;
+pub mod config_mcp;
 pub mod config_profiles;
 pub mod config_prompts;
 pub mod config_visibility;
