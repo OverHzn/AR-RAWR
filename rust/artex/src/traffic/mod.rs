@@ -4,3 +4,4 @@ pub mod query_helpers;
 pub mod rewrite_engine;
 pub mod rewrite_rule;
 pub mod sqlite;
+pub mod store;

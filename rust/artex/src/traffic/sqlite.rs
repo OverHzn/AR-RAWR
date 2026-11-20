@@ -64,6 +64,7 @@ extern "C" {
     fn sqlite3_column_blob(stmt: *mut sqlite3_stmt, col: c_int) -> *const c_void;
     fn sqlite3_column_bytes(stmt: *mut sqlite3_stmt, col: c_int) -> c_int;
     fn sqlite3_changes(db: *mut sqlite3) -> c_int;
+    fn sqlite3_last_insert_rowid(db: *mut sqlite3) -> i64;
 }
 
 const SQLITE_OK: c_int = 0;
@@ -326,6 +327,10 @@ impl Conn {
             sqlite3_finalize(stmt);
         }
         Ok(out)
+    }
+
+    pub fn last_insert_rowid(&self) -> i64 {
+        unsafe { sqlite3_last_insert_rowid(self.raw) }
     }
 
     pub fn execute(&self, sql: &str, params: &[Value]) -> Result<u64> {
