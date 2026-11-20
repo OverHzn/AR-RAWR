@@ -744,3 +744,195 @@ impl DB {
         Ok(())
     }
 }
+
+/// `RecordFindingInput`: the inputs to the atomic finding recorder.
+#[derive(Debug, Clone, Default)]
+pub struct RecordFindingInput {
+    pub task_id: i64,
+    pub exploration_id: i64,
+    pub intent_id: i64,
+    pub vulnclass: String,
+    pub name: String,
+    pub severity: String,
+    pub summary: String,
+    pub evidence: String,
+    pub worker: String,
+    /// `""` = not given (both are reporter-supplied reasoning).
+    pub counterevidence: String,
+    pub confidence_rationale: String,
+    pub asset_ids: Vec<i64>,
+}
+
+/// `RecordedFinding`: the result of recording a finding — its standalone row id,
+/// the anchored finding-node id, and the (decrypted) traffic evidence.
+#[derive(Debug, Clone, Default)]
+pub struct RecordedFinding {
+    pub finding_id: i64,
+    pub node_id: i64,
+    pub traffic: FindingTraffic,
+}
+
+impl DB {
+    /// `RecordFindingTx`: atomically record a finding (node + anchors + optional
+    /// intent edge + findings row + a same-transaction notification event + any
+    /// prepared traffic evidence) inside a caller's transaction.
+    pub async fn record_finding_tx(
+        &self,
+        tx: &deadpool_postgres::Transaction<'_>,
+        input: &RecordFindingInput,
+        prepared: &[PreparedTrafficEvidence],
+    ) -> Result<RecordedFinding> {
+        lock_task_evidence_tx(tx, input.task_id).await?;
+        if input.task_id > 0 {
+            let row = tx
+                .query_opt(
+                    "SELECT exploration_id FROM tasks WHERE id=$1",
+                    &[&input.task_id],
+                )
+                .await?;
+            let exp_id: i64 = row
+                .ok_or_else(|| Error::msg("no rows in result set"))?
+                .get(0);
+            if exp_id != input.exploration_id {
+                return Err(Error::msg(
+                    "the finding's task does not match the exploration record",
+                ));
+            }
+        }
+        if input.intent_id > 0 {
+            let ok: bool = tx
+                .query_one(
+                    "SELECT EXISTS(SELECT 1 FROM exploration_nodes WHERE id=$1 AND exploration_id=$2 AND kind='intent')",
+                    &[&input.intent_id, &input.exploration_id],
+                )
+                .await?
+                .get(0);
+            if !ok {
+                return Err(Error::msg(
+                    "intent_id must be an intent of this task (intents of associated tasks are read-only)",
+                ));
+            }
+        }
+        let payload = serde_json::json!({
+            "vulnclass": input.vulnclass,
+            "name": input.name,
+            "severity": input.severity,
+            "summary": input.summary,
+            "evidence": {"by": input.worker, "poc": input.evidence},
+        });
+        let mut out = RecordedFinding::default();
+        let node_id: i64 = tx
+            .query_one(
+                "INSERT INTO exploration_nodes(exploration_id,kind,payload,priority,state,origin) \
+                 VALUES($1,'finding',$2,9,'confirmed',$3) RETURNING id",
+                &[&input.exploration_id, &payload, &input.worker],
+            )
+            .await?
+            .get(0);
+        out.node_id = node_id;
+        for asset in &input.asset_ids {
+            tx.execute(
+                "INSERT INTO exploration_anchors(node_id,asset_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+                &[&node_id, asset],
+            )
+            .await?;
+        }
+        if input.intent_id > 0 {
+            tx.execute(
+                "INSERT INTO exploration_edges(exploration_id,src_id,rel,dst_id) VALUES($1,$2,$3,$4)",
+                &[
+                    &input.exploration_id,
+                    &input.intent_id,
+                    &crate::db::constants::REL_YIELDS,
+                    &node_id,
+                ],
+            )
+            .await?;
+        }
+        let aids = serde_json::json!(input.asset_ids);
+        let task_id = input.task_id;
+        let finding_id: i64 = tx
+            .query_one(
+                "INSERT INTO findings(task_id,node_id,vulnclass,name,severity,summary,evidence,worker,asset_ids,counterevidence,confidence_rationale) \
+                 VALUES(NULLIF($1::bigint,0),$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
+                &[
+                    &task_id,
+                    &node_id,
+                    &input.vulnclass,
+                    &input.name,
+                    &input.severity,
+                    &input.summary,
+                    &input.evidence,
+                    &input.worker,
+                    &aids,
+                    &input.counterevidence,
+                    &input.confidence_rationale,
+                ],
+            )
+            .await?
+            .get(0);
+        out.finding_id = finding_id;
+
+        // Same-transaction notification event: best-effort, isolated on a savepoint.
+        let snap = crate::notify::Snapshot {
+            kind: crate::notify::EVENT_FINDING_CREATED.to_string(),
+            finding_id,
+            task_id: input.task_id,
+            vulnclass: input.vulnclass.clone(),
+            name: input.name.clone(),
+            severity: input.severity.clone(),
+            summary: input.summary.clone(),
+            asset_ids: input.asset_ids.clone(),
+            from_status: String::new(),
+            to_status: String::new(),
+        };
+        crate::db::notification::record_notification_event_tx(
+            tx,
+            crate::notify::EVENT_FINDING_CREATED,
+            finding_id,
+            &snap,
+        )
+        .await;
+
+        self.add_finding_traffic_tx(tx, finding_id, prepared)
+            .await?;
+        out.traffic = finding_traffic_tx(tx, finding_id).await?;
+        Ok(out)
+    }
+
+    /// `RecordFinding`: standalone-transaction wrapper (no pre-prepared evidence),
+    /// binding the exploration id from `exp_id`.
+    pub async fn record_finding(
+        &self,
+        exp_id: i64,
+        mut input: RecordFindingInput,
+    ) -> Result<RecordedFinding> {
+        input.exploration_id = exp_id;
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let result = self.record_finding_tx(&tx, &input, &[]).await;
+        match result {
+            Ok(out) => {
+                tx.commit().await?;
+                Ok(out)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+}
+
+impl crate::db::exploration::ExplorationStore {
+    /// `RecordFinding`: the legacy/no-recorder path used by tools and tests —
+    /// records a finding atomically under the evidence lock, no pre-prepared traffic.
+    pub async fn record_finding(&self, input: RecordFindingInput) -> Result<RecordedFinding> {
+        self.db().record_finding(self.id(), input).await
+    }
+}

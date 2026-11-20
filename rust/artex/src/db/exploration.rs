@@ -44,6 +44,11 @@ impl ExplorationStore {
         self.exp_id
     }
 
+    /// `db`: the backing handle (crate-internal; for cross-module store methods).
+    pub(crate) fn db(&self) -> &DB {
+        &self.db
+    }
+
     /// `Root`: the exploration's description (NULL -> "") and goal.
     pub async fn root(&self) -> Result<(String, String)> {
         let row = self
