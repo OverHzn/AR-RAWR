@@ -29,6 +29,7 @@ pub mod exploration;
 pub mod finding_evidence;
 pub mod findings;
 pub mod gotime;
+pub mod lessons;
 pub mod llm_usage;
 pub mod llmhealth;
 pub mod llmretry;
