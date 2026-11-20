@@ -8,3 +8,4 @@ pub mod target;
 pub mod target_exempt;
 pub mod target_extract;
 pub mod target_resolve;
+pub mod trace_helpers;

@@ -690,6 +690,8 @@ resume without re-deriving state.
 
 - **E-9 always-allow argv denylist pure slice (this commit):** new `src/intercept/argv_allow.rs` (pure slice of `intercept/alwaysallow_denylist.go`), registered in `src/intercept/mod.rs`. Code-owned denylist (5 groups: interpreters/launchers/package managers/orchestration/destructive), `argv_program_name` (basename, lowercase, strip trailing version digits/dots after a letter, mkfs.* -> mkfs), `argv_allow_denied`, `check_argv_allow`. `AlwaysAllowPrefix` deferred (needs `ArgvPrefix` from argv.go shell parser). Spec: `tests/intercept_argv_allow_test.rs` (3) — port of TestArgvAllowDenylist (denied + allowed lists) + program-name normalization + check error. artex **416 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-10 pure trace helpers slice (this commit):** new `src/intercept/trace_helpers.rs` (pure slice of `intercept/trace.go`), registered in `src/intercept/mod.rs`. `digest_input` (canonicalize JSON via decode+re-encode then sha256 hex — semantically equal bodies get one digest) + `bounded` (truncate to N bytes on UTF-8 rune boundary, returns cut flag). Spec: `tests/intercept_trace_helpers_test.rs` (2) — oracle values captured live from Go (5 digest inputs incl non-JSON/null/array; 5 bounded cases incl multi-byte é). artex **418 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
