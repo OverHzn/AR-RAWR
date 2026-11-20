@@ -51,6 +51,7 @@ dependencies = [
  "futures",
  "gocompat",
  "hmac 0.12.1",
+ "idna",
  "llm-rs",
  "mcphttp-rs",
  "mcphttpx-rs",
