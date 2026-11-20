@@ -993,6 +993,121 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Frontier + goals (port of the `*ExplorationStore` frontier / goal methods in
+// `db/exploration.go`).
+// ---------------------------------------------------------------------------
+
+impl ExplorationStore {
+    /// `Frontier`: this exploration's open intents, highest priority first
+    /// (ties broken by id ascending), capped at `limit` (default 50). The
+    /// claimable-work view the planner schedules against.
+    pub async fn frontier(&self, limit: i32) -> Result<Vec<Node>> {
+        let limit = (if limit <= 0 { 50 } else { limit }) as i64;
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id=$1 AND kind='intent' AND state='open' \
+         ORDER BY priority DESC, id ASC LIMIT $2"
+        );
+        let rows = self.db.query(&sql, &[&self.exp_id, &limit]).await?;
+        Ok(scan_nodes(&rows))
+    }
+
+    /// `HasActiveIntent`: whether any intent is still in play (open OR running).
+    /// Counting open+running (not just open) is race-proof against a worker that
+    /// claimed a seeded intent between the check and the first planner round.
+    pub async fn has_active_intent(&self) -> Result<bool> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT EXISTS(SELECT 1 FROM exploration_nodes \
+             WHERE exploration_id=$1 AND kind='intent' AND state IN ('open','running'))",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `HasOpenGoal`: whether any goal is still 'open'. false => all goals are
+    /// met/abandoned (or there are none) => the planner stops and the task's end
+    /// is decided by whether the frontier drains.
+    pub async fn has_open_goal(&self) -> Result<bool> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT EXISTS(SELECT 1 FROM exploration_nodes \
+             WHERE exploration_id=$1 AND kind='goal' AND state='open')",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `OpenGoalFingerprint`: a stable fingerprint of the open-goal set — the
+    /// sorted goal ids joined by commas ("" when none). Planner quiet-mode uses it
+    /// to tell "the goal set changed" from "nothing the plan depends on changed".
+    pub async fn open_goal_fingerprint(&self) -> Result<String> {
+        let rows = self
+            .db
+            .query(
+                "SELECT id FROM exploration_nodes \
+             WHERE exploration_id=$1 AND kind='goal' AND state='open' ORDER BY id",
+                &[&self.exp_id],
+            )
+            .await?;
+        let ids: Vec<String> = rows
+            .iter()
+            .map(|r| r.get::<_, i64>(0).to_string())
+            .collect();
+        Ok(ids.join(","))
+    }
+
+    /// `UpdateGoalPayload`: replace a goal's payload with `{"text", "vulnclass"?}`
+    /// (`vulnclass` only when non-empty). Scoped to kind='goal'; errors "goal does
+    /// not exist" when the id is not a goal of this exploration.
+    pub async fn update_goal_payload(&self, id: i64, text: &str, vulnclass: &str) -> Result<()> {
+        let mut map = serde_json::Map::new();
+        map.insert("text".to_string(), Value::String(text.to_string()));
+        if !vulnclass.is_empty() {
+            map.insert(
+                "vulnclass".to_string(),
+                Value::String(vulnclass.to_string()),
+            );
+        }
+        let payload = Value::Object(map);
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes SET payload=$1 \
+             WHERE id=$2 AND exploration_id=$3 AND kind='goal'",
+                &[&payload, &id, &self.exp_id],
+            )
+            .await?;
+        if n == 0 {
+            return Err(Error::msg("goal does not exist"));
+        }
+        Ok(())
+    }
+
+    /// `DeleteGoal`: hard-delete a goal node, scoped to kind='goal' so it can
+    /// never drop an intent/fact by id (spawns edges + anchors CASCADE; activity
+    /// node_id SET NULL). Errors "goal does not exist" when no such goal exists.
+    pub async fn delete_goal(&self, id: i64) -> Result<()> {
+        let n = self
+            .db
+            .execute(
+                "DELETE FROM exploration_nodes \
+             WHERE id=$1 AND exploration_id=$2 AND kind='goal'",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        if n == 0 {
+            return Err(Error::msg("goal does not exist"));
+        }
+        Ok(())
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(

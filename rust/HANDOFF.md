@@ -499,6 +499,20 @@ resume without re-deriving state.
   green, clippy clean, fmt clean, gate 30/30. (Gotcha: LIMIT/OFFSET params must bind i64 —
   Postgres types them int8, i32 fails; and `$3 <= 0 OR id < $3` makes Postgres infer int4
   for the unknown param from the `0` literal — write `0::bigint` so it stays int8.)
+- **D-1w exploration frontier + goals (this commit):** `src/db/exploration.rs` extended —
+  `ExplorationStore::{frontier(limit, def 50 -> open intents priority DESC, id ASC),
+  has_active_intent (EXISTS open|running; race-proof vs a worker that claimed a seeded
+  intent between check and first planner round), has_open_goal (EXISTS goal state=open),
+  open_goal_fingerprint (sorted open-goal ids joined by "," -> "" when none; quiet-mode
+  change detector), update_goal_payload(id,text,vulnclass -> {"text","vulnclass"?}; scoped
+  kind='goal'; vulnclass only when non-empty; "goal does not exist" on 0 rows),
+  delete_goal(id -> hard-delete scoped kind='goal' so it can't drop an intent/fact;
+  spawns edges+anchors CASCADE, activity node_id SET NULL; "goal does not exist" on 0 rows)}`.
+  Spec: `tests/db_exploration_frontier_test.rs` (1) — empty frontier/fp, frontier priority
+  DESC + id ASC tie-break + limit cap, open-goal fingerprint shrinks as a goal closes,
+  update_goal_payload (text/vulnclass + empty-omits + non-goal rejected), delete_goal (goal
+  deleted, non-goal kind guard leaves intent, already-gone errors), has_active_intent counts
+  a running intent. artex **247 tests** green, clippy clean, fmt clean, gate 30/30.
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
