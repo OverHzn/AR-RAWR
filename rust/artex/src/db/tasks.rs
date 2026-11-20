@@ -759,3 +759,162 @@ impl DB {
         Ok(t)
     }
 }
+
+/// `TaskDeleteResult`: optional related-data cleanup counts from one cascade delete.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct TaskDeleteResult {
+    pub assets_deleted: i64,
+    pub assets_detached: i64,
+    pub findings_deleted: i64,
+    pub llm_records_deleted: i64,
+}
+
+/// `TargetPinRevokedTaskDeleted`: the revoked_reason stamped on a deleted task's
+/// active pins (kept as history; ids are never reused).
+const TARGET_PIN_REVOKED_TASK_DELETED: &str = "task_deleted";
+
+/// `revokeTaskPins`: mark a deleted task's active target pins as revoked (kept as
+/// history). Shared with the target-pins cluster.
+pub(crate) async fn revoke_task_pins(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+) -> Result<()> {
+    tx.execute(
+        "UPDATE target_pins SET status='revoked', revoked_at=now(), revoked_reason=$2 \
+         WHERE task_id=$1 AND status='active'",
+        &[&task_id, &TARGET_PIN_REVOKED_TASK_DELETED],
+    )
+    .await?;
+    Ok(())
+}
+
+/// `settleTaskTargetRequests`: deny a deleted task's open target-approval requests
+/// (system decision, nothing pinned). Only `target_key` rows are touched; a
+/// conversation's rows cascade on their own.
+pub(crate) async fn settle_task_target_requests(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+) -> Result<()> {
+    let tid = task_id.to_string();
+    tx.execute(
+        "UPDATE intercept_pending \
+         SET status='denied', decided_at=NOW(), decided_by='system', \
+             audit=CASE WHEN audit IS NULL THEN NULL ELSE audit || \
+                 '{\"effective_action\":\"deny\",\"decision_reason\":\"task deleted\",\
+                   \"execution_status\":\"not_executed\"}'::jsonb END \
+         WHERE COALESCE(task_id,'')=$1 AND status='pending' AND target_key IS NOT NULL",
+        &[&tid],
+    )
+    .await?;
+    Ok(())
+}
+
+impl DB {
+    /// `DeleteTask`: hard-delete a task (and its exploration subgraph via cascade),
+    /// without deleting standalone assets or findings.
+    pub async fn delete_task(&self, id: i64) -> Result<()> {
+        self.delete_task_cascade(id, false, false, false).await?;
+        Ok(())
+    }
+
+    /// `DeleteTaskCascade`: hard-delete a task and its exploration subgraph
+    /// (nodes/edges/activity via ON DELETE CASCADE). Standalone findings and assets
+    /// owned only by this task are removed in the same tx; shared assets are kept
+    /// and only have this task detached. `llm_usage` (the token ledger) and target
+    /// pins / approval rows are retained as history (pins revoked, open target
+    /// requests settled).
+    ///
+    /// This is the `prepare=nil` path of `DeleteTaskCascadePrepared`. The external-
+    /// traffic staging variant (with a `prepare` callback) lands with the traffic /
+    /// asset cluster.
+    pub async fn delete_task_cascade(
+        &self,
+        id: i64,
+        delete_assets: bool,
+        delete_findings: bool,
+        delete_llm_records: bool,
+    ) -> Result<TaskDeleteResult> {
+        let mut result = TaskDeleteResult::default();
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+
+        let exp = tx
+            .query_opt(
+                "SELECT exploration_id FROM tasks WHERE id=$1 FOR UPDATE",
+                &[&id],
+            )
+            .await?;
+        let Some(exp) = exp else {
+            return Ok(result); // already gone
+        };
+        let exp_id: i64 = exp.get(0);
+
+        // SHARE ROW EXCLUSIVE conflicts with every INSERT/UPDATE/DELETE on these
+        // tables (and another coordinated deletion); taken before any asset work.
+        if delete_assets {
+            tx.batch_execute("LOCK TABLE assets, exploration_anchors IN SHARE ROW EXCLUSIVE MODE")
+                .await?;
+            // Ownership is the union of explicit task_ids and this exploration's
+            // anchors. An asset is deletable only when no other live task references
+            // it through either mechanism (legacy anchor-only seeds included).
+            let n = tx
+                .execute(
+                    "WITH candidate_assets AS (\
+                         SELECT id FROM assets WHERE $1 = ANY(task_ids) \
+                         UNION \
+                         SELECT ea.asset_id FROM exploration_anchors ea \
+                         JOIN exploration_nodes n ON n.id=ea.node_id \
+                         WHERE n.exploration_id=$2\
+                     ), deletable AS (\
+                         SELECT a.id FROM assets a \
+                         JOIN candidate_assets c ON c.id=a.id \
+                         WHERE NOT EXISTS (\
+                             SELECT 1 FROM tasks t \
+                             WHERE t.id<>$1 AND t.deleted_at IS NULL AND t.id=ANY(a.task_ids)\
+                         ) AND NOT EXISTS (\
+                             SELECT 1 FROM exploration_anchors ea \
+                             JOIN exploration_nodes n ON n.id=ea.node_id \
+                             JOIN tasks t ON t.exploration_id=n.exploration_id \
+                             WHERE ea.asset_id=a.id AND t.id<>$1 AND t.deleted_at IS NULL\
+                         )\
+                     ) \
+                     DELETE FROM assets a USING deletable d WHERE a.id=d.id",
+                    &[&id, &exp_id],
+                )
+                .await?;
+            result.assets_deleted = n as i64;
+
+            let n = tx
+                .execute(
+                    "UPDATE assets SET task_ids = array_remove(task_ids, $1) \
+                     WHERE $1 = ANY(task_ids)",
+                    &[&id],
+                )
+                .await?;
+            result.assets_detached = n as i64;
+        }
+        if delete_findings {
+            let n = tx
+                .execute("DELETE FROM findings WHERE task_id = $1", &[&id])
+                .await?;
+            result.findings_deleted = n as i64;
+        }
+        if delete_llm_records {
+            let tid = id.to_string();
+            let n = tx
+                .execute(
+                    "DELETE FROM llm_records WHERE COALESCE(task_id,'')=$1",
+                    &[&tid],
+                )
+                .await?;
+            result.llm_records_deleted = n as i64;
+        }
+        revoke_task_pins(&tx, id).await?;
+        settle_task_target_requests(&tx, id).await?;
+        tx.execute("DELETE FROM tasks WHERE id=$1", &[&id]).await?;
+        tx.execute("DELETE FROM explorations WHERE id=$1", &[&exp_id])
+            .await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+}
