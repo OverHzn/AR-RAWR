@@ -424,3 +424,96 @@ async fn insert_archive_rows_allowlist_and_empty() {
         .unwrap_err();
     assert!(err.to_string().contains("not allowed"), "got {err}");
 }
+
+#[tokio::test]
+async fn restore_intercept_rows_normalizes_legacy() {
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let t = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+    let task = format!("restore-legacy-{t}");
+    let rows = json!([{
+        "task_id": task,
+        "agent_name": "agent",
+        "tool_name": "Bash",
+        "tool_input": {"command":"fixture"},
+        "status": "pending",
+        "reason": "[model] fixture decision",
+        "decision_source": "",
+        "decided_by": null,
+        "audit": {"execution_status": "awaiting_result"}
+    }]);
+    d.restore_intercept_rows(&rows).await.unwrap();
+
+    let r = d.query_one(
+        "SELECT status, decision_source, decided_by, reason, audit->>'execution_status' FROM intercept_pending WHERE task_id=$1",
+        &[&task],
+    ).await.unwrap();
+    let status: String = r.get(0);
+    let source: String = r.get(1);
+    let actor: String = r.get(2);
+    let reason: String = r.get(3);
+    let exec: String = r.get(4);
+    assert_eq!(status, "timeout");
+    assert_eq!(source, "model");
+    assert_eq!(actor, "system");
+    assert_eq!(reason, "approval timed out while the task was archived");
+    assert_eq!(exec, "not_executed");
+
+    d.execute("DELETE FROM intercept_pending WHERE task_id=$1", &[&task])
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn restore_task_relation_scope_profile_warnings() {
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let t = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+    let task = d
+        .create_task(&format!("restore-rel-{t}"), "goal", None, 0, 0)
+        .await
+        .unwrap();
+
+    let warn = d
+        .restore_task_relations(task.id, &json!([{"source_task_id": 99_999_999}]))
+        .await
+        .unwrap();
+    assert_eq!(warn.len(), 1);
+    assert!(warn[0].contains("unavailable"));
+
+    let warn = d.restore_task_scopes(&json!([{"task_id": task.id, "kind": "keyword", "value": "x", "company_id": 99_999_999}]))
+        .await.unwrap();
+    assert_eq!(warn.len(), 1);
+    assert!(warn[0].contains("deleted"));
+
+    let warn = d
+        .restore_task_llm_profiles(
+            &json!([{"task_id": task.id, "profile_id": 99_999_999, "status": "active"}]),
+        )
+        .await
+        .unwrap();
+    assert_eq!(warn.len(), 1);
+    assert!(warn[0].contains("LLM profile"));
+
+    let _ = d.delete_task(task.id).await;
+}

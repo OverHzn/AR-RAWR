@@ -241,3 +241,217 @@ impl DB {
         Ok(())
     }
 }
+
+// Remaining restore helpers (task relations / scopes / LLM profiles / intercept rows).
+
+fn is_model_reason(reason: &str) -> bool {
+    let lower = reason.to_lowercase();
+    lower.starts_with(crate::db::intercept_store::MODEL_REASON_PREFIX)
+        || reason.starts_with("[模型]")
+}
+
+async fn live_task_exists(tx: &deadpool_postgres::Transaction<'_>, id: i64) -> bool {
+    tx.query_opt(
+        "SELECT 1 FROM tasks WHERE id=$1 AND deleted_at IS NULL",
+        &[&id],
+    )
+    .await
+    .map(|r| r.is_some())
+    .unwrap_or(false)
+}
+
+async fn restore_task_relations_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+    raw: &Json,
+) -> Result<Vec<String>> {
+    let rows = decode_archive_rows(raw);
+    let mut warnings = Vec::new();
+    for row in &rows {
+        let Some(obj) = row.as_object() else { continue };
+        let source = obj.get("source_task_id").and_then(json_int64).unwrap_or(0);
+        if !live_task_exists(tx, source).await {
+            warnings.push(format!(
+                "source task {source} is unavailable; inheritance skipped"
+            ));
+            continue;
+        }
+        let created = obj.get("created_at").and_then(|v| v.as_str()).unwrap_or("");
+        let created = crate::db::archive_helpers::nil_if_empty_string(created);
+        tx.execute(
+            "INSERT INTO task_relations(task_id,source_task_id,created_at) VALUES($1,$2,COALESCE($3::timestamptz,now())) ON CONFLICT DO NOTHING",
+            &[&task_id, &source, &created],
+        ).await?;
+    }
+    Ok(warnings)
+}
+
+async fn restore_task_scopes_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    raw: &Json,
+) -> Result<Vec<String>> {
+    let rows = decode_archive_rows(raw);
+    let mut warnings = Vec::new();
+    let mut kept = Vec::new();
+    for row in rows {
+        let cid = row
+            .as_object()
+            .and_then(|o| o.get("company_id").and_then(json_int64))
+            .unwrap_or(0);
+        if cid > 0 && !row_exists(tx, "companies", cid).await? {
+            warnings.push(format!(
+                "company {cid} has been deleted; associated scope skipped"
+            ));
+            continue;
+        }
+        kept.push(row);
+    }
+    if kept.is_empty() {
+        return Ok(warnings);
+    }
+    let body = serde_json::to_string(&kept).map_err(|e| Error::msg(e.to_string()))?;
+    tx.execute(
+        "INSERT INTO task_scope SELECT * FROM json_populate_recordset(NULL::task_scope,$1::json) ON CONFLICT DO NOTHING",
+        &[&body],
+    ).await?;
+    Ok(warnings)
+}
+
+async fn restore_task_llm_profiles_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    raw: &Json,
+) -> Result<Vec<String>> {
+    let rows = decode_archive_rows(raw);
+    let mut warnings = Vec::new();
+    let mut position = 0i32;
+    for row in &rows {
+        let Some(obj) = row.as_object() else { continue };
+        let profile = obj.get("profile_id").and_then(json_int64).unwrap_or(0);
+        if !row_exists(tx, "llm_profiles", profile).await? {
+            warnings.push(format!(
+                "LLM profile {profile} has been deleted; chain entry skipped"
+            ));
+            continue;
+        }
+        let task = obj.get("task_id").and_then(json_int64).unwrap_or(0);
+        let get = |k: &str| obj.get(k).and_then(|v| v.as_str()).unwrap_or("");
+        let status = get("status");
+        let last_error = get("last_error");
+        let exhausted = crate::db::archive_helpers::nil_if_empty_string(get("exhausted_at"));
+        let created = crate::db::archive_helpers::nil_if_empty_string(get("created_at"));
+        let updated = crate::db::archive_helpers::nil_if_empty_string(get("updated_at"));
+        tx.execute(
+            "INSERT INTO task_llm_profiles(task_id,profile_id,position,status,last_error,exhausted_at,created_at,updated_at)
+VALUES($1,$2,$3,$4,NULLIF($5,''),$6::timestamptz,COALESCE($7::timestamptz,now()),COALESCE($8::timestamptz,now()))
+ON CONFLICT DO NOTHING",
+            &[&task, &profile, &position, &status, &last_error, &exhausted, &created, &updated],
+        ).await?;
+        position += 1;
+    }
+    Ok(warnings)
+}
+
+fn restore_intercept_rows_tx(rows_in: &[Json]) -> Result<Vec<Json>> {
+    let mut rows = rows_in.to_vec();
+    for row in &mut rows {
+        let Some(obj) = row.as_object_mut() else {
+            continue;
+        };
+        let source = obj
+            .get("decision_source")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        if source.is_empty() {
+            let inferred = if obj.get("rule_id").is_some() && !obj.get("rule_id").unwrap().is_null()
+            {
+                "rule"
+            } else if obj
+                .get("reason")
+                .and_then(|v| v.as_str())
+                .map(is_model_reason)
+                .unwrap_or(false)
+            {
+                "model"
+            } else {
+                "unknown"
+            };
+            obj.insert("decision_source".to_string(), Json::String(inferred.into()));
+        }
+        if obj.get("decided_by").map(|v| v.is_null()).unwrap_or(true) {
+            obj.insert("decided_by".to_string(), Json::String(String::new()));
+        }
+        if obj.get("status").and_then(|v| v.as_str()) == Some("pending") {
+            obj.insert("status".to_string(), Json::String("timeout".into()));
+            obj.insert("decided_by".to_string(), Json::String("system".into()));
+            obj.insert(
+                "reason".to_string(),
+                Json::String("approval timed out while the task was archived".into()),
+            );
+            obj.insert(
+                "decided_at".to_string(),
+                Json::String(crate::db::gotime::format_rfc3339(
+                    std::time::SystemTime::now(),
+                )),
+            );
+            if let Some(audit) = obj.get_mut("audit").and_then(|v| v.as_object_mut()) {
+                audit.insert("effective_action".into(), Json::String("deny".into()));
+                audit.insert(
+                    "decision_reason".into(),
+                    Json::String("approval timed out while the task was archived".into()),
+                );
+                audit.insert(
+                    "execution_status".into(),
+                    Json::String("not_executed".into()),
+                );
+            }
+        } else if let Some(audit) = obj.get_mut("audit").and_then(|v| v.as_object_mut()) {
+            if audit.get("execution_status").and_then(|v| v.as_str()) == Some("awaiting_result") {
+                audit.insert("execution_status".into(), Json::String("unknown".into()));
+            }
+        }
+    }
+    Ok(rows)
+}
+
+impl DB {
+    /// `RestoreTaskRelations`: restore inheritance rows, warning for unavailable sources.
+    pub async fn restore_task_relations(&self, task_id: i64, raw: &Json) -> Result<Vec<String>> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        let out = restore_task_relations_tx(&tx, task_id, raw).await?;
+        tx.commit().await?;
+        Ok(out)
+    }
+
+    pub async fn restore_task_scopes(&self, raw: &Json) -> Result<Vec<String>> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        let out = restore_task_scopes_tx(&tx, raw).await?;
+        tx.commit().await?;
+        Ok(out)
+    }
+
+    pub async fn restore_task_llm_profiles(&self, raw: &Json) -> Result<Vec<String>> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        let out = restore_task_llm_profiles_tx(&tx, raw).await?;
+        tx.commit().await?;
+        Ok(out)
+    }
+
+    /// `RestoreInterceptRows`: normalize legacy target-gate fields and settle
+    /// pending rows as timed out, then insert the batch.
+    pub async fn restore_intercept_rows(&self, raw: &Json) -> Result<()> {
+        let rows = restore_intercept_rows_tx(&decode_archive_rows(raw))?;
+        if rows.is_empty() {
+            return Ok(());
+        }
+        let body = serde_json::to_string(&rows).map_err(|e| Error::msg(e.to_string()))?;
+        self.execute(
+            "INSERT INTO intercept_pending SELECT * FROM json_populate_recordset(NULL::intercept_pending,$1::json)",
+            &[&body],
+        ).await?;
+        Ok(())
+    }
+}

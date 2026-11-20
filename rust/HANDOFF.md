@@ -752,6 +752,8 @@ resume without re-deriving state.
 
 - **D-42 archive remap + insert (this commit):** extended `src/db/archive_helpers.rs` with `remap_archive_asset_references` (old->new ids in anchors/links and asset_ids arrays of node payloads/findings; unrelated tables untouched) and `src/db/task_archives_restore.rs` with `DB::insert_archive_rows` (allowlisted tables only, fillArchiveDefaults for older archives, json_populate_recordset insert). Added 2 tests. artex **514 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-43 archive restore relation/scope/profile/intercept helpers (this commit):** extended `src/db/task_archives_restore.rs` with `restore_task_relations_tx`/`restore_task_scopes_tx`/`restore_task_llm_profiles_tx` (skip deleted global objects with warnings, insert in FK-safe order) + `restore_intercept_rows_tx` (legacy decision_source inference rule/model/unknown, decided_by default, pending -> timeout with audit rewrite, awaiting_result -> unknown) and public DB wrappers. Added 2 tests. artex **516 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
