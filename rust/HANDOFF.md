@@ -804,6 +804,8 @@ resume without re-deriving state.
 
 - **A-9 overview text budget + compact finding (this commit):** extended `src/agent/budget.rs` with `related_overview_budget_for_sources` (48k total / 8k per source, max 8 sources), `OverviewTextBudget` (rune-safe bounded `take` with ellipsis) and `compact_finding` (lean node projection id/state/summary + optional vulnclass/severity/status). Spec: 1 test — UTF-8 budget truncation + finding projection. artex **561 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-4 HTTP router foundation (this commit):** new `src/server/router.rs` — first server API slice (no server started). `Route`/`Match`/`Router` matching `"METHOD /path/{param}"` patterns with Go ServeMux-style specificity (literal segments beat wildcards), path params, 405 analogue. Spec: `tests/server_router_test.rs` (3) — representative `server/server.go` routes, literal vs wildcard, 404/405. artex **564 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
