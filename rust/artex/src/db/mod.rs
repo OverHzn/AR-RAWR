@@ -49,6 +49,7 @@ pub mod task_outcome;
 pub mod task_templates;
 pub mod tasks;
 pub mod tool_usage;
+pub mod tools;
 
 /// Serde adapter module path alias used by `SkillStat`'s `#[serde(with = …)]`.
 pub use gotime as gotime_serde;
