@@ -762,6 +762,8 @@ resume without re-deriving state.
 
 - **S-3 worker model-error retry classification (this commit):** extended `src/server/helpers.rs` with `WorkerModelError` (NoaBudget / TaskLlm / Generic) + `retryable_worker_model_error` — only model errors that are neither a NOA budget refusal nor a task-LLM runtime error are retried. Spec: port of TestWorkerModelErrorRetrySkipsNoaBudget. artex **522 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-21 libsqlite3 FFI foundation (this commit):** new `src/traffic/sqlite.rs` — raw `extern "C"` wrapper for the system libsqlite3 3.45.1 (no new crate, works with `--offline`). `Conn::{open, open_memory, exec, query, execute}`, `Value` (Null/Int/Text/Blob + Option/From), `Column`/`Row` typed accessors, SQLITE_TRANSIENT binding, Send + Drop. Verified FTS5 trigram + contentless_delete + optimize/merge (exact features the traffic index needs). Spec: `tests/traffic_sqlite_test.rs` (1) — round trip, NULL/BLOB, FTS5. artex **523 tests** green, clippy clean, fmt clean, gate 30/30. (Subagent research: no SQLite crate in offline registry; system lib + FFI is the only viable path; FTS verified with a C probe.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
