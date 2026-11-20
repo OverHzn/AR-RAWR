@@ -1610,6 +1610,181 @@ impl DB {
 }
 
 // ---------------------------------------------------------------------------
+// Task-list metrics + daily token rollup (port of the `*DB` aggregate methods in
+// `db/exploration.go`: TokenDailyAll / TaskListMetrics / TaskListMetricsAll).
+// ---------------------------------------------------------------------------
+
+/// `DailyTokenBucket`: one UTC calendar day's token aggregate across all tasks.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DailyTokenBucket {
+    pub day: String,
+    pub input: i64,
+    pub output: i64,
+    pub cache_read: i64,
+}
+
+/// `FindingSeverityCounts`: a task's finding count bucketed by severity (records
+/// outside the severity whitelist are counted in no bucket).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FindingSeverityCounts {
+    pub critical: i64,
+    pub high: i64,
+    pub medium: i64,
+    pub low: i64,
+}
+
+/// `TaskListMetrics`: the aggregates rendered in task lists for one task.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TaskListMetrics {
+    pub tokens: TokenUsage,
+    pub last_activity: i64,
+    pub goals: GoalCounts,
+    pub running_intents: i64,
+    pub findings: FindingSeverityCounts,
+}
+
+/// `taskListMetricsQuery`: the select shared by `task_list_metrics_all` and
+/// `task_list_metrics`; each appends its own WHERE on `task`. The lateral lookups
+/// hit the per-exploration indexes instead of regrouping the whole history.
+const TASK_LIST_METRICS_QUERY: &str = "
+		SELECT task.exploration_id,
+		       COALESCE(token_metrics.input_tokens,0),
+		       COALESCE(token_metrics.output_tokens,0),
+		       COALESCE(token_metrics.cache_read_tokens,0),
+		       COALESCE(token_metrics.cache_write_tokens,0),
+		       COALESCE(latest_activity.created_at,0),
+		       COALESCE(goal_metrics.total,0),
+		       COALESCE(goal_metrics.met,0),
+		       COALESCE(intent_metrics.running,0),
+		       COALESCE(finding_metrics.critical,0),
+		       COALESCE(finding_metrics.high,0),
+		       COALESCE(finding_metrics.medium,0),
+		       COALESCE(finding_metrics.low,0)
+		FROM tasks task
+		LEFT JOIN LATERAL (
+			SELECT SUM(input_tokens) AS input_tokens,
+			       SUM(output_tokens) AS output_tokens,
+			       SUM(cache_read_tokens) AS cache_read_tokens,
+			       SUM(cache_write_tokens) AS cache_write_tokens
+			FROM activity
+			WHERE exploration_id=task.exploration_id AND kind='result'
+		) token_metrics ON true
+		LEFT JOIN LATERAL (
+			SELECT EXTRACT(EPOCH FROM activity.created_at)::bigint AS created_at
+			FROM activity
+			WHERE activity.exploration_id=task.exploration_id
+			ORDER BY activity.created_at DESC
+			LIMIT 1
+		) latest_activity ON true
+		LEFT JOIN LATERAL (
+			SELECT COUNT(*) AS total,
+			       COUNT(*) FILTER (WHERE state='met') AS met
+			FROM exploration_nodes
+			WHERE exploration_id=task.exploration_id AND kind='goal'
+		) goal_metrics ON true
+		LEFT JOIN LATERAL (
+			SELECT COUNT(*) AS running
+			FROM exploration_nodes
+			WHERE exploration_id=task.exploration_id AND kind='intent' AND state='running'
+		) intent_metrics ON true
+		LEFT JOIN LATERAL (
+			SELECT COUNT(*) FILTER (WHERE severity='critical') AS critical,
+			       COUNT(*) FILTER (WHERE severity='high')     AS high,
+			       COUNT(*) FILTER (WHERE severity='medium')   AS medium,
+			       COUNT(*) FILTER (WHERE severity='low')      AS low
+			FROM findings
+			WHERE task_id=task.id
+		) finding_metrics ON true
+		WHERE task.deleted_at IS NULL";
+
+/// `scanTaskListMetrics`: read one row of [`TASK_LIST_METRICS_QUERY`] into
+/// `(exploration_id, metrics)`.
+fn scan_task_list_metrics(row: &tokio_postgres::Row) -> (i64, TaskListMetrics) {
+    (
+        row.get(0),
+        TaskListMetrics {
+            tokens: TokenUsage {
+                worker: String::new(),
+                input: row.get(1),
+                output: row.get(2),
+                cache_read: row.get(3),
+                cache_write: row.get(4),
+            },
+            last_activity: row.get(5),
+            goals: GoalCounts {
+                total: row.get(6),
+                met: row.get(7),
+            },
+            running_intents: row.get(8),
+            findings: FindingSeverityCounts {
+                critical: row.get(9),
+                high: row.get(10),
+                medium: row.get(11),
+                low: row.get(12),
+            },
+        },
+    )
+}
+
+impl DB {
+    /// `TokenDailyAll`: aggregate token consumption by UTC calendar day for the
+    /// past `days` days across all explorations (only `kind='result'` rows carry
+    /// tokens). `days`<=0 defaults to 30.
+    pub async fn token_daily_all(&self, days: i32) -> Result<Vec<DailyTokenBucket>> {
+        let days = if days <= 0 { 30 } else { days };
+        let rows = self
+            .query(
+                "SELECT TO_CHAR(DATE_TRUNC('day', created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day, \
+             COALESCE(SUM(input_tokens), 0), \
+             COALESCE(SUM(output_tokens), 0), \
+             COALESCE(SUM(cache_read_tokens), 0) \
+             FROM activity \
+             WHERE kind = 'result' \
+             AND created_at >= NOW() - ($1::int * INTERVAL '1 day') \
+             GROUP BY day ORDER BY day",
+                &[&days],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| DailyTokenBucket {
+                day: r.get(0),
+                input: r.get(1),
+                output: r.get(2),
+                cache_read: r.get(3),
+            })
+            .collect())
+    }
+
+    /// `TaskListMetricsAll`: list aggregates for every live (not soft-deleted)
+    /// task in one query.
+    pub async fn task_list_metrics_all(
+        &self,
+    ) -> Result<std::collections::HashMap<i64, TaskListMetrics>> {
+        let rows = self.query(TASK_LIST_METRICS_QUERY, &[]).await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            let (eid, metrics) = scan_task_list_metrics(r);
+            out.insert(eid, metrics);
+        }
+        Ok(out)
+    }
+
+    /// `TaskListMetrics`: the same aggregates for the one live task of exploration
+    /// `exp_id`. A missing/deleted task gives zero metrics (like a missing key of
+    /// [`task_list_metrics_all`](Self::task_list_metrics_all)).
+    pub async fn task_list_metrics(&self, exp_id: i64) -> Result<TaskListMetrics> {
+        let sql = format!("{TASK_LIST_METRICS_QUERY} AND task.exploration_id=$1");
+        let row = self.query_opt(&sql, &[&exp_id]).await?;
+        Ok(row
+            .as_ref()
+            .map(scan_task_list_metrics)
+            .map(|(_, m)| m)
+            .unwrap_or_default())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Activity stream (port of the `*ExplorationStore` activity methods in
 // `db/exploration.go`). `Activity` is the worker-step record; the read methods
 // scan different column subsets into it, leaving the rest at defaults.
