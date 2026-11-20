@@ -176,3 +176,18 @@ pub fn tee_or_passthrough<'a, R: Read>(
         None => MaybeTee::Plain(rc),
     }
 }
+
+/// `parseSession`: split a harness session id ("exp<N>-<role>[-suffix]") into
+/// its exploration id and worker role. Non-session strings parse as empty.
+pub fn parse_session(s: &str) -> (String, String) {
+    let Some(rest) = s.strip_prefix("exp") else {
+        return (String::new(), String::new());
+    };
+    let Some(i) = rest.find('-') else {
+        return (rest.to_string(), String::new());
+    };
+    let task_id = &rest[..i];
+    let rest = &rest[i + 1..];
+    let worker = rest.find('-').map(|j| &rest[..j]).unwrap_or(rest);
+    (task_id.to_string(), worker.to_string())
+}

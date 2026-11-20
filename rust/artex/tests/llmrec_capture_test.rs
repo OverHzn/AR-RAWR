@@ -82,3 +82,19 @@ fn unused_capture_is_empty() {
 }
 
 use std::sync::Arc;
+
+#[test]
+fn parse_session_fallback_is_exploration_scoped() {
+    use artex::llmrec::parse_session;
+    assert_eq!(
+        parse_session("exp12-worker-i99"),
+        ("12".into(), "worker".into())
+    );
+    assert_eq!(
+        parse_session("exp7-planner"),
+        ("7".into(), "planner".into())
+    );
+    assert_eq!(parse_session("exp9"), ("9".into(), String::new()));
+    assert_eq!(parse_session("not-a-task"), (String::new(), String::new()));
+    assert_eq!(parse_session(""), (String::new(), String::new()));
+}

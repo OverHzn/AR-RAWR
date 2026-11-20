@@ -734,6 +734,8 @@ resume without re-deriving state.
 
 - **E-16 llmrec raw wire capture (this commit):** new `src/llmrec.rs` — port of `llmrec/capture.go`. `Capture` (mutex-guarded request + attempts), `LlmContext`/`new_capture`/`capture_from`, `set_request` (first body only), `tee_response` (mirrors streamed bytes into an attempt via `CaptureReader`), `raw_request`, `raw_response` (lone attempt verbatim; retries get per-attempt framing in order), `attempts`, and nil-safe free helpers + `tee_or_passthrough`. Spec: `tests/llmrec_capture_test.rs` (5) — port of all five Go capture tests. artex **497 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: Rust needs explicit lifetimes on CaptureReader/MaybeTee; Go's context.Value becomes an explicit LlmContext struct.)
 
+- **E-17 llmrec parseSession (this commit):** added `parse_session` to `src/llmrec.rs` — splits `exp<N>-<role>[-suffix]` session ids into exploration id + worker role; non-session strings parse empty. Added port of TestParseSessionFallbackIsExplorationScoped. artex **498 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
