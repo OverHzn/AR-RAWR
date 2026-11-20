@@ -22,6 +22,7 @@ pub mod browser_mcp;
 pub mod chat_mentions;
 pub mod companies;
 pub mod constants;
+pub mod conversation;
 pub mod coverage_ledger;
 pub mod error;
 pub mod exploration;
