@@ -33,6 +33,10 @@ pub struct TaskArchiveAggregate {
     /// `token_daily`: per-(profile, day) buckets (consumed by `UsageDaily`).
     #[serde(default)]
     pub token_daily: Vec<crate::db::llm_usage::ProfileDayUsage>,
+    /// `finding_stats`: the compact finding aggregate folded into `FindingStats`
+    /// (global dashboards). Ignored by the metering readers.
+    #[serde(default)]
+    pub finding_stats: crate::db::findings::FindingStats,
 }
 
 impl DB {

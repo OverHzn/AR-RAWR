@@ -1082,3 +1082,129 @@ impl ExplorationStore {
         }
     }
 }
+
+/// `FindingStats`: whole-table aggregate powering the findings page's stat cards
+/// and vuln-class filter — exact regardless of pagination. Counts from live rows
+/// are merged with cold archive summaries by [`DB::finding_stats`].
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct FindingStats {
+    #[serde(default)]
+    pub total: i64,
+    #[serde(default)]
+    pub pending: i64,
+    #[serde(default)]
+    pub submitted: i64,
+    #[serde(default)]
+    pub accepted: i64,
+    #[serde(default)]
+    pub critical: i64,
+    #[serde(default)]
+    pub high: i64,
+    #[serde(default)]
+    pub medium: i64,
+    #[serde(default)]
+    pub low: i64,
+    #[serde(default)]
+    pub vulnclasses: Vec<String>,
+    /// Tasks that have findings (for the "by task" dropdown).
+    #[serde(default)]
+    pub tasks: Vec<FindingTaskOption>,
+}
+
+/// `FindingTaskOption`: one entry in the findings page's task filter — a task with
+/// at least one finding. `description` is empty when the task was deleted (finding
+/// rows persist), so the frontend falls back to the id.
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+pub struct FindingTaskOption {
+    pub id: i64,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub count: i64,
+}
+
+impl DB {
+    /// `FindingStats`: whole-table counts (by severity, pending, report stage) and
+    /// the sorted set of distinct vuln classes, merged with archived-task aggregates.
+    pub async fn finding_stats(&self) -> Result<FindingStats> {
+        let mut st = FindingStats::default();
+        let row = self
+            .query_one(
+                "SELECT COUNT(*), \
+                 COUNT(*) FILTER (WHERE status = 'pending'), \
+                 COUNT(*) FILTER (WHERE report_state = 'submitted'), \
+                 COUNT(*) FILTER (WHERE report_state = 'accepted'), \
+                 COUNT(*) FILTER (WHERE severity = 'critical'), \
+                 COUNT(*) FILTER (WHERE severity = 'high'), \
+                 COUNT(*) FILTER (WHERE severity = 'medium'), \
+                 COUNT(*) FILTER (WHERE severity = 'low') \
+                 FROM findings",
+                &[],
+            )
+            .await?;
+        st.total = row.get(0);
+        st.pending = row.get(1);
+        st.submitted = row.get(2);
+        st.accepted = row.get(3);
+        st.critical = row.get(4);
+        st.high = row.get(5);
+        st.medium = row.get(6);
+        st.low = row.get(7);
+
+        let vc_rows = self
+            .query(
+                "SELECT DISTINCT vulnclass FROM findings WHERE vulnclass <> '' ORDER BY vulnclass",
+                &[],
+            )
+            .await?;
+        for r in &vc_rows {
+            st.vulnclasses.push(r.get(0));
+        }
+
+        // Task dropdown: tasks with findings, most recently found first.
+        let task_rows = self
+            .query(
+                "SELECT f.task_id, COALESCE(t.name, ''), COALESCE(t.description, ''), COUNT(*) \
+                 FROM findings f LEFT JOIN tasks t ON f.task_id = t.id \
+                 WHERE f.task_id IS NOT NULL \
+                 GROUP BY f.task_id, t.name, t.description \
+                 ORDER BY MAX(f.created_at) DESC",
+                &[],
+            )
+            .await?;
+        for r in &task_rows {
+            st.tasks.push(FindingTaskOption {
+                id: r.get(0),
+                name: r.get(1),
+                description: r.get(2),
+                count: r.get(3),
+            });
+        }
+
+        // Fold cold archive summaries into the counts + vuln-class set (the archived
+        // task dropdown is deliberately NOT merged — matches Go).
+        let archived = crate::db::task_archive_aggregate::archived_task_aggregates(self).await?;
+        let mut vulnclasses: std::collections::BTreeSet<String> =
+            st.vulnclasses.drain(..).collect();
+        for aggregate in &archived {
+            let cold = &aggregate.finding_stats;
+            st.total += cold.total;
+            st.pending += cold.pending;
+            st.submitted += cold.submitted;
+            st.accepted += cold.accepted;
+            st.critical += cold.critical;
+            st.high += cold.high;
+            st.medium += cold.medium;
+            st.low += cold.low;
+            for vc in &cold.vulnclasses {
+                if !vc.is_empty() {
+                    vulnclasses.insert(vc.clone());
+                }
+            }
+        }
+        st.vulnclasses = vulnclasses.into_iter().collect();
+        Ok(st)
+    }
+}
