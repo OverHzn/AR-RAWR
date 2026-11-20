@@ -3025,4 +3025,32 @@ impl ExplorationStore {
         }
         Ok(())
     }
+
+    /// `SetIntentBlockedReason`: block an intent and record why (empty clears the
+    /// reason). Scoped to this exploration; only intent-kind nodes are affected.
+    pub async fn set_intent_blocked_reason(&self, id: i64, reason: &str) -> Result<()> {
+        self.db
+            .execute(
+                "UPDATE exploration_nodes \
+                 SET state='blocked', blocked_reason=NULLIF($1,''), completed_at=now() \
+                 WHERE id=$2 AND exploration_id=$3 AND kind='intent'",
+                &[&reason, &id, &self.exp_id],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// `ReopenIntentsByBlockedReason`: reopen every blocked intent of this
+    /// exploration that was blocked for `reason`; returns the count changed.
+    pub async fn reopen_intents_by_blocked_reason(&self, reason: &str) -> Result<u64> {
+        self.db
+            .execute(
+                "UPDATE exploration_nodes \
+                 SET state='open', blocked_reason=NULL, completed_at=NULL \
+                 WHERE exploration_id=$1 AND kind='intent' AND state='blocked' \
+                 AND blocked_reason=$2",
+                &[&self.exp_id, &reason],
+            )
+            .await
+    }
 }

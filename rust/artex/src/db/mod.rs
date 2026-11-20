@@ -38,6 +38,7 @@ pub mod skill_gaps;
 pub mod skill_usage;
 pub mod task_archive_aggregate;
 pub mod task_categories;
+pub mod task_context;
 pub mod task_credentials;
 pub mod task_outcome;
 pub mod task_templates;

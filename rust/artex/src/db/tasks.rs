@@ -13,6 +13,109 @@ use std::time::SystemTime;
 
 use crate::db::{Error, Result, DB};
 
+/// `Task` is a row in the task registry (1:1 with an exploration). The LLM-chain
+/// fields (`llm_profile_id` / `active_llm_profile_id` / `llm_profile_ids` / ...),
+/// `source_task_ids`, and `company_ids` are hydrated from the side tables by
+/// `DB::hydrate_task_context` / `hydrate_tasks_context`; `created_at` / `pinned`
+/// come straight from the `tasks` row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Task {
+    pub id: i64,
+    /// optional task name; empty=unnamed
+    pub name: String,
+    pub category_id: Option<i64>,
+    pub category_name: String,
+    /// derived from `pinned_at != NULL` at scan time.
+    pub pinned: bool,
+    pub pinned_at: Option<SystemTime>,
+    pub description: String,
+    pub goal: String,
+    pub exploration_id: i64,
+    pub status: String,
+    pub paused: bool,
+    pub queued: bool,
+    pub queued_at: Option<SystemTime>,
+    pub queue_mode: String,
+    /// compatibility alias for `active_llm_profile_id` (kept for older clients).
+    pub llm_profile_id: Option<i64>,
+    /// the full ordered chain (all entries, ready or exhausted).
+    pub llm_profile_ids: Vec<i64>,
+    /// the ready subset of `llm_profile_ids`.
+    pub ready_llm_profile_ids: Vec<i64>,
+    pub active_llm_profile_id: Option<i64>,
+    pub llm_chain_revision: i64,
+    /// "default" (no chain), "ready" (active head usable), "chain_exhausted".
+    pub llm_failover_state: String,
+    pub llm_failover_reason: String,
+    /// per-intent chain-head rotation switch (#85).
+    pub llm_rotate: bool,
+    pub source_task_ids: Vec<i64>,
+    pub company_ids: Vec<i64>,
+    /// parent task id (recorded by orchestration spawn; empty=top level).
+    pub parent_ref: String,
+    pub created_at: SystemTime,
+    /// when it entered a terminal state (done/failed/timeout); None if non-terminal.
+    pub completed_at: Option<SystemTime>,
+    /// task-level wall-clock budget in seconds; 0=no time limit.
+    pub timeout_seconds: i32,
+    /// when it first actually started running (not created_at); None=not yet run.
+    pub first_run_at: Option<SystemTime>,
+    /// = first_run_at + timeout_seconds; None=unlimited or not yet run.
+    pub deadline_at: Option<SystemTime>,
+    /// planner heartbeat trigger interval (seconds).
+    pub plan_heartbeat_seconds: i32,
+    /// planner quiet-mode (#86): skip edge-triggered rounds while work is in flight.
+    pub plan_quiet_mode: bool,
+    /// per-task opt-in of the approval gate for asset targets.
+    pub target_gate: bool,
+    /// master switch of the "asset coverage" feature (default true).
+    pub coverage_enabled: bool,
+}
+
+impl Default for Task {
+    /// Zero-value `Task` (Go's `&Task{}`): epoch `created_at`, empty strings,
+    /// zero numbers, empty slices. A construction convenience; the real fields are
+    /// filled by a row scan + hydrate.
+    fn default() -> Self {
+        Task {
+            id: 0,
+            name: String::new(),
+            category_id: None,
+            category_name: String::new(),
+            pinned: false,
+            pinned_at: None,
+            description: String::new(),
+            goal: String::new(),
+            exploration_id: 0,
+            status: String::new(),
+            paused: false,
+            queued: false,
+            queued_at: None,
+            queue_mode: String::new(),
+            llm_profile_id: None,
+            llm_profile_ids: Vec::new(),
+            ready_llm_profile_ids: Vec::new(),
+            active_llm_profile_id: None,
+            llm_chain_revision: 0,
+            llm_failover_state: String::new(),
+            llm_failover_reason: String::new(),
+            llm_rotate: false,
+            source_task_ids: Vec::new(),
+            company_ids: Vec::new(),
+            parent_ref: String::new(),
+            created_at: SystemTime::UNIX_EPOCH,
+            completed_at: None,
+            timeout_seconds: 0,
+            first_run_at: None,
+            deadline_at: None,
+            plan_heartbeat_seconds: 0,
+            plan_quiet_mode: false,
+            target_gate: false,
+            coverage_enabled: false,
+        }
+    }
+}
+
 /// `MinPlanHeartbeatSeconds`: floor of the planner heartbeat interval (default
 /// 10min). Anything lower is raised to it to avoid hammering the planner.
 pub const MIN_PLAN_HEARTBEAT_SECONDS: i32 = 600;
