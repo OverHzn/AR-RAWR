@@ -838,3 +838,159 @@ async fn query_by_company() {
     s.delete_by_ids(&[id]).await.unwrap();
     let _ = company.delete_company(company_id).await;
 }
+
+#[tokio::test]
+async fn company_paging_counts_and_attribution() {
+    use artex::db::assets::UpsertSubdomainReq;
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let company = d.companies();
+    let t = tag();
+
+    // Global type counts.
+    let domain = format!("counttest-{t}.example.biz");
+    let id = s
+        .upsert_root_domain(&UpsertRootDomainReq {
+            domain: domain.clone(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert!(
+        s.counts_by_type()
+            .await
+            .unwrap()
+            .get("root_domain")
+            .copied()
+            .unwrap_or(0)
+            > 0
+    );
+    s.delete_by_ids(&[id]).await.unwrap();
+
+    // Attribution at insert time from a company scope rule.
+    let (cid, _) = company
+        .upsert_company(&format!("InsertAttrCorp-{t}"), "")
+        .await
+        .unwrap();
+    let _ = company
+        .add_scope(cid, &[format!("insertattr-{t}.com")], "test")
+        .await;
+    let attr_domain = format!("insertattr-{t}.com");
+    let aid = s
+        .upsert_root_domain(&UpsertRootDomainReq {
+            domain: attr_domain.clone(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let credited: Option<i64> = d
+        .query_one("SELECT company_id FROM assets WHERE id=$1", &[&aid])
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(credited, Some(cid), "attribution at insert time");
+
+    // Company paging across 60 subdomains.
+    let (pid, _) = company
+        .upsert_company(&format!("QueryByCompanyPagingCorp-{t}"), "")
+        .await
+        .unwrap();
+    let page_scope = format!("qbc-paging-{t}.io");
+    let _ = company
+        .add_scope(pid, std::slice::from_ref(&page_scope), "test")
+        .await;
+    for i in 0..60 {
+        let _ = s
+            .upsert_subdomain(&UpsertSubdomainReq {
+                domain: format!("paging-{i:02}.{page_scope}"),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+    }
+    let total = s.count_by_company(pid, "subdomain").await.unwrap();
+    assert_eq!(total, 60, "CountByCompany");
+    let mut seen = std::collections::HashSet::new();
+    let mut offset = 0;
+    while offset < total {
+        for a in s
+            .query_by_company(pid, "subdomain", 25, offset)
+            .await
+            .unwrap()
+        {
+            assert!(seen.insert(a.id), "asset {} returned twice", a.id);
+        }
+        offset += 25;
+    }
+    assert_eq!(seen.len(), 60);
+
+    d.execute(
+        "DELETE FROM assets WHERE root_domain=$1 OR root_domain=$2",
+        &[&attr_domain, &page_scope],
+    )
+    .await
+    .unwrap();
+    let _ = company.delete_company(cid).await;
+    let _ = company.delete_company(pid).await;
+}
+
+#[tokio::test]
+async fn upsert_ip_bound_domains() {
+    if std::env::var("ARTEX_PG_DSN")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .is_none()
+    {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    }
+    let Some(dsn) = base_dsn() else { return };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let ip = format!(
+        "203.0.{}.{}",
+        (t.as_bytes()[0] % 200) as u32 + 1,
+        (t.as_bytes()[1] % 200) as u32 + 1
+    );
+    let d1 = format!("bd1-{t}.example.test");
+    let d2 = format!("bd2-{t}.example.test");
+
+    s.upsert_ip(&UpsertIPReq {
+        ip: ip.clone(),
+        bound_domains: vec![d1.clone()],
+        ..Default::default()
+    })
+    .await
+    .unwrap();
+    s.upsert_ip(&UpsertIPReq {
+        ip: ip.clone(),
+        bound_domains: vec![d2.clone()],
+        ..Default::default()
+    })
+    .await
+    .unwrap();
+    let bound: Vec<String> = d
+        .query_one(
+            "SELECT bound_domains FROM assets WHERE type='ip' AND ip=$1",
+            &[&ip],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(bound.len(), 2, "bound_domains merge: {bound:?}");
+    assert!(bound.contains(&d1) && bound.contains(&d2));
+    s.delete_by_ids(&[d
+        .query_one("SELECT id FROM assets WHERE type='ip' AND ip=$1", &[&ip])
+        .await
+        .unwrap()
+        .get(0)])
+        .await
+        .unwrap();
+}

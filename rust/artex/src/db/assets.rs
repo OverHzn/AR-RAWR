@@ -950,6 +950,20 @@ RETURNING id",
         Ok(self.db.query_one(&sql, &params).await?.get(0))
     }
 
+    pub async fn counts_by_type(&self) -> Result<std::collections::HashMap<String, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT type, count(*)::bigint FROM assets GROUP BY type",
+                &[],
+            )
+            .await?;
+        Ok(rows
+            .iter()
+            .map(|r| (r.get::<_, String>(0), r.get::<_, i64>(1)))
+            .collect())
+    }
+
     pub async fn count_by_type(&self, typ: &str) -> Result<i64> {
         Ok(self
             .db

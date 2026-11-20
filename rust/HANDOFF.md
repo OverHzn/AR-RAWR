@@ -726,6 +726,8 @@ resume without re-deriving state.
 
 - **D-37 AssetStore query/count slice (this commit):** extended `src/db/assets.rs` with `query_by_task`, `count_by_task`, `counts_by_type_for_task`, `query_by_company`, `count_by_company`, `count_by_type` — optional type filter, paged (LIMIT/OFFSET only when >0), ordered by last_seen/id desc so pages are disjoint. Added tests `query_by_task_counts_and_paging` (60 assets at 25/page) + `query_by_company` (scope attribution). artex **485 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-38 AssetStore attribution + bound domains (this commit):** added `counts_by_type` (global) and tests `company_paging_counts_and_attribution` (counts_by_type, company attribution at insert time, 60 subdomains at 25/page) + `upsert_ip_bound_domains` (bound_domains union on repeated upsert). artex **487 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: clippy cloned_ref_to_slice_refs -> `std::slice::from_ref`.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
