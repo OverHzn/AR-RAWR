@@ -748,6 +748,8 @@ resume without re-deriving state.
 
 - **S-2 goal ambiguity gate (this commit):** extended `src/server/helpers.rs` with `goal_gate_check` — port of `server/goal_gate.go` (#99). Literal [targetless] opt-out, 80-char floor, then target presence (URL / domain / IPv4 / localhost:port / absolute path). Spec: port of TestGoalGateCheck (good + bad tables). artex **508 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-41 task archive asset restore (this commit):** new `src/db/task_archives_restore.rs` (first slice of `db/task_archives_restore.go`), registered in db/mod.rs. `DB::restore_archive_assets` (tx): archived asset rows -> company-deletion warnings, URL normalization scoped to service/endpoint only (drops credentials from old archives), natural-key reuse (root_domain/ip/subdomain/app/service/endpoint), task_ids union, id-collision remap via sequence, ON CONFLICT fallback; returns old->new id mapping + warnings. Spec: `tests/db_archive_restore_test.rs` (4) — full port of `task_archives_restore_url_test.go`. artex **512 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: bind owned String params via Vec to avoid temporaries; `row_to_json(a)::jsonb` for serde Value scans.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

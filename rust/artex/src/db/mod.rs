@@ -70,6 +70,7 @@ pub mod target_exemptions;
 pub mod target_pins;
 pub mod task_archive_aggregate;
 pub mod task_archives;
+pub mod task_archives_restore;
 pub mod task_categories;
 pub mod task_context;
 pub mod task_credentials;
