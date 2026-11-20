@@ -303,3 +303,152 @@ impl DB {
             .await
     }
 }
+
+/// `FindingReportStateBatchResult`: one id's outcome in a bulk report-stage update.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FindingReportStateBatchResult {
+    pub id: i64,
+    /// The prior report_state (`"none"` when NULL); empty when the id is unknown.
+    pub from: String,
+    pub found: bool,
+    pub changed: bool,
+}
+
+impl DB {
+    /// `DeleteFinding`: remove a finding entirely — the standalone `findings` row
+    /// and its originating exploration node (`kind='finding'`), so it disappears
+    /// from the list, the per-task Findings tab and the graph alike. Runs under the
+    /// evidence lock; a missing finding is a no-op returning 0. Returns 1 when a
+    /// row was deleted.
+    pub async fn delete_finding(&self, id: i64) -> Result<i64> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&crate::db::finding_evidence::FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let result = async {
+            match crate::db::finding_evidence::lock_finding_evidence_tx(&tx, id, None).await {
+                Ok(()) => {}
+                Err(e) if e.is(crate::db::finding_evidence::ERR_FINDING_NOT_FOUND) => {
+                    return Ok(0);
+                }
+                Err(e) => return Err(e),
+            }
+            let node_id = tx
+                .query_opt("DELETE FROM findings WHERE id=$1 RETURNING node_id", &[&id])
+                .await?;
+            if let Some(row) = node_id {
+                let nid: Option<i64> = row.get(0);
+                if let Some(nid) = nid {
+                    tx.execute(
+                        "DELETE FROM exploration_nodes WHERE id=$1 AND kind='finding'",
+                        &[&nid],
+                    )
+                    .await?;
+                }
+            }
+            Ok(1)
+        }
+        .await;
+        match result {
+            Ok(n) => {
+                tx.commit().await?;
+                Ok(n)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `setFindingReportStateTx`: set one finding's report_state (+ node payload
+    /// mirror) inside a tx, under `FOR UPDATE`. Returns `(from, found, changed)`;
+    /// `from` is the prior state (`"none"` when NULL). A missing id is `found=false`.
+    pub(crate) async fn set_finding_report_state_tx(
+        &self,
+        tx: &deadpool_postgres::Transaction<'_>,
+        id: i64,
+        state: &str,
+    ) -> Result<(String, bool, bool)> {
+        let row = tx
+            .query_opt(
+                "SELECT COALESCE(report_state,'none'), node_id FROM findings WHERE id=$1 FOR UPDATE",
+                &[&id],
+            )
+            .await?;
+        let Some(row) = row else {
+            return Ok((String::new(), false, false));
+        };
+        let from: String = row.get(0);
+        let node_id: Option<i64> = row.get(1);
+        if from == state {
+            return Ok((from, true, false));
+        }
+        tx.execute(
+            "UPDATE findings SET report_state=$2 WHERE id=$1",
+            &[&id, &state],
+        )
+        .await?;
+        if let Some(nid) = node_id {
+            tx.execute(
+                "UPDATE exploration_nodes SET payload = jsonb_set(payload, '{report_state}', to_jsonb($1::text)) WHERE id = $2",
+                &[&state, &nid],
+            )
+            .await?;
+        }
+        Ok((from, true, true))
+    }
+
+    /// `SetFindingReportStates`: update several findings to the same report stage in
+    /// one evidence-locked transaction. Unknown ids come back `found=false` instead
+    /// of hiding the others; a DB error rolls the whole batch back. No notification.
+    pub async fn set_finding_report_states(
+        &self,
+        ids: &[i64],
+        state: &str,
+    ) -> Result<Vec<FindingReportStateBatchResult>> {
+        let mut out: Vec<FindingReportStateBatchResult> = Vec::with_capacity(ids.len());
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&crate::db::finding_evidence::FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let result = async {
+            for &id in ids {
+                let (from, found, changed) =
+                    self.set_finding_report_state_tx(&tx, id, state).await?;
+                out.push(FindingReportStateBatchResult {
+                    id,
+                    from,
+                    found,
+                    changed,
+                });
+            }
+            Ok(())
+        }
+        .await;
+        match result {
+            Ok(()) => {
+                tx.commit().await?;
+                Ok(out)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `SetFindingReportByNodeID`: set the Markdown report on the finding row whose
+    /// `node_id` matches, with no optimistic version guard. Returns rows affected
+    /// (0 when no row). Thin wrapper over the versioned setter.
+    pub async fn set_finding_report_by_node_id(&self, node_id: i64, report: &str) -> Result<i64> {
+        self.set_finding_report_version_by_node_id(node_id, report, None)
+            .await
+    }
+}
