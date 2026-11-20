@@ -2,6 +2,7 @@
 //! `TestTargetOnlyGuardSkipsRules`, `TestRuleMatchDoesNotCallJudge`.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 
 use artex::db::intercept_store::InterceptRule;
 use artex::guard::{Guard, HookEvent, InterceptDecider};
@@ -127,4 +128,122 @@ fn rule_match_does_not_call_judge() {
         0,
         "judge called for a rule-covered call"
     );
+}
+
+// --- G-2: target gate stage ---
+
+use artex::guard::{TargetGate, TargetRequest, TargetScope};
+use artex::intercept::block_message::{TargetResult, TARGET_RULE_BLOCKED};
+
+struct FakeGate {
+    checks: std::sync::Arc<AtomicUsize>,
+    asked: std::sync::Arc<Mutex<Vec<String>>>,
+    check: Box<dyn Fn(usize) -> (Vec<TargetRequest>, TargetResult) + Send + Sync>,
+}
+
+impl FakeGate {
+    fn new(
+        check: impl Fn(usize) -> (Vec<TargetRequest>, TargetResult) + Send + Sync + 'static,
+    ) -> (
+        Self,
+        std::sync::Arc<AtomicUsize>,
+        std::sync::Arc<Mutex<Vec<String>>>,
+    ) {
+        let checks = std::sync::Arc::new(AtomicUsize::new(0));
+        let asked = std::sync::Arc::new(Mutex::new(Vec::new()));
+        let gate = FakeGate {
+            checks: checks.clone(),
+            asked: asked.clone(),
+            check: Box::new(check),
+        };
+        (gate, checks, asked)
+    }
+}
+
+impl TargetGate for FakeGate {
+    fn check_targets(&self, _tool: &str, _input: &[u8]) -> (Vec<TargetRequest>, TargetResult) {
+        let n = self.checks.fetch_add(1, Ordering::SeqCst) + 1;
+        (self.check)(n)
+    }
+    fn request_targets(
+        &self,
+        _tool: &str,
+        _input: &[u8],
+        unpinned: &[TargetRequest],
+        _ask: bool,
+    ) -> (TargetResult, bool) {
+        self.asked
+            .lock()
+            .unwrap()
+            .push(unpinned.first().map(|t| t.host.clone()).unwrap_or_default());
+        (TargetResult::default(), false)
+    }
+}
+
+fn app_target() -> TargetRequest {
+    TargetRequest {
+        host: "app.example.com".into(),
+        port: 443,
+    }
+}
+
+#[test]
+fn gate_runs_outside_enabled_tool_set() {
+    let (gate, checks, asked) = FakeGate::new(|_| (Vec::new(), TargetResult::default()));
+    let g = Guard::new().with_gate(Box::new(gate));
+    let scope = TargetScope { enabled: true };
+    for (tool, input) in [
+        (
+            "Monitor",
+            r#"{"command":"tail -f /dev/null | nc 203.0.113.7 4444"}"#,
+        ),
+        ("mcp__scan__run", r#"{"target":"203.0.113.7"}"#),
+        ("WebFetch", r#"{"url":"https://app.example.com/"}"#),
+    ] {
+        assert!(
+            !g.pre_tool_use_with_scope(&ev(tool, input), Some(&scope))
+                .is_blocked(),
+            "blocked {tool}"
+        );
+    }
+    assert_eq!(checks.load(Ordering::SeqCst), 3);
+    assert!(asked.lock().unwrap().is_empty());
+}
+
+#[test]
+fn gate_block_uses_gate_message() {
+    let (gate, _checks, _asked) = FakeGate::new(|_| {
+        (
+            Vec::new(),
+            TargetResult {
+                code: TARGET_RULE_BLOCKED.to_string(),
+                host: "203.0.113.7".into(),
+                port: 4444,
+                reason: "blocked by an asset rule".into(),
+            },
+        )
+    });
+    let g = Guard::new().with_gate(Box::new(gate));
+    let r = g.pre_tool_use_with_scope(
+        &ev("WebFetch", r#"{"url":"x"}"#),
+        Some(&TargetScope { enabled: true }),
+    );
+    assert!(r.is_blocked());
+    assert!(r.message.contains(TARGET_RULE_BLOCKED));
+    assert!(r.message.contains("blocked by an asset rule"));
+}
+
+#[test]
+fn target_request_loop_is_bounded_to_three_passes() {
+    let (gate, checks, asked) = FakeGate::new(|_| (vec![app_target()], TargetResult::default()));
+    let g = Guard::target_only(Vec::new(), Box::new(PanicDecider)).with_gate(Box::new(gate));
+    let r = g.pre_tool_use_with_scope(
+        &ev("WebFetch", r#"{"url":"https://app.example.com/"}"#),
+        Some(&TargetScope { enabled: true }),
+    );
+    assert!(r.is_blocked());
+    assert!(r.message.contains("TARGET_APPROVAL_PENDING"));
+    assert!(r.message.contains("after 3 approval rounds"));
+    assert_eq!(asked.lock().unwrap().len(), 3);
+    assert_eq!(checks.load(Ordering::SeqCst), 4);
 }

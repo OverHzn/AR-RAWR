@@ -90,6 +90,7 @@ pub struct Guard {
     kind: GuardKind,
     decider: Option<Box<dyn InterceptDecider>>,
     builtin: Vec<CompiledRule>,
+    gate: Option<Box<dyn TargetGate>>,
     audit: Mutex<Vec<AuditEntry>>,
 }
 
@@ -104,6 +105,21 @@ fn command_from_input(input: &[u8]) -> String {
         .to_string()
 }
 
+impl<T: TargetGate + ?Sized> TargetGate for Box<T> {
+    fn check_targets(&self, tool: &str, input: &[u8]) -> (Vec<TargetRequest>, TargetResult) {
+        (**self).check_targets(tool, input)
+    }
+    fn request_targets(
+        &self,
+        tool: &str,
+        input: &[u8],
+        unpinned: &[TargetRequest],
+        ask: bool,
+    ) -> (TargetResult, bool) {
+        (**self).request_targets(tool, input, unpinned, ask)
+    }
+}
+
 impl Guard {
     /// `New`: passthrough guard that still records an audit entry per call.
     pub fn new() -> Self {
@@ -111,6 +127,7 @@ impl Guard {
             kind: GuardKind::Passthrough,
             decider: None,
             builtin: Vec::new(),
+            gate: None,
             audit: Mutex::new(Vec::new()),
         }
     }
@@ -121,6 +138,7 @@ impl Guard {
             kind: GuardKind::TargetOnly,
             decider: Some(decider),
             builtin,
+            gate: None,
             audit: Mutex::new(Vec::new()),
         }
     }
@@ -131,6 +149,7 @@ impl Guard {
             kind: GuardKind::Full,
             decider: Some(decider),
             builtin: Vec::new(),
+            gate: None,
             audit: Mutex::new(Vec::new()),
         }
     }
@@ -159,6 +178,8 @@ impl Guard {
 
     /// `PreToolUse`: audit then intercept (target-only guards skip the audit ring).
     pub fn pre_tool_use(&self, ev: &HookEvent) -> HookResult {
+        return self.pre_tool_use_with_scope(ev, None);
+        #[allow(unreachable_code)]
         let cmd = command_from_input(&ev.input);
         if self.kind != GuardKind::TargetOnly {
             self.record(&ev.tool_name, "allow", "", &cmd);
@@ -218,5 +239,188 @@ impl Guard {
 impl Default for Guard {
     fn default() -> Self {
         Guard::new()
+    }
+}
+
+// Target gate stage (guard/guard.go: requestTargets + gateScope).
+
+use crate::intercept::block_message::{
+    target_block_message, TargetResult, TARGET_APPROVAL_PENDING,
+};
+
+pub const TARGET_PASSES: usize = 3;
+
+#[derive(Debug, Clone, Default)]
+pub struct TargetScope {
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TargetRequest {
+    pub host: String,
+    pub port: i32,
+}
+
+/// The target-gate surface the guard uses; a `fakeGate` in tests.
+pub trait TargetGate {
+    fn check_targets(&self, tool: &str, input: &[u8]) -> (Vec<TargetRequest>, TargetResult);
+    fn request_targets(
+        &self,
+        tool: &str,
+        input: &[u8],
+        unpinned: &[TargetRequest],
+        ask: bool,
+    ) -> (TargetResult, bool);
+}
+
+impl Guard {
+    /// Attach a target gate (builder-style, for tests and real adapters).
+    pub fn with_gate(mut self, gate: Box<dyn TargetGate>) -> Self {
+        self.gate = Some(gate);
+        self
+    }
+
+    /// `PreToolUse` with an explicit target scope (Go carries it in context).
+    pub fn pre_tool_use_with_scope(
+        &self,
+        ev: &HookEvent,
+        scope: Option<&TargetScope>,
+    ) -> HookResult {
+        let cmd = command_from_input(&ev.input);
+        if self.kind != GuardKind::TargetOnly {
+            self.record(&ev.tool_name, "allow", "", &cmd);
+        }
+        let gated = scope.map(|s| s.enabled).unwrap_or(false) && self.gate.is_some();
+        let Some(decider) = &self.decider else {
+            return if gated {
+                self.apply_gate(self.gate.as_ref().unwrap(), ev)
+            } else {
+                HookResult::allow()
+            };
+        };
+
+        // Target-only: built-in deny rules first, before the gate.
+        if self.kind == GuardKind::TargetOnly {
+            if let Some(dec) = match_first(&self.builtin, &ev.tool_name, &ev.input) {
+                decider.log(&ev.tool_name, "denied");
+                return self.block(&ev.tool_name, system_block_message(&dec.message));
+            }
+            if !gated {
+                return HookResult::allow();
+            }
+            return self.apply_gate(self.gate.as_ref().unwrap(), ev);
+        }
+
+        // Full guard: rules, then judge only when no rule matched.
+        let rules_enabled = decider.is_tool_enabled(&ev.tool_name);
+        let dec = if rules_enabled {
+            match decider.match_rules(&ev.tool_name, &ev.input) {
+                Some(d) => Some(d),
+                None => decider.judge(&ev.tool_name, &ev.input),
+            }
+        } else {
+            None
+        };
+        let Some(dec) = dec else {
+            // The gate applies even outside the enabled tool set.
+            return if gated {
+                self.apply_gate(self.gate.as_ref().unwrap(), ev)
+            } else {
+                HookResult::allow()
+            };
+        };
+        match dec.action.as_str() {
+            "deny" => {
+                decider.log(&ev.tool_name, "denied");
+                self.block(&ev.tool_name, system_block_message(&dec.message))
+            }
+            "allow" => {
+                decider.log(&ev.tool_name, "allowed");
+                if gated {
+                    self.apply_gate(self.gate.as_ref().unwrap(), ev)
+                } else {
+                    HookResult::allow()
+                }
+            }
+            "ask" => {
+                let mut ask = true;
+                if gated {
+                    let gate = self.gate.as_ref().unwrap();
+                    let (unpinned, res) = gate.check_targets(&ev.tool_name, &ev.input);
+                    if !res.code.is_empty() {
+                        return self.block(&ev.tool_name, target_block_message(&res));
+                    }
+                    if !unpinned.is_empty() {
+                        let (res, merged) = self.request_targets(gate, ev, unpinned, ask);
+                        if !res.code.is_empty() {
+                            return self.block(&ev.tool_name, target_block_message(&res));
+                        }
+                        if merged {
+                            ask = false;
+                        }
+                    }
+                }
+                if ask && !decider.handle_ask(&dec, &ev.tool_name, &ev.input) {
+                    self.block(
+                        &ev.tool_name,
+                        system_block_message(
+                            "manual approval not granted (user rejected or approval timed out)",
+                        ),
+                    )
+                } else {
+                    HookResult::allow()
+                }
+            }
+            _ => HookResult::allow(),
+        }
+    }
+
+    fn apply_gate(&self, gate: &dyn TargetGate, ev: &HookEvent) -> HookResult {
+        let (unpinned, res) = gate.check_targets(&ev.tool_name, &ev.input);
+        if !res.code.is_empty() {
+            return self.block(&ev.tool_name, target_block_message(&res));
+        }
+        if unpinned.is_empty() {
+            return HookResult::allow();
+        }
+        let (res, _merged) = self.request_targets(gate, ev, unpinned, false);
+        if !res.code.is_empty() {
+            return self.block(&ev.tool_name, target_block_message(&res));
+        }
+        HookResult::allow()
+    }
+
+    fn request_targets(
+        &self,
+        gate: &dyn TargetGate,
+        ev: &HookEvent,
+        mut unpinned: Vec<TargetRequest>,
+        mut ask: bool,
+    ) -> (TargetResult, bool) {
+        let mut merged = false;
+        for _ in 0..TARGET_PASSES {
+            let (res, was_merged) = gate.request_targets(&ev.tool_name, &ev.input, &unpinned, ask);
+            if !res.code.is_empty() {
+                return (res, merged);
+            }
+            if was_merged {
+                merged = true;
+                ask = false;
+            }
+            let (next, res) = gate.check_targets(&ev.tool_name, &ev.input);
+            if !res.code.is_empty() || next.is_empty() {
+                return (res, merged);
+            }
+            unpinned = next;
+        }
+        let t = &unpinned[0];
+        (
+            TargetResult {
+                code: TARGET_APPROVAL_PENDING.to_string(),
+                host: t.host.clone(), port: t.port,
+                reason: format!("the target is still not covered by a pin after {TARGET_PASSES} approval rounds; its addresses changed again"),
+            },
+            merged,
+        )
     }
 }

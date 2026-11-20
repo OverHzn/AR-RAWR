@@ -790,6 +790,8 @@ resume without re-deriving state.
 
 - **G-1 guard core (this commit):** new `src/guard.rs` (port of `guard/guard.go` pure core) — `HookEvent`/`HookResult`/`AuditEntry`, `InterceptDecider` trait (+ NullDecider), `Guard::{new,target_only,full}`, `pre_tool_use`: audit (except target-only), built-in deny for target-only, rules-before-judge for full guard, deny/allow/ask handling, capped audit ring. Spec: `tests/guard_core_test.rs` (3) — passthrough+audit, target-only skips rules/judge, rule match doesn't call judge. artex **548 tests** green, clippy clean, fmt clean, gate 30/30. (Planned by subagent; gate stage + 3-pass loop in G-2.)
 
+- **G-2 guard target gate stage (this commit):** extended `src/guard.rs` with `TargetScope`/`TargetRequest`/`TargetGate` trait (+ Box blanket impl), `Guard::with_gate`, `pre_tool_use_with_scope` (gate runs outside enabled tool set, deny before gate, ask+target merged), `apply_gate` and the bounded `request_targets` loop (3 passes, 4 checks, TARGET_APPROVAL_PENDING when addresses keep changing). Spec: 3 tests — gate outside tool set, gate block message, 3-pass loop counters. artex **551 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
