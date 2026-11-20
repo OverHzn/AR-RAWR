@@ -59,6 +59,7 @@ pub mod publicsuffix;
 pub mod secrets;
 pub mod seed;
 pub mod settings;
+pub mod side_questions;
 pub mod skill_gaps;
 pub mod skill_usage;
 pub mod target_exemptions;

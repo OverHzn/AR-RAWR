@@ -124,6 +124,16 @@ impl GoTime {
         self.0.is_none()
     }
 
+    /// The underlying instant, for binding a TIMESTAMPTZ parameter.
+    pub fn as_system_time(&self) -> Option<SystemTime> {
+        self.0
+    }
+
+    /// Wrap a driver-provided instant (zero time when absent).
+    pub fn from_system_time(t: Option<SystemTime>) -> Self {
+        GoTime(t)
+    }
+
     fn unix_secs(&self) -> Option<i64> {
         self.0.map(|t| match t.duration_since(UNIX_EPOCH) {
             Ok(d) => d.as_secs() as i64,
@@ -145,6 +155,16 @@ impl GoTime {
 impl serde::Serialize for GoTime {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_str(&self.format_rfc3339())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for GoTime {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = <String as serde::Deserialize>::deserialize(d)?;
+        if s == "0001-01-01T00:00:00Z" {
+            return Ok(GoTime::zero());
+        }
+        Ok(GoTime(crate::db::gotime::parse_rfc3339(&s)))
     }
 }
 
@@ -174,7 +194,8 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 // === Data model (sidequestion/{capture,request,context}.go) ===
 
 /// `sidequestion.Model`: configuration identity only, never credentials or URLs.
-#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Model {
     pub profile_id: i64,
     pub name: String,
@@ -186,7 +207,8 @@ pub struct Model {
 }
 
 /// `sidequestion.Snapshot`: an immutable main-agent checkpoint.
-#[derive(Debug, Clone, PartialEq, Default, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Snapshot {
     pub parent: Parent,
     pub run_id: i64,
@@ -197,11 +219,15 @@ pub struct Snapshot {
 }
 
 /// `sidequestion.Exchange`: one recorded side Q&A turn.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Exchange {
     pub id: String,
+    #[serde(skip)]
     pub session_key: String,
+    #[serde(rename = "client_request_id")]
     pub client_id: String,
+    #[serde(skip)]
     pub generation: i64,
     pub question: String,
     pub answer: String,
@@ -213,6 +239,7 @@ pub struct Exchange {
     pub sequence: i64,
     pub usage: Usage,
     pub ordinal: i64,
+    #[serde(rename = "context")]
     pub context: ContextInfo,
 }
 
@@ -231,7 +258,8 @@ impl Exchange {
 /// `sidequestion.Memory`: the persisted cursor + cached summaries. Independent of
 /// the main snapshot; `Through` is a persisted ordinal, not an array offset, so
 /// restart / pagination / failed requests cannot shift it.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Memory {
     pub history: String,
     pub through: i64,
@@ -241,7 +269,8 @@ pub struct Memory {
 }
 
 /// `sidequestion.ContextInfo`: observability about how a request was prepared.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct ContextInfo {
     pub phase: String,
     pub recent_exchanges: i64,
