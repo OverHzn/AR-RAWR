@@ -234,3 +234,68 @@ fn blob_range_bounds() {
     assert!(empty.is_empty());
     assert_eq!(total, size);
 }
+
+#[test]
+fn delete_host_and_gc_blobs() {
+    let s = TrafficStore::open_temp().unwrap();
+    let big = vec![b'q'; MAX_INLINE_BODY + 32];
+    let m1 = meta(
+        "1700000000-0010",
+        "victim.example.com",
+        200,
+        "https://victim.example.com/x",
+    );
+    let m2 = meta(
+        "1700000000-0011",
+        "keeper.example.com",
+        200,
+        "https://keeper.example.com/y",
+    );
+    insert(&s, &m1, b"req", &big, "text/plain");
+    insert(&s, &m2, b"req", &big, "text/plain");
+    assert_eq!(s.count().unwrap(), 2);
+    let spilled = s.spill(&big, "text/plain");
+    assert!(s.blob_path(&spilled.hash).is_some());
+
+    let n = s.delete_host("victim").unwrap();
+    assert_eq!(n, 1);
+    assert_eq!(s.count().unwrap(), 1);
+    // Shared blob survives because the keeper still references it.
+    assert!(s.blob_path(&spilled.hash).is_some());
+
+    assert_eq!(
+        s.delete_hosts_exact(&["keeper.example.com".to_string()])
+            .unwrap(),
+        1
+    );
+    assert_eq!(s.count().unwrap(), 0);
+    s.gc_blobs().unwrap();
+    assert!(
+        s.blob_path(&spilled.hash).is_none(),
+        "unreferenced blob collected"
+    );
+}
+
+#[test]
+fn delete_all_clears_index() {
+    let s = TrafficStore::open_temp().unwrap();
+    for i in 0..3 {
+        let m = meta(
+            &format!("1700000000-{i:04}"),
+            "host.test",
+            200,
+            "https://host.test/x",
+        );
+        insert(&s, &m, b"req", b"resp", "text/plain");
+    }
+    let (n, _reclaimed) = s.delete_all().unwrap();
+    assert_eq!(n, 3);
+    assert_eq!(s.count().unwrap(), 0);
+    assert_eq!(
+        s.page(&artex::traffic::store::PageQuery::default(), 0, 10)
+            .unwrap()
+            .0
+            .len(),
+        0
+    );
+}

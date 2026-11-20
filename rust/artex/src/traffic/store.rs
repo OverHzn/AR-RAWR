@@ -512,6 +512,165 @@ impl TrafficStore {
     }
 }
 
+impl TrafficStore {
+    /// Delete all rows matching `where` (and their child rows) in one tx.
+    /// `where` is a caller-owned fixed SQL fragment with `?` placeholders.
+    fn delete_where(&self, where_sql: &str, params: &[Value]) -> Result<i64> {
+        let db = self.db.lock().unwrap();
+        db.exec("BEGIN")?;
+        let result = (|| -> Result<i64> {
+            if self.fts {
+                db.execute(&format!("DELETE FROM ex_fts WHERE rowid IN (SELECT rowid FROM exchanges WHERE {where_sql})"), params)?;
+            }
+            for table in [
+                "exchange_bodies",
+                "stream_messages",
+                "exchange_rewrites",
+                "blob_refs",
+            ] {
+                let key = if table == "exchange_bodies" {
+                    "id"
+                } else {
+                    "exchange_id"
+                };
+                db.execute(&format!("DELETE FROM {table} WHERE {key} IN (SELECT id FROM exchanges WHERE {where_sql})"), params)?;
+            }
+            Ok(db.execute(&format!("DELETE FROM exchanges WHERE {where_sql}"), params)? as i64)
+        })();
+        match result {
+            Ok(n) => {
+                db.exec("COMMIT")?;
+                Ok(n)
+            }
+            Err(e) => {
+                let _ = db.exec("ROLLBACK");
+                Err(e)
+            }
+        }
+    }
+
+    /// `DeleteHost`: remove every exchange whose host contains `host`.
+    pub fn delete_host(&self, host: &str) -> Result<i64> {
+        let n = self.delete_where("host LIKE ?", &[Value::Text(format!("%{host}%"))])?;
+        if n > 0 {
+            self.gc_blobs()?;
+        }
+        Ok(n)
+    }
+
+    /// `DeleteHostsExact`: remove exchanges whose host is one of `hosts`.
+    pub fn delete_hosts_exact(&self, hosts: &[String]) -> Result<i64> {
+        if hosts.is_empty() {
+            return Ok(0);
+        }
+        let conds = vec!["host=?"; hosts.len()].join(" OR ");
+        let params: Vec<Value> = hosts.iter().cloned().map(Value::Text).collect();
+        let n = self.delete_where(&conds, &params)?;
+        if n > 0 {
+            self.gc_blobs()?;
+        }
+        Ok(n)
+    }
+
+    /// `DeleteAll`: purge every exchange and reclaim disk space.
+    pub fn delete_all(&self) -> Result<(i64, i64)> {
+        let before = self.index_bytes();
+        let n = self.delete_where("1=1", &[])?;
+        self.gc_blobs()?;
+        let db = self.db.lock().unwrap();
+        if self.fts {
+            let _ = db.exec("INSERT INTO ex_fts(ex_fts) VALUES('optimize')");
+        }
+        db.exec("PRAGMA wal_checkpoint(TRUNCATE)")?;
+        db.exec("VACUUM")?;
+        let after = self.index_bytes();
+        Ok((n, before.saturating_sub(after) as i64))
+    }
+
+    pub fn index_bytes(&self) -> u64 {
+        self.dir
+            .join("_index")
+            .join("index.sqlite")
+            .metadata()
+            .map(|m| m.len())
+            .unwrap_or(0)
+    }
+
+    /// `gcBlobs`: delete unreferenced blobs and empty bucket directories.
+    pub fn gc_blobs(&self) -> Result<()> {
+        let mut refs = std::collections::HashSet::new();
+        for row in self.query("SELECT DISTINCT hash FROM blob_refs", &[])? {
+            if let Some(h) = row.opt_text(0) {
+                refs.insert(h);
+            }
+        }
+        // Legacy .http files may still point at blobs.
+        let legacy: i64 =
+            self.query("SELECT COUNT(*) FROM exchanges WHERE path<>''", &[])?[0].int(0);
+        if legacy > 0 {
+            let re = regex::Regex::new(r"@blob sha256:([0-9a-f]{64})").unwrap();
+            for entry in walk_dir(&self.dir) {
+                let name = entry
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                if name != "request.http" && name != "response.http" {
+                    continue;
+                }
+                if let Ok(bytes) = std::fs::read(&entry) {
+                    if let Ok(text) = std::str::from_utf8(&bytes) {
+                        for cap in re.captures_iter(text) {
+                            if let Some(m) = cap.get(1) {
+                                refs.insert(m.as_str().to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let root = self.dir.join("_blobs").join("sha256");
+        let mut buckets = Vec::new();
+        for entry in walk_dir(&root) {
+            if entry.is_dir() {
+                if entry != root {
+                    buckets.push(entry);
+                }
+                continue;
+            }
+            let h = entry
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .trim_end_matches(".bin")
+                .to_string();
+            if !refs.contains(&h) {
+                let _ = std::fs::remove_file(&entry);
+            }
+        }
+        buckets.sort_by_key(|b| std::cmp::Reverse(b.to_string_lossy().len()));
+        for b in buckets {
+            let _ = std::fs::remove_dir(&b);
+        }
+        Ok(())
+    }
+}
+
+fn walk_dir(root: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut out = Vec::new();
+    let Ok(rd) = std::fs::read_dir(root) else {
+        return out;
+    };
+    for e in rd.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            out.extend(walk_dir(&p));
+        }
+        out.push(p);
+    }
+    out
+}
+
 /// `assembleRaw`: head + blank line + body, plus a blob pointer when spilled.
 fn assemble_raw(head: &str, body: &[u8], blob: Option<String>, total: i64) -> String {
     let mut out = String::new();

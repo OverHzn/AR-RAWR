@@ -770,6 +770,8 @@ resume without re-deriving state.
 
 - **T-2 Page/FTS search + blob range (this commit):** extended `src/traffic/store.rs` with `PageQuery` (manual Default: resp_min/max = -1 to skip bounds), `page()` (dynamic AND filters, status class, FTS metadata-or-body and body-only search, whitelisted sort dir with total `id DESC` tie-break, total count), `search()` (legacy host listing), `blob_range()` (clamped read via file seek), and `path` on ExchangeMeta. Spec: 2 tests — filters/sort/FTS/paging + blob bounds. artex **531 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: Go's `ORDER BY <col> <dir>, id DESC` uses id DESC as tie-break even for asc.)
 
+- **T-3 traffic delete + blob GC (this commit):** extended `src/traffic/store.rs` with `delete_where` (tx, ordered: FTS -> bodies -> stream -> rewrites -> blob_refs -> exchanges), `delete_host` (substring), `delete_hosts_exact`, `delete_all` (VACUUM + reclaimed bytes), `index_bytes` and `gc_blobs` (live refs from blob_refs + legacy .http `@blob sha256:` pointers, deepest bucket first). Spec: 2 tests — shared blob survives host delete then collected, delete_all clears index. artex **533 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
