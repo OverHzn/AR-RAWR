@@ -17,3 +17,4 @@ pub mod permission;
 pub mod report;
 pub mod sidequestion;
 pub mod tool;
+pub mod traffic;
