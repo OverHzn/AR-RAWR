@@ -27,6 +27,7 @@ pub mod company_scope;
 pub mod config_agents;
 pub mod config_profiles;
 pub mod config_prompts;
+pub mod config_visibility;
 pub mod constants;
 pub mod conversation;
 pub mod coverage_ledger;
