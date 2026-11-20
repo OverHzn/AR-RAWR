@@ -437,3 +437,110 @@ async fn upsert_app_dedup_by_bundle_and_name() {
 
     assert_eq!(s.delete_by_ids(&[id1, id3]).await.unwrap(), 2);
 }
+
+#[tokio::test]
+async fn upsert_http_service_merge_and_auth() {
+    use artex::db::assets::UpsertHTTPServiceReq;
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let url = format!("https://www.httpsvc-{}.example.com/", tag());
+    let domain = format!(
+        "www.httpsvc-{}.example.com",
+        url.split("httpsvc-")
+            .nth(1)
+            .unwrap()
+            .split('.')
+            .next()
+            .unwrap()
+    );
+    let root_domain = "example.com";
+
+    let id1 = s
+        .upsert_http_service(&UpsertHTTPServiceReq {
+            url: url.clone(),
+            technologies: vec!["nginx".into(), "vue".into()],
+            status_code: Some(200),
+            content_length: Some(1024),
+            page_title: "Test Site".into(),
+            task_id: 1,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert!(id1 > 0);
+    let tech: i64 = d
+        .query_one(
+            "SELECT array_length(technologies,1)::bigint FROM assets WHERE id=$1",
+            &[&id1],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(tech, 2);
+
+    let id2 = s
+        .upsert_http_service(&UpsertHTTPServiceReq {
+            url: url.clone(),
+            technologies: vec!["react".into(), "webpack".into()],
+            task_id: 2,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id2, id1, "http service dedup failed");
+    let tech: i64 = d
+        .query_one(
+            "SELECT array_length(technologies,1)::bigint FROM assets WHERE id=$1",
+            &[&id1],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(tech, 4, "technologies merge");
+
+    // Auth append on a separate service.
+    let auth_url = format!("http://authtest-{}.example.org/", tag());
+    let a1 = s
+        .upsert_http_service(&UpsertHTTPServiceReq {
+            url: auth_url.clone(),
+            auth: vec![
+                serde_json::json!({"type": "basic", "username": "admin", "password": "pass"}),
+            ],
+            task_id: 1,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let a2 = s
+        .upsert_http_service(&UpsertHTTPServiceReq {
+            url: auth_url.clone(),
+            auth: vec![serde_json::json!({"type": "bearer", "token": "tok123"})],
+            task_id: 2,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(a2, a1);
+    let cnt: i64 = d
+        .query_one(
+            "SELECT cardinality(auth)::bigint FROM assets WHERE id=$1",
+            &[&a1],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(cnt, 2, "auth append");
+
+    d.execute(
+        "DELETE FROM assets WHERE url=$1 OR url=$2 OR domain=$3 OR domain=$4",
+        &[&url, &auth_url, &domain, &root_domain],
+    )
+    .await
+    .unwrap();
+}

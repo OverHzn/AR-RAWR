@@ -94,6 +94,21 @@ pub struct UpsertSubdomainReq {
 }
 
 #[derive(Debug, Clone, Default)]
+pub struct UpsertHTTPServiceReq {
+    pub url: String,
+    pub technologies: Vec<String>,
+    pub status_code: Option<i32>,
+    pub content_length: Option<i64>,
+    pub page_title: String,
+    pub favicon_mmh3: String,
+    /// JSON objects appended to the asset's auth array.
+    pub auth: Vec<Json>,
+    /// Optional IP, from async DNS.
+    pub ip: String,
+    pub task_id: i64,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct UpsertAppReq {
     pub name: String,
     pub bundle_id: String,
@@ -433,6 +448,146 @@ RETURNING id"
         };
         let row = self.db.query_one(sql, &params).await?;
         Ok(row.get(0))
+    }
+
+    /// `UpsertHTTPService`: insert/merge an HTTP service asset; domain, port,
+    /// service name and root domain are derived from the normalized URL.
+    pub async fn upsert_http_service(&self, req: &UpsertHTTPServiceReq) -> Result<i64> {
+        if req.url.is_empty() {
+            return Err(Error::msg("url is required"));
+        }
+        validate_asset_ip(&req.ip)?;
+        let norm_url = crate::db::asset_helpers::normalize_url(&req.url);
+        let (domain, port, service_name) = crate::db::asset_helpers::parse_url(&norm_url);
+        let root_domain = {
+            let (r, _) = nkey_root(&domain);
+            if r.is_empty() {
+                domain.clone()
+            } else {
+                r
+            }
+        };
+        let cseg = calc_c_segment(&req.ip);
+        let company = self
+            .db
+            .companies()
+            .resolve_company_with_icp(&root_domain, &req.ip, "")
+            .await?;
+        let tasks = task_ids_array(req.task_id);
+        let techs = marshal_string_array(&req.technologies);
+        let auth = marshal_jsonb_array(&req.auth)?;
+        let domain_opt: Option<&str> = if domain.is_empty() {
+            None
+        } else {
+            Some(&domain)
+        };
+        let ip_opt: Option<&str> = if req.ip.is_empty() {
+            None
+        } else {
+            Some(&req.ip)
+        };
+        let cseg_opt: Option<&str> = if cseg.is_empty() { None } else { Some(&cseg) };
+        let title_opt: Option<&str> = if req.page_title.is_empty() {
+            None
+        } else {
+            Some(&req.page_title)
+        };
+        let favicon_opt: Option<&str> = if req.favicon_mmh3.is_empty() {
+            None
+        } else {
+            Some(&req.favicon_mmh3)
+        };
+        let port_opt = crate::db::asset_helpers::nullable_int(port);
+
+        let row = self.db.query_one(
+            "INSERT INTO assets(
+    type, url, service_type, service_name, domain, ip, port, root_domain,
+    c_segment, favicon_mmh3, technologies, status_code, content_length, page_title,
+    auth, company_id, company_source, task_ids
+)
+VALUES (
+    'service', $1, 'http', $2, $3, $4, $5, $6,
+    $7::text::cidr, $8, $9::text::text[], $10, $11, $12,
+    $13::text::jsonb[], $14, 'scope', $15::bigint[]
+)
+ON CONFLICT (url) WHERE type = 'service' AND service_type = 'http' DO UPDATE SET
+    status_code    = COALESCE(EXCLUDED.status_code,    assets.status_code),
+    content_length = COALESCE(EXCLUDED.content_length, assets.content_length),
+    page_title     = COALESCE(EXCLUDED.page_title,     assets.page_title),
+    favicon_mmh3   = COALESCE(EXCLUDED.favicon_mmh3,   assets.favicon_mmh3),
+    ip             = COALESCE(EXCLUDED.ip,             assets.ip),
+    c_segment      = COALESCE(EXCLUDED.c_segment,      assets.c_segment),
+    technologies   = (SELECT ARRAY(SELECT DISTINCT unnest(assets.technologies || EXCLUDED.technologies))),
+    auth           = (
+        SELECT ARRAY(
+            SELECT DISTINCT ON (elem::text) elem
+            FROM unnest(assets.auth || EXCLUDED.auth) AS elem
+        )
+    ),
+    task_ids       = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    company_id     = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    last_seen      = now()
+RETURNING id",
+            &[&norm_url, &service_name, &domain_opt, &ip_opt, &port_opt, &root_domain,
+              &cseg_opt, &favicon_opt, &techs, &req.status_code, &req.content_length, &title_opt,
+              &auth, &company, &tasks],
+        ).await?;
+        let id: i64 = row.get(0);
+
+        // Side effects: register root domain + subdomain, then bind the IP.
+        if !root_domain.is_empty() {
+            let _ = self
+                .upsert_root_domain(&UpsertRootDomainReq {
+                    domain: root_domain.clone(),
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        if !domain.is_empty()
+            && domain != root_domain
+            && domain.parse::<std::net::IpAddr>().is_err()
+        {
+            let _ = self
+                .upsert_subdomain(&UpsertSubdomainReq {
+                    domain: domain.clone(),
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        if !req.ip.is_empty() {
+            let bound = if domain.is_empty() {
+                Vec::new()
+            } else {
+                vec![domain]
+            };
+            let ports = if port > 0 {
+                vec![PortService {
+                    port,
+                    service: service_name,
+                }]
+            } else {
+                Vec::new()
+            };
+            let _ = self
+                .upsert_ip(&UpsertIPReq {
+                    ip: req.ip.clone(),
+                    bound_domains: bound,
+                    open_ports: ports,
+                    task_id: req.task_id,
+                })
+                .await;
+        }
+        Ok(id)
     }
 
     pub async fn query_by_type(&self, typ: &str, limit: i64, offset: i64) -> Result<Vec<Asset>> {

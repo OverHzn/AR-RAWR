@@ -718,6 +718,8 @@ resume without re-deriving state.
 
 - **D-33 AssetStore UpsertApp (this commit):** extended `src/db/assets.rs` with `UpsertAppReq` + `upsert_app` — two SQL paths keyed by bundle_id (unique where non-null) or exact app_name (unique where bundle_id null), COALESCE merges, explicit company override vs ICP auto-attribution, task_ids union, name-required error. Added test `upsert_app_dedup_by_bundle_and_name`. artex **480 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **D-34 AssetStore UpsertHTTPService (this commit):** extended `src/db/assets.rs` with `UpsertHTTPServiceReq` + `upsert_http_service` — URL normalization, derived domain/port/service-name/root-domain, technology and auth array merges (DISTINCT), status/content-length/title merges, IP validation & C segment, side effects (root domain, subdomain, bound IP with port service). Added test `upsert_http_service_merge_and_auth`. artex **481 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
