@@ -247,6 +247,10 @@ impl ExplorationStore {
 /// takeover query as `$2 * INTERVAL '1 second'`.
 pub const INTENT_CLAIM_TTL_SECS: f64 = 90.0;
 
+/// `ErrIntentStateConflict`: a compare-and-set / soft-delete transition lost a
+/// race with a concurrent state change (callers map it to HTTP 409).
+pub const ERR_INTENT_STATE_CONFLICT: &str = "intent state changed concurrently";
+
 /// An intent is terminal (stamps `completed_at`) in these states; reopening
 /// (open/running/paused) clears it. Mirrors Go's inline check.
 fn is_terminal_intent_state(state: &str) -> bool {
@@ -372,6 +376,60 @@ impl ExplorationStore {
             )
             .await?;
         Ok(row.get(0))
+    }
+
+    /// `SoftDeleteIntent`: soft-delete an open/running/paused intent — it sets
+    /// state='deleted' + records the delete reason, keeping the node and its
+    /// lineage (unlike a hard cancel). Side-question sessions for the intent are
+    /// atomically cleaned up in the same transaction (a kept session would reject
+    /// the delayed snapshot). Returns the intent's summary from *before* deletion,
+    /// for the planner notification. The caller must stop any running worker
+    /// first to avoid later writes. Errors with [`ERR_INTENT_STATE_CONFLICT`] when
+    /// the intent is in a non-deletable state (done/blocked/exhausted/stopped/
+    /// deleted).
+    pub async fn soft_delete_intent(&self, id: i64, reason: &str) -> Result<String> {
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+
+        let row = tx
+            .query_opt(
+                "SELECT state, payload FROM exploration_nodes \
+             WHERE id=$1 AND exploration_id=$2 AND kind='intent' FOR UPDATE",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        let (state, payload): (String, Value) = match row {
+            Some(r) => (r.get(0), r.get(1)),
+            None => return Err(Error::msg("intent not found")),
+        };
+        if state != "running" && state != "paused" && state != "open" {
+            return Err(Error::sentinel(
+                ERR_INTENT_STATE_CONFLICT,
+                format!("{ERR_INTENT_STATE_CONFLICT}: intent state {state} cannot be deleted"),
+            ));
+        }
+
+        tx.execute(
+            "UPDATE exploration_nodes \
+          SET state='deleted', delete_reason=$3, blocked_reason=NULL, \
+              content_version=content_version+1, completed_at=now() \
+          WHERE id=$1 AND exploration_id=$2",
+            &[&id, &self.exp_id, &reason],
+        )
+        .await?;
+        tx.execute(
+            "DELETE FROM side_question_sessions WHERE intent_id=$1",
+            &[&id],
+        )
+        .await?;
+
+        let summary = payload
+            .get("summary")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        tx.commit().await?;
+        Ok(summary)
     }
 }
 

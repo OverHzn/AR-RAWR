@@ -432,7 +432,7 @@ resume without re-deriving state.
   validation rollback (missing asset -> error, tx rolls back, no node left). artex **241
   tests** green, clippy clean, fmt clean, gate 30/30. (Note: exploration_anchors.asset_id
   FKs assets(id) so anchors always need real assets, for any kind — not just fact.)
-- **D-1s exploration intent state transitions (this commit):** `src/db/exploration.rs`
+- **D-1s exploration intent state transitions (commit 7b28e1d):** `src/db/exploration.rs`
   extended — `ExplorationStore::{reset_running_intents (take over expired/NULL-heartbeat
   running claims in one atomic UPDATE; clears unclaim_token), reopen_intent (blocked/
   exhausted/stopped->open, returns changed), reopen_blocked_intents (batch blocked->open,
@@ -445,7 +445,21 @@ resume without re-deriving state.
   `tests/db_exploration_intent_state_test.rs` (2) — full state machine (set/CAS/reopen/
   reset/count + completed_at stamping) + kind/exploration scoping (SetIntentState is a
   no-op on a goal or a foreign exploration's intent). artex **243 tests** green, clippy
-  clean, fmt clean, gate 30/30. (Next: SoftDeleteIntent, then CancelIntent + token-rollup.)
+  clean, fmt clean, gate 30/30. (Note: count_* return i64 = COUNT(*) bigint; the f64 TTL
+  binds fine into `$2 * INTERVAL '1 second'` via the `interval * double precision` op.)
+- **D-1t SoftDeleteIntent (this commit):** `src/db/exploration.rs` extended —
+  `ExplorationStore::soft_delete_intent(id, reason) -> Result<String>` (tx: SELECT
+  state,payload FOR UPDATE -> guard state ∈ {running,paused,open} else
+  ERR_INTENT_STATE_CONFLICT sentinel "intent state changed concurrently: intent state %s
+  cannot be deleted"; missing -> plain "intent not found"; UPDATE state='deleted' +
+  delete_reason + completed_at=now() + content_version bump; DELETE side_question_sessions
+  WHERE intent_id; return prior payload.summary). `pub const ERR_INTENT_STATE_CONFLICT`.
+  Spec: `tests/db_exploration_intent_softdelete_test.rs` (1) — open→deleted + summary +
+  completed_at, side-session cleanup (seeded via task_id+exploration_id+intent_id to
+  satisfy the sessions XOR CHECK), done-state conflict guard leaves node untouched,
+  paused deletable, missing id → not-found. artex **244 tests** green, clippy clean, fmt
+  clean, gate 30/30. (Next: CancelIntent + intentTokenRollup — the hard-delete graph
+  cascade; needs a TokenUsage type + activity token rollup.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
