@@ -686,6 +686,8 @@ resume without re-deriving state.
 
 - **D-25 pure asset helpers slice (this commit):** new `src/db/asset_helpers.rs` (pure slice of `db/assets.go` + `db/nkey.go`), registered `pub mod asset_helpers`. `PortService`, `calc_c_segment` (IPv4 /24, IPv6 /48), `default_port`, `normalize_url` (lowercase scheme/host, drop userinfo, strip bare-root trailing slash), `parse_url` (domain/port/service name), `marshal_jsonb_array`/`marshal_string_array`/`marshal_port_services` (PG array literals), `nullable_int`, `validate_asset_ip` (ERR_ASSET_IP_INVALID sentinel — hostnames never in assets.ip). Spec: `tests/db_asset_helpers_test.rs` (4) — all oracle values captured live from Go (calcCSegment/normalizeURL/parseURL/defaultPort/marshal literals/ValidateIP). artex **411 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: test fn named same as imported fn conflicts -> rename test; normalize_url via url::Url set_scheme/set_host/set_username/set_password.)
 
+- **E-8 target resolve pure helpers (this commit):** new `src/intercept/target_resolve.rs` (pure slice of `intercept/target_resolve.go`), registered in `src/intercept/mod.rs`. `canonical_ips` (IPv4-mapped unmapped, sorted, deduped — Rust IpAddr has no zone) + `subset` (every resolved address pinned; empty answer -> false). Spec: `tests/intercept_target_resolve_test.rs` (2) — port of TestSubset (9 cases) + canonical IP normalization. artex **413 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
