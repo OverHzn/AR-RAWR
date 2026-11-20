@@ -105,7 +105,7 @@ pub struct Node {
 }
 
 /// `nodeCols`: the shared read column list (matches Go's `scanNode` order).
-const NODE_COLS: &str = "id, kind, payload, priority, state, COALESCE(origin,''), \
+pub(crate) const NODE_COLS: &str = "id, kind, payload, priority, state, COALESCE(origin,''), \
     COALESCE(owner,''), COALESCE(blocked_reason,''), COALESCE(delete_reason,''), created_at";
 
 /// `scanNode`: scan a row on [`NODE_COLS`]. The finding-aware fields are left at
@@ -816,7 +816,7 @@ pub struct NodeFilter {
 }
 
 /// `scanNodes`: scan a batch of rows on [`NODE_COLS`].
-fn scan_nodes(rows: &[tokio_postgres::Row]) -> Vec<Node> {
+pub(crate) fn scan_nodes(rows: &[tokio_postgres::Row]) -> Vec<Node> {
     rows.iter().map(scan_node).collect()
 }
 
