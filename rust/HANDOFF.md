@@ -796,6 +796,8 @@ resume without re-deriving state.
 
 - **A-5 agent hook slots (this commit):** new `src/agent/hooks.rs` — port of the concurrency-safe hook globals in `agent/assembly.go`/`prompt.go`. `HookSlot<T>` (Arc<RwLock<Option<Arc<T>>>>, clone shares slot, get clones out so callers never hold the lock) + `AgentHooks` (augment/resolve/prompt/wrapup). Spec: `tests/agent_hooks_test.rs` (1) — 4 readers × 200 rounds against a writer swapping 200×, plus canonical hook set clear/swap. artex **553 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-6 prompt rendering (this commit):** new `src/agent/prompt.rs` — `Vars`, strict mini template renderer (`{{.Field}}`, `{{if .X}}…{{else}}…{{end}}`, unknown key = error) and `render_system` (DB override → render → fallback to code default on error). Port of `agent/prompt.go:renderSystem`/`renderTmpl`. Spec: `tests/agent_prompt_test.rs` (2) — override/fallback + conditionals. artex **555 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
