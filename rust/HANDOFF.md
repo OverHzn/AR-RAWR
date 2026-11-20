@@ -792,6 +792,8 @@ resume without re-deriving state.
 
 - **G-2 guard target gate stage (this commit):** extended `src/guard.rs` with `TargetScope`/`TargetRequest`/`TargetGate` trait (+ Box blanket impl), `Guard::with_gate`, `pre_tool_use_with_scope` (gate runs outside enabled tool set, deny before gate, ask+target merged), `apply_gate` and the bounded `request_targets` loop (3 passes, 4 checks, TARGET_APPROVAL_PENDING when addresses keep changing). Spec: 3 tests — gate outside tool set, gate block message, 3-pass loop counters. artex **551 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **G-3 guard post-tool attribution (this commit):** extended `src/guard.rs` with `post_tool_use` (Bash-only Observer/G5 classification: blocked via WAF/403/429 regex, error, ok) + `attributions()` counts. Spec: 1 test — three classes + non-Bash ignored. artex **552 tests** green, clippy clean, fmt clean, gate 30/30. Guard slice from subagent plan (G-1/G-2/G-3) complete; DB/LLM/DNS-backed integration tests remain deferred.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

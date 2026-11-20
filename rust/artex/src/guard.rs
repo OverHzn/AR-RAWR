@@ -92,6 +92,7 @@ pub struct Guard {
     builtin: Vec<CompiledRule>,
     gate: Option<Box<dyn TargetGate>>,
     audit: Mutex<Vec<AuditEntry>>,
+    attrib: Mutex<std::collections::HashMap<String, usize>>,
 }
 
 fn command_from_input(input: &[u8]) -> String {
@@ -129,6 +130,7 @@ impl Guard {
             builtin: Vec::new(),
             gate: None,
             audit: Mutex::new(Vec::new()),
+            attrib: Mutex::new(std::collections::HashMap::new()),
         }
     }
 
@@ -140,6 +142,7 @@ impl Guard {
             builtin,
             gate: None,
             audit: Mutex::new(Vec::new()),
+            attrib: Mutex::new(std::collections::HashMap::new()),
         }
     }
 
@@ -151,6 +154,7 @@ impl Guard {
             builtin: Vec::new(),
             gate: None,
             audit: Mutex::new(Vec::new()),
+            attrib: Mutex::new(std::collections::HashMap::new()),
         }
     }
 
@@ -239,6 +243,38 @@ impl Guard {
 impl Default for Guard {
     fn default() -> Self {
         Guard::new()
+    }
+}
+
+impl Guard {
+    /// `postToolUse`: Observer failure attribution (Bash only).
+    pub fn post_tool_use(&self, ev: &HookEvent) -> HookResult {
+        if ev.tool_name != "Bash" {
+            return HookResult::allow();
+        }
+        let re = regex::Regex::new(
+            r"(?i)\b(403|forbidden|waf|blocked|rate.?limit|429|captcha|denied)\b",
+        )
+        .unwrap();
+        let class = if re.is_match(&String::from_utf8_lossy(&ev.result)) {
+            "blocked"
+        } else if ev.is_error {
+            "error"
+        } else {
+            "ok"
+        };
+        *self
+            .attrib
+            .lock()
+            .unwrap()
+            .entry(class.to_string())
+            .or_insert(0) += 1;
+        HookResult::allow()
+    }
+
+    /// `Attributions`: failure-attribution counts (Observer / G5).
+    pub fn attributions(&self) -> std::collections::HashMap<String, usize> {
+        self.attrib.lock().unwrap().clone()
     }
 }
 

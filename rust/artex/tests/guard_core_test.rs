@@ -247,3 +247,25 @@ fn target_request_loop_is_bounded_to_three_passes() {
     assert_eq!(asked.lock().unwrap().len(), 3);
     assert_eq!(checks.load(Ordering::SeqCst), 4);
 }
+
+#[test]
+fn post_tool_use_attributions() {
+    let g = Guard::new();
+    let mut ok = ev("Bash", "");
+    ok.result = b"all good".to_vec();
+    g.post_tool_use(&ok);
+    let mut blocked = ev("Bash", "");
+    blocked.result = b"HTTP 403 Forbidden from WAF".to_vec();
+    g.post_tool_use(&blocked);
+    let mut errored = ev("Bash", "");
+    errored.is_error = true;
+    g.post_tool_use(&errored);
+    let other = ev("Write", "403");
+    g.post_tool_use(&other);
+
+    let a = g.attributions();
+    assert_eq!(a.get("ok"), Some(&1));
+    assert_eq!(a.get("blocked"), Some(&1));
+    assert_eq!(a.get("error"), Some(&1));
+    assert_eq!(a.len(), 3, "non-Bash tools are not attributed");
+}
