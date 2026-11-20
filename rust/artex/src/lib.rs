@@ -5,6 +5,7 @@
 //! agent, server). Pure/deterministic helpers are additionally proven by the
 //! oracle-parity crates under `rust/*-rs`; this crate is the runnable application.
 
+pub mod agent;
 pub mod config;
 pub mod db;
 pub mod egress;
