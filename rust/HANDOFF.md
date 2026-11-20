@@ -706,6 +706,8 @@ resume without re-deriving state.
 
 - **D-28 task asset/scope pure helpers (this commit):** new `src/db/task_helpers.rs` (slice of `db/task_assets.go` + `db/task_scope.go`), registered in db/mod.rs. `normalize_task_asset_ids` (dedup, positive ids, max 100, ERR_TASK_ASSET_INVALID), `normalize_task_asset_source` (lowercase source/default system, trim summary, 500-rune cap), `strip_host_port` (host:port / [ipv6]:port, bare IPv6 unchanged), `ip_to_host_cidr` (/32 or /128), `asset_key`/`company_key`, `CoverageGraphNode` + `coverage_node_label`/`host_port_of`. Unblocks AssetStore write path. Spec: `tests/db_task_helpers_test.rs` (4) — oracle captured live from Go. artex **464 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **E-15 pure traffic helpers slice (this commit):** new `src/traffic/pure_helpers.rs` (slice of `traffic/traffic.go`), registered in traffic/mod.rs. `clamp_blob_range` (blob range with length<=0 meaning rest), `host_only` (strip :port, bare IPv6 unchanged), `proxy_addr` (bare :port -> loopback URL), `validate_proxy_url` (http/https/socks5 + host only). Spec: `tests/traffic_pure_helpers_test.rs` (4) — ports of TestClampBlobRange (9 cases)/TestHostOnly/TestValidateProxyURL/TestProxyAddr. artex **468 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
