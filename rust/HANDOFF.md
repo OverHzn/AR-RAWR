@@ -794,6 +794,8 @@ resume without re-deriving state.
 
 - **G-3 guard post-tool attribution (this commit):** extended `src/guard.rs` with `post_tool_use` (Bash-only Observer/G5 classification: blocked via WAF/403/429 regex, error, ok) + `attributions()` counts. Spec: 1 test — three classes + non-Bash ignored. artex **552 tests** green, clippy clean, fmt clean, gate 30/30. Guard slice from subagent plan (G-1/G-2/G-3) complete; DB/LLM/DNS-backed integration tests remain deferred.
 
+- **A-5 agent hook slots (this commit):** new `src/agent/hooks.rs` — port of the concurrency-safe hook globals in `agent/assembly.go`/`prompt.go`. `HookSlot<T>` (Arc<RwLock<Option<Arc<T>>>>, clone shares slot, get clones out so callers never hold the lock) + `AgentHooks` (augment/resolve/prompt/wrapup). Spec: `tests/agent_hooks_test.rs` (1) — 4 readers × 200 rounds against a writer swapping 200×, plus canonical hook set clear/swap. artex **553 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
