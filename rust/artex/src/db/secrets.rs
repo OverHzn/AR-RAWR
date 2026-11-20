@@ -598,7 +598,7 @@ async fn backfill_secrets(client: &Client, secret_box: &SecretBox) -> crate::db:
     for c in secret_columns() {
         // Collect (id, old) for every non-NULL value, sealing plaintext ones.
         let select_sql = format!(
-            "SELECT {}, {}::text FROM {} WHERE {} IS NOT NULL{}",
+            "SELECT {}::text, {}::text FROM {} WHERE {} IS NOT NULL{}",
             c.id_col(),
             c.col,
             c.table,
@@ -608,35 +608,20 @@ async fn backfill_secrets(client: &Client, secret_box: &SecretBox) -> crate::db:
         let rows = client.query(&select_sql, &[]).await?;
 
         // id is BIGINT for table columns and TEXT (the key) for settings/tools.
-        // Read it as a string representation to keep one update path.
-        enum Id {
-            Int(i64),
-            Str(String),
-        }
-        impl Id {
-            fn dbg(&self) -> String {
-                match self {
-                    Id::Int(n) => n.to_string(),
-                    Id::Str(s) => s.clone(),
-                }
-            }
-        }
-        let mut ids: Vec<Id> = Vec::new();
+        // The SELECT casts it to text so one string path covers both (matching
+        // Go's `var id any` scan); the UPDATE compares `id::text=$2`.
+        let mut ids: Vec<String> = Vec::new();
         let mut olds: Vec<String> = Vec::new();
         let mut news: Vec<String> = Vec::new();
         for row in &rows {
-            let id = if c.id_col() == "id" {
-                Id::Int(row.get::<usize, i64>(0))
-            } else {
-                Id::Str(row.get::<usize, String>(0))
-            };
+            let id: String = row.get(0);
             let old: String = row.get(1);
             if is_sealed(&c, &old) {
                 continue;
             }
             let nv = secret_box
                 .seal(&c, &old)
-                .map_err(|e| Error::msg(format!("backfill {} id={}: {}", c.aad(), id.dbg(), e)))?;
+                .map_err(|e| Error::msg(format!("backfill {} id={}: {}", c.aad(), id, e)))?;
             if is_sealed(&c, &nv) {
                 // empty values stay as they are
                 ids.push(id);
@@ -651,17 +636,16 @@ async fn backfill_secrets(client: &Client, secret_box: &SecretBox) -> crate::db:
         let cast = if c.json { "::text::jsonb" } else { "" };
         for (i, id) in ids.iter().enumerate() {
             let update_sql = format!(
-                "UPDATE {} SET {}=$1{} WHERE {}=$2 AND {}::text=$3",
+                "UPDATE {} SET {}=$1{} WHERE {}::text=$2 AND {}::text=$3",
                 c.table,
                 c.col,
                 cast,
                 c.id_col(),
                 c.col
             );
-            let res = match id {
-                Id::Int(n) => client.execute(&update_sql, &[&news[i], n, &olds[i]]).await,
-                Id::Str(s) => client.execute(&update_sql, &[&news[i], s, &olds[i]]).await,
-            };
+            let res = client
+                .execute(&update_sql, &[&news[i], &id, &olds[i]])
+                .await;
             match res {
                 Ok(n) => {
                     if n > 0 {
@@ -669,12 +653,7 @@ async fn backfill_secrets(client: &Client, secret_box: &SecretBox) -> crate::db:
                     }
                 }
                 Err(e) => {
-                    return Err(Error::msg(format!(
-                        "backfill {} id={}: {}",
-                        c.aad(),
-                        id.dbg(),
-                        e
-                    )));
+                    return Err(Error::msg(format!("backfill {} id={}: {}", c.aad(), id, e)));
                 }
             }
         }

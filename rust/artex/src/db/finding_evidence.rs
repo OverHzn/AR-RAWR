@@ -375,3 +375,264 @@ pub fn open_snapshot_heads(s: &mut TrafficEvidenceSnapshot) -> Result<()> {
     s.resp_head = open_secret(&COL_EV_RESP_HEAD, &s.resp_head).map_err(Error::msg)?;
     Ok(())
 }
+
+/// `LockTaskEvidenceTx`: serialize writes with archive queueing (which locks the
+/// same task row). Once a task is archived (or soft-deleted), its snapshot must
+/// not acquire new evidence. `task_id == 0` is a no-op.
+pub async fn lock_task_evidence_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+) -> Result<()> {
+    if task_id == 0 {
+        return Ok(());
+    }
+    let row = tx
+        .query_opt(
+            "SELECT deleted_at FROM tasks WHERE id=$1 FOR UPDATE",
+            &[&task_id],
+        )
+        .await?;
+    let Some(row) = row else {
+        // Go: QueryRow.Scan returns sql.ErrNoRows when the task is gone. The
+        // original returns that raw error (not the archive-state sentinel).
+        return Err(Error::msg("no rows in result set"));
+    };
+    let deleted: Option<std::time::SystemTime> = row.get(0);
+    if deleted.is_some() {
+        return Err(Error::sentinel(
+            ERR_TASK_ARCHIVE_STATE,
+            ERR_TASK_ARCHIVE_STATE,
+        ));
+    }
+    let state = tx
+        .query_opt(
+            "SELECT state FROM task_archives WHERE task_id=$1",
+            &[&task_id],
+        )
+        .await?;
+    if let Some(row) = state {
+        let s: String = row.get(0);
+        if s != ARCHIVE_FAILED {
+            return Err(Error::sentinel(
+                ERR_TASK_ARCHIVE_STATE,
+                ERR_TASK_ARCHIVE_STATE,
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `LockFindingEvidenceTx`: look up the finding's task, lock it against archive
+/// queueing, then `FOR UPDATE` the finding row and (optionally) assert its
+/// evidence version is unchanged. `version == None` skips the optimistic check.
+pub async fn lock_finding_evidence_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    finding_id: i64,
+    version: Option<i64>,
+) -> Result<()> {
+    let task_row = tx
+        .query_opt("SELECT task_id FROM findings WHERE id=$1", &[&finding_id])
+        .await?;
+    let Some(task_row) = task_row else {
+        return Err(Error::sentinel(
+            ERR_FINDING_NOT_FOUND,
+            ERR_FINDING_NOT_FOUND,
+        ));
+    };
+    let task_id: Option<i64> = task_row.get(0);
+    lock_task_evidence_tx(tx, task_id.unwrap_or(0)).await?;
+
+    let cur = tx
+        .query_opt(
+            "SELECT evidence_version FROM findings WHERE id=$1 FOR UPDATE",
+            &[&finding_id],
+        )
+        .await?;
+    let Some(cur) = cur else {
+        return Err(Error::sentinel(
+            ERR_FINDING_NOT_FOUND,
+            ERR_FINDING_NOT_FOUND,
+        ));
+    };
+    let current: i64 = cur.get(0);
+    if let Some(v) = version {
+        if v != current {
+            return Err(Error::sentinel(
+                ERR_EVIDENCE_CONFLICT,
+                ERR_EVIDENCE_CONFLICT,
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `FindingTrafficTx`: read a finding's evidence version, report version, and
+/// ordered bindings (each with its decrypted snapshot) inside a tx.
+pub(crate) async fn finding_traffic_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    finding_id: i64,
+) -> Result<FindingTraffic> {
+    let mut out = FindingTraffic {
+        finding_id,
+        bindings: Vec::new(),
+        ..FindingTraffic::default()
+    };
+    let head = tx
+        .query_opt(
+            "SELECT evidence_version,report_evidence_version FROM findings WHERE id=$1",
+            &[&finding_id],
+        )
+        .await?;
+    let Some(head) = head else {
+        return Err(Error::sentinel(
+            ERR_FINDING_NOT_FOUND,
+            ERR_FINDING_NOT_FOUND,
+        ));
+    };
+    out.version = head.get(0);
+    out.report_version = head.get(1);
+
+    let rows = tx
+        .query(
+            "SELECT b.id,b.finding_id,b.snapshot_id,b.role,b.note,b.position,b.created_at,\
+             s.source_traffic_id,s.captured_at,s.url,s.method,s.status,s.content_type,\
+             s.req_head,s.resp_head,s.req_hash,s.resp_hash,s.req_len,s.resp_len,s.created_at \
+             FROM finding_traffic_bindings b \
+             JOIN traffic_evidence_snapshots s ON s.id=b.snapshot_id \
+             WHERE b.finding_id=$1 ORDER BY b.position,b.id",
+            &[&finding_id],
+        )
+        .await?;
+    for r in &rows {
+        let mut snap = TrafficEvidenceSnapshot {
+            id: r.get::<_, String>(2),
+            source_traffic_id: r.get(7),
+            captured_at: r.get(8),
+            url: r.get(9),
+            method: r.get(10),
+            status: r.get(11),
+            content_type: r.get(12),
+            req_head: r.get(13),
+            resp_head: r.get(14),
+            req_hash: r.get(15),
+            resp_hash: r.get(16),
+            req_len: r.get(17),
+            resp_len: r.get(18),
+            created_at: r.get(19),
+        };
+        open_snapshot_heads(&mut snap)?;
+        out.bindings.push(FindingTrafficBinding {
+            id: r.get(0),
+            finding_id: r.get(1),
+            snapshot_id: r.get(2),
+            role: r.get(3),
+            note: r.get(4),
+            position: r.get(5),
+            created_at: r.get(6),
+            snapshot: snap,
+        });
+    }
+    Ok(out)
+}
+
+impl DB {
+    /// `GetFindingTraffic`: read a finding's traffic evidence (versions + ordered
+    /// decrypted bindings) under the evidence advisory lock.
+    pub async fn get_finding_traffic(&self, finding_id: i64) -> Result<FindingTraffic> {
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let out = finding_traffic_tx(&tx, finding_id).await;
+        tx.commit().await?;
+        out
+    }
+
+    /// `EditFindingTraffic`: edit one finding's evidence bindings under the evidence
+    /// lock. `order` (when present) reorders every binding (must be a permutation
+    /// of the current binding ids); otherwise a single binding is removed
+    /// (`remove`) or has its role/note patched (`COALESCE` keeps NULL = unchanged).
+    /// `version` is the optimistic-concurrency guard.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn edit_finding_traffic(
+        &self,
+        finding_id: i64,
+        binding_id: i64,
+        version: i64,
+        role: Option<&str>,
+        note: Option<&str>,
+        remove: bool,
+        order: Option<&[i64]>,
+    ) -> Result<()> {
+        if let Some(r) = role {
+            if !valid_traffic_role(r) {
+                return Err(Error::msg("invalid traffic role"));
+            }
+        }
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+        tx.execute(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&FINDING_EVIDENCE_LOCK_KEY],
+        )
+        .await?;
+        let result = async {
+            lock_finding_evidence_tx(&tx, finding_id, Some(version)).await?;
+            if let Some(order) = order {
+                let current = finding_traffic_tx(&tx, finding_id).await?;
+                if order.len() != current.bindings.len() {
+                    return Err(Error::sentinel(ERR_EVIDENCE_CONFLICT, ERR_EVIDENCE_CONFLICT));
+                }
+                let mut ids: std::collections::HashSet<i64> =
+                    current.bindings.iter().map(|b| b.id).collect();
+                for (position, &id) in order.iter().enumerate() {
+                    if !ids.remove(&id) {
+                        return Err(Error::sentinel(
+                            ERR_EVIDENCE_CONFLICT,
+                            ERR_EVIDENCE_CONFLICT,
+                        ));
+                    }
+                    let position = position as i32;
+                    tx.execute(
+                        "UPDATE finding_traffic_bindings SET position=$1 WHERE finding_id=$2 AND id=$3",
+                        &[&position, &finding_id, &id],
+                    )
+                    .await?;
+                }
+            } else {
+                let n = if remove {
+                    tx.execute(
+                        "DELETE FROM finding_traffic_bindings WHERE finding_id=$1 AND id=$2",
+                        &[&finding_id, &binding_id],
+                    )
+                    .await?
+                } else {
+                    tx.execute(
+                        "UPDATE finding_traffic_bindings SET role=COALESCE($3,role),note=COALESCE($4,note) \
+                         WHERE finding_id=$1 AND id=$2",
+                        &[&finding_id, &binding_id, &role, &note],
+                    )
+                    .await?
+                };
+                if n == 0 {
+                    return Err(Error::sentinel(ERR_EVIDENCE_NOT_FOUND, ERR_EVIDENCE_NOT_FOUND));
+                }
+            }
+            self.bump_evidence_version_tx(&tx, finding_id).await
+        }
+        .await;
+        match result {
+            Ok(()) => {
+                tx.commit().await?;
+                Ok(())
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+}
