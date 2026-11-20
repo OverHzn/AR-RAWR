@@ -761,6 +761,238 @@ fn add_usage(
     e.cache_write += usage.cache_write;
 }
 
+// ---------------------------------------------------------------------------
+// Node + edge reads (port of the `*ExplorationStore` listing methods in
+// `db/exploration.go`) — read-only graph queries for viz / pagination / lineage.
+// ---------------------------------------------------------------------------
+
+/// `Edge`: one row from `exploration_edges`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Edge {
+    pub from: i64,
+    pub rel: String,
+    pub to: i64,
+}
+
+/// `NodeFilter`: narrows a [`nodes_page`](ExplorationStore::nodes_page) query.
+/// Empty fields include every value.
+#[derive(Debug, Clone, Default)]
+pub struct NodeFilter {
+    /// `exploration_nodes.kind` whitelist.
+    pub kinds: Vec<String>,
+    /// `exploration_nodes.state` whitelist.
+    pub states: Vec<String>,
+    /// Case-insensitive substring over `payload::text` / `origin`. A bare number
+    /// (or the `#`-prefixed form the UI shows) is also matched as an exact id.
+    pub query: String,
+    /// `true` = oldest first (replay); default newest first (broadcast).
+    pub asc: bool,
+}
+
+/// `scanNodes`: scan a batch of rows on [`NODE_COLS`].
+fn scan_nodes(rows: &[tokio_postgres::Row]) -> Vec<Node> {
+    rows.iter().map(scan_node).collect()
+}
+
+fn scan_edges(rows: &[tokio_postgres::Row]) -> Vec<Edge> {
+    rows.iter()
+        .map(|r| Edge {
+            from: r.get(0),
+            rel: r.get(1),
+            to: r.get(2),
+        })
+        .collect()
+}
+
+impl ExplorationStore {
+    /// `Nodes`: list all nodes in id order (graph viz), capped at `limit`
+    /// (default 2000).
+    pub async fn nodes(&self, limit: i32) -> Result<Vec<Node>> {
+        let limit = (if limit <= 0 { 2000 } else { limit }) as i64;
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes WHERE exploration_id=$1 ORDER BY id LIMIT $2"
+        );
+        let rows = self.db.query(&sql, &[&self.exp_id, &limit]).await?;
+        Ok(scan_nodes(&rows))
+    }
+
+    /// `ListByKind`: nodes of a kind, newest first, capped at `limit` (default 500).
+    pub async fn list_by_kind(&self, kind: &str, limit: i32) -> Result<Vec<Node>> {
+        let limit = (if limit <= 0 { 500 } else { limit }) as i64;
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id=$1 AND kind=$2 ORDER BY id DESC LIMIT $3"
+        );
+        let rows = self.db.query(&sql, &[&self.exp_id, &kind, &limit]).await?;
+        Ok(scan_nodes(&rows))
+    }
+
+    /// `ListByKindPage`: one newest-first page of a kind for reverse pagination —
+    /// up to `limit` nodes with id < `before` (`before`<=0 = newest page). The bool
+    /// reports whether still-older nodes exist, so a client can page past the old
+    /// fixed cap instead of losing older intents.
+    pub async fn list_by_kind_page(
+        &self,
+        kind: &str,
+        before: i64,
+        limit: i32,
+    ) -> Result<(Vec<Node>, bool)> {
+        let limit = if limit <= 0 { 300 } else { limit };
+        let limit1 = limit as i64 + 1; // fetch one extra to probe hasMore
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id=$1 AND kind=$2 AND ($3 <= 0::bigint OR id < $3) \
+         ORDER BY id DESC LIMIT $4"
+        );
+        let rows = self
+            .db
+            .query(&sql, &[&self.exp_id, &kind, &before, &limit1])
+            .await?;
+        let mut nodes = scan_nodes(&rows);
+        let has_more = nodes.len() > limit as usize;
+        if has_more {
+            nodes.truncate(limit as usize);
+        }
+        Ok((nodes, has_more))
+    }
+
+    /// `NodesPage`: one 1-based page of nodes (plus the total matching count) under
+    /// an optional [`NodeFilter`]. `page`<1 -> 1; `size`<=0 -> 20, capped at 200.
+    /// Pages in SQL (the broadcast board reads the graph as a time series) rather
+    /// than pulling the whole graph like [`nodes`](Self::nodes) does.
+    pub async fn nodes_page(
+        &self,
+        f: NodeFilter,
+        page: i32,
+        size: i32,
+    ) -> Result<(Vec<Node>, i64)> {
+        let page = if page < 1 { 1 } else { page } as i64;
+        let mut size = size as i64;
+        if size <= 0 {
+            size = 20;
+        }
+        if size > 200 {
+            size = 200;
+        }
+        let offset = (page - 1) * size;
+
+        let q = f.query.trim().to_string();
+        let like_pat = format!("%{q}%");
+        // A bare number (or the UI's "#41" form) is also an exact id match.
+        let id_val: Option<i64> = q.strip_prefix('#').unwrap_or(q.as_str()).parse().ok();
+        let id_inner: i64 = id_val.unwrap_or(0);
+
+        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = vec![&self.exp_id];
+        let mut conds: Vec<String> = vec!["exploration_id=$1".to_string()];
+        if !f.kinds.is_empty() {
+            params.push(&f.kinds);
+            conds.push(format!("kind = ANY(${}::text[])", params.len()));
+        }
+        if !f.states.is_empty() {
+            params.push(&f.states);
+            conds.push(format!("state = ANY(${}::text[])", params.len()));
+        }
+        if !q.is_empty() {
+            params.push(&like_pat);
+            let n = params.len();
+            let mut ors = vec![
+                format!("payload::text ILIKE ${n}"),
+                format!("COALESCE(origin,'') ILIKE ${n}"),
+            ];
+            if id_val.is_some() {
+                params.push(&id_inner);
+                ors.push(format!("id = ${}", params.len()));
+            }
+            conds.push(format!("({})", ors.join(" OR ")));
+        }
+        let where_clause = conds.join(" AND ");
+
+        let total: i64 = self
+            .db
+            .query_one(
+                &format!("SELECT COUNT(*) FROM exploration_nodes WHERE {where_clause}"),
+                &params,
+            )
+            .await?
+            .get(0);
+
+        params.push(&size);
+        params.push(&offset);
+        let limit_idx = params.len() - 1;
+        let offset_idx = params.len();
+        let order = if f.asc { "ASC" } else { "DESC" };
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes WHERE {where_clause} \
+         ORDER BY id {order} LIMIT ${limit_idx} OFFSET ${offset_idx}"
+        );
+        let rows = self.db.query(&sql, &params).await?;
+        Ok((scan_nodes(&rows), total))
+    }
+
+    /// `NodesByIDs`: load the given nodes of this exploration in id order (empty
+    /// input -> empty). Resolves the neighbours of a board page without pulling the
+    /// whole graph.
+    pub async fn nodes_by_ids(&self, ids: &[i64]) -> Result<Vec<Node>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id=$1 AND id = ANY($2::bigint[]) ORDER BY id"
+        );
+        let rows = self.db.query(&sql, &[&self.exp_id, &ids]).await?;
+        Ok(scan_nodes(&rows))
+    }
+
+    /// `Edges`: list exploration edges (graph viz), capped at `limit` (default
+    /// 5000).
+    pub async fn edges(&self, limit: i32) -> Result<Vec<Edge>> {
+        let limit = (if limit <= 0 { 5000 } else { limit }) as i64;
+        let rows = self
+            .db
+            .query(
+                "SELECT src_id, rel, dst_id FROM exploration_edges \
+             WHERE exploration_id=$1 LIMIT $2",
+                &[&self.exp_id, &limit],
+            )
+            .await?;
+        Ok(scan_edges(&rows))
+    }
+
+    /// `EdgesTouching`: every edge with one end among `ids` (empty input -> empty).
+    pub async fn edges_touching(&self, ids: &[i64]) -> Result<Vec<Edge>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let rows = self
+            .db
+            .query(
+                "SELECT src_id, rel, dst_id FROM exploration_edges \
+             WHERE exploration_id=$1 AND \
+                   (src_id = ANY($2::bigint[]) OR dst_id = ANY($2::bigint[]))",
+                &[&self.exp_id, &ids],
+            )
+            .await?;
+        Ok(scan_edges(&rows))
+    }
+
+    /// `FactsYielded`: ids of fact nodes an intent produced (intent --yields-->
+    /// fact), oldest first. Best-effort (empty for an intent with no facts).
+    pub async fn facts_yielded(&self, intent_id: i64) -> Result<Vec<i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT n.id FROM exploration_edges e \
+             JOIN exploration_nodes n ON n.id=e.dst_id AND n.exploration_id=e.exploration_id \
+             WHERE e.exploration_id=$1 AND e.src_id=$2 AND e.rel=$3 AND n.kind=$4 \
+             ORDER BY n.id",
+                &[&self.exp_id, &intent_id, &REL_YIELDS, &KIND_FACT],
+            )
+            .await?;
+        Ok(rows.iter().map(|r| r.get::<_, i64>(0)).collect())
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(

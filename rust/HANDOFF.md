@@ -481,6 +481,24 @@ resume without re-deriving state.
   -> not-found. artex **245 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha:
   activity token cols are INTEGER/int4 → bind token rollup values `as i32`, else
   tokio-postgres "error serializing parameter" on the i64→int4 mismatch.)
+- **D-1v exploration node + edge reads (this commit):** `src/db/exploration.rs` extended
+  — `ExplorationStore::{nodes(limit, def 2000), list_by_kind(kind,limit, def 500,
+  id DESC), list_by_kind_page(kind,before,limit, def 300 -> (Vec<Node>, hasMore); fetches
+  limit+1 to probe), nodes_page(NodeFilter,page,size -> (Vec<Node>, total); 1-based,
+  size def 20 cap 200, dynamic WHERE via ANY($n::text[]) for kinds/states + payload::text
+  /origin ILIKE + bare-number/#id exact-id jump, ORDER BY id ASC/DESC LIMIT/OFFSET),
+  nodes_by_ids(ids -> id-ordered, empty->empty), edges(limit, def 5000), edges_touching(ids
+  -> src OR dst match, empty->empty), facts_yielded(intent -> intent-yield-fact ids)}` +
+  `pub struct Edge {from,rel,to}` + `pub struct NodeFilter {kinds,states,query,asc}` +
+  private `scan_nodes`/`scan_edges`. NodesPage builds params as `Vec<&(dyn ToSql+Sync)>`
+  (owned locals pushed by ref; the exact-id value hoisted to an outer `id_inner` so it
+  outlives the query). Spec: `tests/db_exploration_reads_test.rs` (1) — nodes+limit,
+  list_by_kind newest-first, list_by_kind_page hasMore across 2 pages, nodes_page kind/
+  keyword(case-insensitive)/`#id` jump/state filters + asc order + size-clamp total,
+  nodes_by_ids id-order + empty, facts_yielded, edges/touching counts. artex **246 tests**
+  green, clippy clean, fmt clean, gate 30/30. (Gotcha: LIMIT/OFFSET params must bind i64 —
+  Postgres types them int8, i32 fails; and `$3 <= 0 OR id < $3` makes Postgres infer int4
+  for the unknown param from the `0` literal — write `0::bigint` so it stays int8.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
