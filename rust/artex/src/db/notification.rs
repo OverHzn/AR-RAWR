@@ -74,7 +74,7 @@ impl DB {
 
 /// `snapshot_json`: the on-the-wire form of a `notify.Snapshot`, matching the Go
 /// struct's json tags (`from_status` / `to_status` are omitempty).
-fn snapshot_json(s: &Snapshot) -> serde_json::Value {
+pub(crate) fn snapshot_json(s: &Snapshot) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     map.insert("kind".into(), serde_json::json!(s.kind));
     map.insert("finding_id".into(), serde_json::json!(s.finding_id));
