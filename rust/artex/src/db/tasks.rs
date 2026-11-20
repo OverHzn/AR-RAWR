@@ -316,3 +316,142 @@ impl DB {
         Ok(row.get::<_, Option<SystemTime>>(0))
     }
 }
+
+/// `taskCols`: the `SELECT` column list backing `scanTask` (and every full-row
+/// read: `GetTask` / `ListTasks` / `UpdateTask`). COALESCE guards keep the
+/// nullable columns at their Go zero values.
+const TASK_COLS: &str = "id, COALESCE(name,''), category_id, \
+COALESCE((SELECT category.name FROM task_categories category WHERE category.id=tasks.category_id),''), \
+description, goal, exploration_id, status, paused, queued, queued_at, \
+COALESCE(queue_mode,''), llm_profile_id, active_llm_profile_id, \
+COALESCE(parent_ref,''), pinned_at, created_at, completed_at, \
+COALESCE(timeout_seconds,0), COALESCE(plan_heartbeat_seconds,300), \
+COALESCE(plan_quiet_mode,true), COALESCE(coverage_enabled,true), \
+COALESCE(llm_rotate,false), first_run_at, deadline_at, target_gate";
+
+/// `scanTask`: build a `Task` from a `TASK_COLS`-shaped row. `pinned` is derived
+/// from `pinned_at != NULL` (there is no separate `pinned` column).
+fn scan_task(row: &tokio_postgres::Row) -> Task {
+    let pinned_at: Option<SystemTime> = row.get(15);
+    Task {
+        id: row.get(0),
+        name: row.get(1),
+        category_id: row.get(2),
+        category_name: row.get(3),
+        pinned: pinned_at.is_some(),
+        pinned_at,
+        description: row.get(4),
+        goal: row.get(5),
+        exploration_id: row.get(6),
+        status: row.get(7),
+        paused: row.get(8),
+        queued: row.get(9),
+        queued_at: row.get(10),
+        queue_mode: row.get(11),
+        llm_profile_id: row.get(12),
+        active_llm_profile_id: row.get(13),
+        llm_profile_ids: Vec::new(),
+        ready_llm_profile_ids: Vec::new(),
+        llm_chain_revision: 0,
+        llm_failover_state: String::new(),
+        llm_failover_reason: String::new(),
+        llm_rotate: row.get(22),
+        source_task_ids: Vec::new(),
+        company_ids: Vec::new(),
+        parent_ref: row.get(14),
+        created_at: row.get(16),
+        completed_at: row.get(17),
+        timeout_seconds: row.get(18),
+        first_run_at: row.get(23),
+        deadline_at: row.get(24),
+        plan_heartbeat_seconds: row.get(19),
+        plan_quiet_mode: row.get(20),
+        target_gate: row.get(25),
+        coverage_enabled: row.get(21),
+    }
+}
+
+/// `TaskPatch` updates task-list metadata without changing execution state. Each
+/// `Option` is a tri-state: `None` = leave unchanged.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TaskPatch {
+    pub name: Option<String>,
+    pub pinned: Option<bool>,
+    /// planner quiet-mode (#86).
+    pub plan_quiet_mode: Option<bool>,
+    /// target-gate opt-in.
+    pub target_gate: Option<bool>,
+}
+
+impl DB {
+    /// `GetTask`: one alive task (None if not found / soft-deleted), hydrated with
+    /// its LLM chain, source ids, and company scopes.
+    pub async fn get_task(&self, id: i64) -> Result<Option<Task>> {
+        let row = self
+            .query_opt(
+                &format!("SELECT {TASK_COLS} FROM tasks WHERE id=$1 AND deleted_at IS NULL"),
+                &[&id],
+            )
+            .await?;
+        let Some(row) = row else {
+            return Ok(None);
+        };
+        let mut t = scan_task(&row);
+        self.hydrate_task_context(&mut t).await?;
+        Ok(Some(t))
+    }
+
+    /// `ListTasks`: alive tasks, pinned first (by pinned_at desc), then newest id.
+    /// Bulk-hydrated with three queries rather than 3N+1.
+    pub async fn list_tasks(&self) -> Result<Vec<Task>> {
+        let rows = self
+            .query(
+                &format!(
+                    "SELECT {TASK_COLS} FROM tasks WHERE deleted_at IS NULL \
+                     ORDER BY (pinned_at IS NOT NULL) DESC, pinned_at DESC NULLS LAST, id DESC"
+                ),
+                &[],
+            )
+            .await?;
+        let mut out: Vec<Task> = rows.iter().map(scan_task).collect();
+        self.hydrate_tasks_context(&mut out).await?;
+        Ok(out)
+    }
+
+    /// `UpdateTask`: patch task-list metadata (name / pinned / quiet-mode /
+    /// target-gate). Returns None when the task is missing or soft-deleted. The
+    /// row is returned un-hydrated (the LLM chain is not re-read), matching Go.
+    pub async fn update_task(&self, id: i64, patch: TaskPatch) -> Result<Option<Task>> {
+        let name_present = patch.name.is_some();
+        let quiet_present = patch.plan_quiet_mode.is_some();
+        let gate_present = patch.target_gate.is_some();
+        let row = self
+            .query_opt(
+                &format!(
+                    "UPDATE tasks SET \
+                     name = CASE WHEN $2::boolean THEN $3 ELSE name END, \
+                     pinned_at = CASE \
+                         WHEN $4::boolean IS NULL THEN pinned_at \
+                         WHEN $4::boolean THEN COALESCE(pinned_at, now()) \
+                         ELSE NULL \
+                     END, \
+                     plan_quiet_mode = CASE WHEN $5::boolean THEN $6 ELSE plan_quiet_mode END, \
+                     target_gate = CASE WHEN $7::boolean THEN $8 ELSE target_gate END \
+                     WHERE id=$1 AND deleted_at IS NULL \
+                     RETURNING {TASK_COLS}",
+                ),
+                &[
+                    &id,
+                    &name_present,
+                    &patch.name,
+                    &patch.pinned,
+                    &quiet_present,
+                    &patch.plan_quiet_mode,
+                    &gate_present,
+                    &patch.target_gate,
+                ],
+            )
+            .await?;
+        Ok(row.as_ref().map(scan_task))
+    }
+}
