@@ -378,8 +378,9 @@ impl DB {
     }
 
     /// `insertTaskLLMProfiles`: write the ordered chain rows inside a tx. Rejects
-    /// non-positive or duplicate ids (Go's per-position validation).
-    async fn insert_task_llm_profiles(
+    /// non-positive or duplicate ids (Go's per-position validation). Shared with
+    /// the task-create path (`CreateTaskWithOptions`).
+    pub(crate) async fn insert_task_llm_profiles(
         tx: &deadpool_postgres::Transaction<'_>,
         task_id: i64,
         profile_ids: &[i64],

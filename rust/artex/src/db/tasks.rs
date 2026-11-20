@@ -455,3 +455,307 @@ impl DB {
         Ok(row.as_ref().map(scan_task))
     }
 }
+
+/// `taskCompanyAssetSource`: the `task_asset_links.source` label for assets pulled
+/// in through a company scope at task creation.
+const TASK_COMPANY_ASSET_SOURCE: &str = "company";
+
+/// `insertTaskRelations`: validate and insert the direct source-task relations.
+/// Rejects non-positive / self / duplicate ids and missing (or soft-deleted) tasks.
+async fn insert_task_relations(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+    source_ids: &[i64],
+) -> Result<()> {
+    let mut seen: std::collections::HashSet<i64> = std::collections::HashSet::new();
+    for &source_id in source_ids {
+        if source_id <= 0 || source_id == task_id || !seen.insert(source_id) {
+            return Err(Error::msg(format!(
+                "invalid or duplicate source task id {source_id}"
+            )));
+        }
+        let n = tx
+            .execute(
+                "INSERT INTO task_relations(task_id, source_task_id) \
+                 SELECT $1, id FROM tasks WHERE id=$2 AND deleted_at IS NULL",
+                &[&task_id, &source_id],
+            )
+            .await?;
+        if n != 1 {
+            return Err(Error::msg(format!("source task {source_id} not found")));
+        }
+    }
+    Ok(())
+}
+
+/// `insertTaskCompanies`: attach company asset scopes under the shared scope-mutation
+/// lock (so the creation-time snapshot serialises with scope edits), snapshot the
+/// currently-attributed assets into the task, and record provenance links. Errors
+/// (`ErrTaskCompanyNotFound`) when any company is missing.
+async fn insert_task_companies(
+    tx: &deadpool_postgres::Transaction<'_>,
+    task_id: i64,
+    company_ids: &[i64],
+) -> Result<()> {
+    if company_ids.is_empty() {
+        return Ok(());
+    }
+    // Serialise with company-scope edits so the task sees one committed attribution.
+    tx.execute(
+        "SELECT pg_advisory_xact_lock($1)",
+        &[&crate::db::companies::COMPANY_SCOPE_MUTATION_LOCK],
+    )
+    .await?;
+
+    let inserted: i64 = tx
+        .query_one(
+            "WITH requested(company_id, position) AS (\
+                 SELECT company_id, position \
+                 FROM unnest($2::bigint[]) WITH ORDINALITY AS requested(company_id, position)\
+             ), inserted AS (\
+                 INSERT INTO task_scope(task_id, kind, company_id, source, reason) \
+                 SELECT $1, 'company', companies.id, 'manual', \
+                        'associated with company at task creation' \
+                 FROM requested \
+                 JOIN companies ON companies.id=requested.company_id \
+                 ORDER BY requested.position \
+                 RETURNING company_id\
+             ) \
+             SELECT count(*) FROM inserted",
+            &[&task_id, &company_ids],
+        )
+        .await?
+        .get::<_, i64>(0);
+    if inserted != company_ids.len() as i64 {
+        return Err(Error::sentinel(
+            ERR_TASK_COMPANY_NOT_FOUND,
+            format!("{ERR_TASK_COMPANY_NOT_FOUND}: one or more companies do not exist"),
+        ));
+    }
+
+    // `task_ids` update fires sync_task_asset_links (creating generic source rows),
+    // so the provenance upsert must run afterwards to keep the company name/reason.
+    tx.execute(
+        "UPDATE assets \
+         SET task_ids=CASE \
+             WHEN $1=ANY(task_ids) THEN task_ids \
+             ELSE array_append(task_ids, $1) \
+         END \
+         WHERE company_id=ANY($2::bigint[])",
+        &[&task_id, &company_ids],
+    )
+    .await?;
+    tx.execute(
+        "INSERT INTO task_asset_links(task_id, asset_id, source, source_summary) \
+         SELECT $1, asset.id, $3, \
+                'associated with company at task creation: ' || company.name \
+         FROM assets asset \
+         JOIN companies company ON company.id=asset.company_id \
+         WHERE asset.company_id=ANY($2::bigint[]) \
+           AND $1=ANY(asset.task_ids) \
+         ON CONFLICT (task_id, asset_id) DO UPDATE \
+         SET source=EXCLUDED.source, \
+             source_summary=EXCLUDED.source_summary, \
+             source_node_id=NULL",
+        &[&task_id, &company_ids, &TASK_COMPANY_ASSET_SOURCE],
+    )
+    .await?;
+    Ok(())
+}
+
+/// `TaskCreateOptions`: the task data committed atomically with the task/exploration
+/// row. `None` switch fields keep their defaults (quiet-mode / coverage on).
+#[derive(Debug, Clone, Default)]
+pub struct TaskCreateOptions {
+    /// optional task name; empty=unnamed.
+    pub name: String,
+    pub category_id: Option<i64>,
+    pub source_task_ids: Vec<i64>,
+    pub company_ids: Vec<i64>,
+    pub llm_profile_ids: Vec<i64>,
+    pub timeout_seconds: i32,
+    pub plan_heartbeat_seconds: i32,
+    /// per-task quiet-mode switch; `None` = default on (#86).
+    pub plan_quiet_mode: Option<bool>,
+    /// "asset coverage" switch; `None` = default on (true).
+    pub coverage_enabled: Option<bool>,
+    /// task-level asset interception rules, written in the same tx.
+    pub intercept_rules: Vec<crate::db::task_templates::TaskInterceptRuleInput>,
+    /// per-intent chain-head rotation (#85); `None` = off.
+    pub llm_rotate: Option<bool>,
+    /// approval-gate opt-in; `None` = off.
+    pub target_gate: Option<bool>,
+}
+
+impl DB {
+    /// `CreateTask`: create an exploration + task in one tx. `llm_profile_id`, when
+    /// present, becomes the single-entry chain. `timeout_seconds` is the wall-clock
+    /// budget (0 = no limit); the deadline is stamped later at first real run.
+    pub async fn create_task(
+        &self,
+        description: &str,
+        goal: &str,
+        llm_profile_id: Option<i64>,
+        timeout_seconds: i32,
+        plan_heartbeat_seconds: i32,
+    ) -> Result<Task> {
+        let mut llm_profile_ids = Vec::new();
+        if let Some(id) = llm_profile_id {
+            llm_profile_ids.push(id);
+        }
+        self.create_task_with_options(
+            description,
+            goal,
+            TaskCreateOptions {
+                llm_profile_ids,
+                timeout_seconds,
+                plan_heartbeat_seconds,
+                ..TaskCreateOptions::default()
+            },
+        )
+        .await
+    }
+
+    /// `CreateTaskWithOptions`: create an exploration (with an origin fact node),
+    /// the task row, direct source relations, the ordered LLM chain, and task-level
+    /// intercept rules in one transaction.
+    pub async fn create_task_with_options(
+        &self,
+        description: &str,
+        goal: &str,
+        mut opts: TaskCreateOptions,
+    ) -> Result<Task> {
+        if opts.source_task_ids.len() > MAX_TASK_SOURCE_COUNT {
+            return Err(Error::msg(format!(
+                "too many source tasks: got {}, maximum is {MAX_TASK_SOURCE_COUNT}",
+                opts.source_task_ids.len()
+            )));
+        }
+        opts.company_ids = normalize_task_company_ids(&opts.company_ids)?;
+
+        let mut client = self.pool.get().await?;
+        let tx = client.transaction().await?;
+
+        let exp_id: i64 = tx
+            .query_one(
+                "INSERT INTO explorations(description, goal) VALUES ($1,$2) RETURNING id",
+                &[&description, &goal],
+            )
+            .await?
+            .get::<_, i64>(0);
+
+        // origin fact: the graph root (KindFact, state='origin') holding the original
+        // description + goal; goals/intents/findings descend from it.
+        let origin_payload = serde_json::json!({
+            "summary": format!("Task origin: {description}; Goal: {goal}"),
+            "description": description,
+            "goal": goal,
+        });
+        tx.execute(
+            "INSERT INTO exploration_nodes(exploration_id, kind, payload, priority, state, origin) \
+             VALUES ($1, 'fact', $2, 0, 'origin', 'system')",
+            &[&exp_id, &origin_payload],
+        )
+        .await?;
+
+        let timeout_seconds = if opts.timeout_seconds < 0 {
+            0
+        } else {
+            opts.timeout_seconds
+        };
+        let plan_heartbeat_seconds = normalize_heartbeat(opts.plan_heartbeat_seconds);
+        let coverage_enabled = opts.coverage_enabled.unwrap_or(true);
+
+        let mut category_name = String::new();
+        if let Some(cid) = opts.category_id {
+            if cid <= 0 {
+                return Err(Error::sentinel(
+                    crate::db::task_categories::ERR_TASK_CATEGORY_INVALID,
+                    format!(
+                        "{}: category id must be positive",
+                        crate::db::task_categories::ERR_TASK_CATEGORY_INVALID
+                    ),
+                ));
+            }
+            let row = tx
+                .query_opt("SELECT name FROM task_categories WHERE id=$1", &[&cid])
+                .await?;
+            let Some(row) = row else {
+                return Err(Error::sentinel(
+                    crate::db::task_categories::ERR_TASK_CATEGORY_NOT_FOUND,
+                    crate::db::task_categories::ERR_TASK_CATEGORY_NOT_FOUND,
+                ));
+            };
+            category_name = row.get::<_, String>(0);
+        }
+
+        let active: Option<i64> = opts.llm_profile_ids.first().copied();
+        let quiet_mode = opts.plan_quiet_mode.unwrap_or(true);
+        let rotate = opts.llm_rotate.unwrap_or(false);
+        let target_gate = opts.target_gate.unwrap_or(false);
+
+        let mut t = Task {
+            name: opts.name.clone(),
+            category_id: opts.category_id,
+            category_name,
+            description: description.to_string(),
+            goal: goal.to_string(),
+            exploration_id: exp_id,
+            llm_profile_id: active,
+            active_llm_profile_id: active,
+            llm_profile_ids: opts.llm_profile_ids.clone(),
+            source_task_ids: opts.source_task_ids.clone(),
+            company_ids: opts.company_ids.clone(),
+            timeout_seconds,
+            plan_heartbeat_seconds,
+            plan_quiet_mode: quiet_mode,
+            coverage_enabled,
+            llm_rotate: rotate,
+            target_gate,
+            ..Task::default()
+        };
+
+        let row = tx
+            .query_one(
+                "INSERT INTO tasks(name, category_id, description, goal, exploration_id, \
+                 llm_profile_id, active_llm_profile_id, timeout_seconds, \
+                 plan_heartbeat_seconds, plan_quiet_mode, coverage_enabled, llm_rotate, \
+                 target_gate) \
+                 VALUES ($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10,$11,$12) \
+                 RETURNING id, status, paused, created_at",
+                &[
+                    &opts.name,
+                    &opts.category_id,
+                    &description,
+                    &goal,
+                    &exp_id,
+                    &active,
+                    &timeout_seconds,
+                    &plan_heartbeat_seconds,
+                    &quiet_mode,
+                    &coverage_enabled,
+                    &rotate,
+                    &target_gate,
+                ],
+            )
+            .await?;
+        t.id = row.get::<_, i64>(0);
+        t.status = row.get(1);
+        t.paused = row.get(2);
+        t.created_at = row.get(3);
+
+        insert_task_relations(&tx, t.id, &opts.source_task_ids).await?;
+        insert_task_companies(&tx, t.id, &opts.company_ids).await?;
+        DB::insert_task_llm_profiles(&tx, t.id, &opts.llm_profile_ids).await?;
+        crate::db::task_intercept::insert_task_intercept_rules(&tx, t.id, &opts.intercept_rules)
+            .await?;
+
+        t.llm_failover_state = if opts.llm_profile_ids.is_empty() {
+            "default".to_string()
+        } else {
+            "ready".to_string()
+        };
+        tx.commit().await?;
+        Ok(t)
+    }
+}

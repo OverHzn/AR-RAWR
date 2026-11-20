@@ -29,8 +29,8 @@ pub const ERR_COMPANY_NOT_FOUND: &str = "company not found";
 
 /// `companyScopeMutationLock`: the advisory-lock key that serialises scope writes
 /// (and every derived-attribution recompute) so the committed ownership always
-/// reflects the latest committed rules.
-const COMPANY_SCOPE_MUTATION_LOCK: i64 = 7_337_741_003;
+/// reflects the latest committed rules. Shared with task-create company inserts.
+pub(crate) const COMPANY_SCOPE_MUTATION_LOCK: i64 = 7_337_741_003;
 /// `malformedIPAssetsSampled`: how many offending ids one warning names.
 const MALFORMED_IP_ASSETS_SAMPLED: i64 = 5;
 
