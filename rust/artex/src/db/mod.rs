@@ -25,6 +25,7 @@ pub mod constants;
 pub mod coverage_ledger;
 pub mod error;
 pub mod exploration;
+pub mod findings;
 pub mod gotime;
 pub mod llm_usage;
 pub mod llmhealth;
