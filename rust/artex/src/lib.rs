@@ -7,6 +7,7 @@
 
 pub mod config;
 pub mod db;
+pub mod egress;
 pub mod harness;
 pub mod intercept;
 pub mod llm;
