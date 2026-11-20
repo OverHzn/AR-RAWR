@@ -740,6 +740,8 @@ resume without re-deriving state.
 
 - **A-1 typed bbot ingestion (this commit):** new `src/agent/mod.rs` + `src/agent/bbot.rs` — first slice of the agent layer, port of `agent/bbot_ingest.go` (#124 F10b). `parse_bbot_jsonl` (JSONL, typed keys only, unknown keys dropped), `bbot_typed` (regex-validated token/host, port range, URL only http/https with matching host and userinfo stripped), `bbot_quote` (free text kept as one inert quoted string, data wins over data_json), `BbotIngest::asset_items` (only scope_distance==0 events feed insert_assets; typed DNS_NAME/IP_ADDRESS/OPEN_TCP_PORT/URL). Spec: `tests/agent_bbot_ingest_test.rs` (2) — ports of TestParseBbotJSONLTypedOnly + TestParseBbotURLUserinfo. artex **501 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **A-2 agent provider pure helpers (this commit):** new `src/agent/provider.rs` (slice of `agent/provider.go`). `is_quota_exhausted_message` (explicit balance/billing/quota signals rotate providers; auth/5xx and transient rate limits never do), `validate_user_agent` (trim, 256-byte cap, reject all control chars), `is_falsy` (0/false/off/no), `normalize_ollama_base_url` (strip /chat/completions, default, append /v1). Spec: `tests/agent_provider_helpers_test.rs` (3) — full quota classification table + UA cases + config string helpers. artex **504 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
