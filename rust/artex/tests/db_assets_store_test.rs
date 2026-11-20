@@ -643,3 +643,78 @@ async fn upsert_other_service_dedup_auth_and_side_effect() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+async fn upsert_endpoint_dedup_params_and_required_fields() {
+    use artex::db::assets::UpsertEndpointReq;
+
+    let Some(dsn) = base_dsn() else {
+        eprintln!("skipping: ARTEX_PG_DSN unset");
+        return;
+    };
+    let _g = DB_LOCK.lock().await;
+    let Some(d) = open(&dsn).await else { return };
+    let s = d.assets();
+    let t = tag();
+    let url = format!("https://api.eptest-{t}.com/users?id=1");
+    let domain = format!("api.eptest-{t}.com");
+    let root_domain = format!("eptest-{t}.com");
+
+    let err = s
+        .upsert_endpoint(&UpsertEndpointReq {
+            method: "GET".into(),
+            ..Default::default()
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(err.to_string(), "url is required");
+    let err = s
+        .upsert_endpoint(&UpsertEndpointReq {
+            url: "https://example.com/".into(),
+            ..Default::default()
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(err.to_string(), "method is required");
+
+    let id1 = s
+        .upsert_endpoint(&UpsertEndpointReq {
+            url: url.clone(),
+            method: "get".into(),
+            params: vec![serde_json::json!({"location": "query", "name": "id", "value": "1"})],
+            task_id: 1,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert!(id1 > 0);
+    let id2 = s
+        .upsert_endpoint(&UpsertEndpointReq {
+            url: url.clone(),
+            method: "GET".into(),
+            params: vec![
+                serde_json::json!({"location": "query", "name": "filter", "value": "active"}),
+            ],
+            task_id: 2,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(id2, id1, "endpoint dedup failed");
+    let cnt: i64 = d
+        .query_one(
+            "SELECT cardinality(params)::bigint FROM assets WHERE id=$1",
+            &[&id1],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(cnt, 2, "params merge");
+
+    d.execute(
+        "DELETE FROM assets WHERE url=$1 OR domain=$2 OR domain=$3",
+        &[&url, &domain, &root_domain],
+    )
+    .await
+    .unwrap();
+}

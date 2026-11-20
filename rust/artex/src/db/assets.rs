@@ -94,6 +94,16 @@ pub struct UpsertSubdomainReq {
 }
 
 #[derive(Debug, Clone, Default)]
+pub struct UpsertEndpointReq {
+    pub url: String,
+    pub method: String,
+    pub params: Vec<Json>,
+    /// Optional IP, from async DNS.
+    pub ip: String,
+    pub task_id: i64,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct UpsertOtherServiceReq {
     pub domain: String,
     pub ip: String,
@@ -716,6 +726,119 @@ RETURNING id",
             let _ = self
                 .upsert_subdomain(&UpsertSubdomainReq {
                     domain,
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        Ok(id)
+    }
+
+    /// `UpsertEndpoint`: idempotent endpoint insert/merge keyed by (URL, method),
+    /// with params merged by (location, name) and host side effects.
+    pub async fn upsert_endpoint(&self, req: &UpsertEndpointReq) -> Result<i64> {
+        if req.url.is_empty() {
+            return Err(Error::msg("url is required"));
+        }
+        if req.method.is_empty() {
+            return Err(Error::msg("method is required"));
+        }
+        validate_asset_ip(&req.ip)?;
+        let method = req.method.to_uppercase();
+        let norm_url = crate::db::asset_helpers::normalize_url(&req.url);
+        let (domain, port, _) = crate::db::asset_helpers::parse_url(&norm_url);
+        let root_domain = {
+            let (r, _) = nkey_root(&domain);
+            if r.is_empty() {
+                domain.clone()
+            } else {
+                r
+            }
+        };
+        let cseg = calc_c_segment(&req.ip);
+        let company = self
+            .db
+            .companies()
+            .resolve_company_with_icp(&root_domain, &req.ip, "")
+            .await?;
+        let tasks = task_ids_array(req.task_id);
+        let params = marshal_jsonb_array(&req.params)?;
+        let domain_opt: Option<&str> = if domain.is_empty() {
+            None
+        } else {
+            Some(&domain)
+        };
+        let root_opt: Option<&str> = if root_domain.is_empty() {
+            None
+        } else {
+            Some(&root_domain)
+        };
+        let ip_opt: Option<&str> = if req.ip.is_empty() {
+            None
+        } else {
+            Some(&req.ip)
+        };
+        let cseg_opt: Option<&str> = if cseg.is_empty() { None } else { Some(&cseg) };
+        let port_opt = crate::db::asset_helpers::nullable_int(port);
+
+        let row = self.db.query_one(
+            "INSERT INTO assets(
+    type, url, method, domain, ip, port, root_domain,
+    params, company_id, company_source, task_ids, c_segment
+)
+VALUES ('endpoint', $1, $2, $3, $4, $5, $6, $7::text::jsonb[], $8, 'scope', $9::bigint[], $10::text::cidr)
+ON CONFLICT (url, method) WHERE type = 'endpoint' DO UPDATE SET
+    params     = (
+        SELECT ARRAY(
+            SELECT DISTINCT ON ((elem->>'location'), (elem->>'name')) elem
+            FROM unnest(assets.params || EXCLUDED.params) AS elem
+            ORDER BY (elem->>'location'), (elem->>'name'), elem::text DESC
+        )
+    ),
+    ip         = COALESCE(EXCLUDED.ip,        assets.ip),
+    c_segment  = COALESCE(EXCLUDED.c_segment, assets.c_segment),
+    task_ids   = (SELECT ARRAY(SELECT DISTINCT unnest(assets.task_ids || EXCLUDED.task_ids))),
+    company_id = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN assets.company_id
+        ELSE COALESCE(EXCLUDED.company_id, assets.company_id)
+    END,
+    company_source = CASE
+        WHEN assets.company_source = 'explicit' AND assets.company_id IS NOT NULL THEN 'explicit'
+        WHEN EXCLUDED.company_id IS NOT NULL THEN 'scope'
+        ELSE assets.company_source
+    END,
+    last_seen  = now()
+RETURNING id",
+            &[&norm_url, &method, &domain_opt, &ip_opt, &port_opt, &root_opt,
+              &params, &company, &tasks, &cseg_opt],
+        ).await?;
+        let id: i64 = row.get(0);
+
+        if !root_domain.is_empty() {
+            let _ = self
+                .upsert_root_domain(&UpsertRootDomainReq {
+                    domain: root_domain.clone(),
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        if !domain.is_empty()
+            && domain != root_domain
+            && domain.parse::<std::net::IpAddr>().is_err()
+        {
+            let _ = self
+                .upsert_subdomain(&UpsertSubdomainReq {
+                    domain: domain.clone(),
+                    task_id: req.task_id,
+                    ..Default::default()
+                })
+                .await;
+        }
+        if !req.ip.is_empty() {
+            let _ = self
+                .upsert_ip(&UpsertIPReq {
+                    ip: req.ip.clone(),
                     task_id: req.task_id,
                     ..Default::default()
                 })
