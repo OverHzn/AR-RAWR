@@ -782,6 +782,8 @@ resume without re-deriving state.
 
 - **E-23 replay pure validation (this commit):** new `src/traffic/replay.rs` — `ReplayRequest`/`ReplayHeader`, `validate_replay_request` (method/URL/userinfo/limits/header injection/Upgrade/Host checks, hop-by-hop + Connection-named header dropping, empty User-Agent insertion) and `replay_recorded` (passthrough-aware). HTTP dial deferred. Spec: `tests/traffic_replay_test.rs` (3) — ports of TestReplayRejectsInvalidRequests (13 cases) + hop-by-hop filtering + TestReplayRecordedHelper. artex **542 tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: url crate normalizes `http:///x` to `http://x/`; Go rejects empty authority — check before parsing.)
 
+- **E-24 intercept rule matching (this commit):** new `src/intercept/rule_match.rs` (pure slice of `intercept/intercept.go`) — `CompiledRule`, `compile_rule` (invalid regex/argv pattern never matches), `rule_matches` (tool_name/tool_input, string/regex/argv with denylist neutralization) + conservative simple-argv tokenizer. Full Bash `ArgvPrefix` still deferred. Spec: `tests/intercept_rule_match_test.rs` (1) — Go oracle, 9 cases. artex **543 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full

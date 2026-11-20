@@ -6,6 +6,7 @@ pub mod closed_judge;
 pub mod prompt;
 pub mod prompt_text;
 pub mod risk;
+pub mod rule_match;
 pub mod target;
 pub mod target_exempt;
 pub mod target_extract;
