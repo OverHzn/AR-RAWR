@@ -50,6 +50,7 @@ pub mod llmhealth;
 pub mod llmretry;
 pub mod logs;
 pub mod migrate;
+pub mod nkey;
 pub mod notification;
 pub mod notification_channels;
 pub mod notification_delivery;
