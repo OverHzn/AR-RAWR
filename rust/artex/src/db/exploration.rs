@@ -1957,6 +1957,46 @@ const ACTIVITY_COLS_FULL: &str = "id, node_id, COALESCE(worker,''), COALESCE(kin
     created_at, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, main_seg";
 
 impl ExplorationStore {
+    /// `appendActivity` (tx form): insert one activity row inside a caller's tx.
+    pub(crate) async fn append_activity_tx(
+        &self,
+        tx: &deadpool_postgres::Transaction<'_>,
+        a: &Activity,
+    ) -> Result<i64> {
+        let metadata = if a.metadata.is_null() {
+            serde_json::json!({})
+        } else {
+            a.metadata.clone()
+        };
+        let row = tx
+            .query_one(
+                "INSERT INTO activity(exploration_id, node_id, worker, kind, tool, tool_use_id, \
+                 is_error, summary, detail, metadata, input_tokens, output_tokens, \
+                 cache_read_tokens, cache_write_tokens, main_seg) \
+                 VALUES ($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),$7,\
+                 NULLIF($8,''),NULLIF($9,''),$10,$11,$12,$13,$14,$15) RETURNING id",
+                &[
+                    &self.exp_id,
+                    &a.node_id,
+                    &utf8_clean(&a.worker),
+                    &utf8_clean(&a.kind),
+                    &utf8_clean(&a.tool),
+                    &utf8_clean(&a.tool_use_id),
+                    &a.is_error,
+                    &utf8_clean(&a.summary),
+                    &utf8_clean(&a.detail),
+                    &metadata,
+                    &a.input_tokens,
+                    &a.output_tokens,
+                    &a.cache_read_tokens,
+                    &a.cache_write_tokens,
+                    &a.main_seg,
+                ],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
     /// `AppendActivity`: record one worker step and return its id. Empty text
     /// fields become NULL (`NULLIF(x,'')`); empty metadata becomes `{}`.
     pub async fn append_activity(&self, a: Activity) -> Result<i64> {
