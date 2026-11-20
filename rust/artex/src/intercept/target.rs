@@ -10,7 +10,7 @@ pub const TARGET_DOMAIN: &str = "domain";
 pub const TARGET_IP: &str = "ip";
 pub const TARGET_CIDR: &str = "cidr";
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Target {
     pub kind: String,
     pub host: String,

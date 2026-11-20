@@ -4,3 +4,4 @@ pub mod prompt_text;
 pub mod risk;
 pub mod target;
 pub mod target_exempt;
+pub mod target_extract;
