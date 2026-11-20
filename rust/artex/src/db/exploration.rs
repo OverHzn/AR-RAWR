@@ -1609,6 +1609,457 @@ impl DB {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Activity stream (port of the `*ExplorationStore` activity methods in
+// `db/exploration.go`). `Activity` is the worker-step record; the read methods
+// scan different column subsets into it, leaving the rest at defaults.
+// ---------------------------------------------------------------------------
+
+/// `Activity`: one worker step in the exploration's activity log. The read methods
+/// fill only the columns they select (list/page include metadata + main_seg; the
+/// terminal/inherited variants drop metadata and main_seg; traces keep summaries
+/// only; by-ids fill the lazy `detail` blob).
+#[derive(Debug, Clone)]
+pub struct Activity {
+    pub id: i64,
+    pub node_id: Option<i64>,
+    pub worker: String,
+    pub kind: String,
+    pub tool: String,
+    pub tool_use_id: String,
+    pub is_error: bool,
+    pub summary: String,
+    pub detail: String,
+    pub metadata: Value,
+    pub created_at: SystemTime,
+    // Token usage — set only on the terminal kind='result' record; None elsewhere.
+    pub input_tokens: Option<i32>,
+    pub output_tokens: Option<i32>,
+    pub cache_read_tokens: Option<i32>,
+    pub cache_write_tokens: Option<i32>,
+    pub source_task_id: i64,
+    pub inherited: bool,
+    // MainSeg is the main-agent conversation segment (None for non-mainagent rows).
+    pub main_seg: Option<i32>,
+}
+
+impl Default for Activity {
+    fn default() -> Self {
+        Activity {
+            id: 0,
+            node_id: None,
+            worker: String::new(),
+            kind: String::new(),
+            tool: String::new(),
+            tool_use_id: String::new(),
+            is_error: false,
+            summary: String::new(),
+            detail: String::new(),
+            metadata: Value::Null,
+            created_at: UNIX_EPOCH,
+            input_tokens: None,
+            output_tokens: None,
+            cache_read_tokens: None,
+            cache_write_tokens: None,
+            source_task_id: 0,
+            inherited: false,
+            main_seg: None,
+        }
+    }
+}
+
+impl Activity {
+    /// Constructor for an append with all builder-style fields defaulted.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        node_id: Option<i64>,
+        worker: &str,
+        kind: &str,
+        tool: &str,
+        tool_use_id: &str,
+        is_error: bool,
+        summary: &str,
+        detail: &str,
+        metadata: Value,
+        input_tokens: Option<i32>,
+        output_tokens: Option<i32>,
+        cache_read_tokens: Option<i32>,
+        cache_write_tokens: Option<i32>,
+        main_seg: Option<i32>,
+    ) -> Activity {
+        Activity {
+            id: 0,
+            node_id,
+            worker: worker.to_string(),
+            kind: kind.to_string(),
+            tool: tool.to_string(),
+            tool_use_id: tool_use_id.to_string(),
+            is_error,
+            summary: summary.to_string(),
+            detail: detail.to_string(),
+            metadata,
+            created_at: UNIX_EPOCH,
+            input_tokens,
+            output_tokens,
+            cache_read_tokens,
+            cache_write_tokens,
+            source_task_id: 0,
+            inherited: false,
+            main_seg,
+        }
+    }
+}
+
+/// `utf8Clean`: strip NUL bytes (Rust strings are already valid UTF-8, so Go's
+/// `ToValidUTF8` pass is a no-op here; PostgreSQL text still rejects a NUL).
+fn utf8_clean(s: &str) -> String {
+    s.replace('\0', "")
+}
+
+/// `scanActivity` (full list/page column set: 15 cols incl. metadata + main_seg).
+fn scan_activity_full(row: &tokio_postgres::Row) -> Activity {
+    Activity {
+        id: row.get(0),
+        node_id: row.get(1),
+        worker: row.get(2),
+        kind: row.get(3),
+        tool: row.get(4),
+        tool_use_id: row.get(5),
+        is_error: row.get(6),
+        summary: row.get(7),
+        metadata: row.get(8),
+        created_at: row.get(9),
+        input_tokens: row.get(10),
+        output_tokens: row.get(11),
+        cache_read_tokens: row.get(12),
+        cache_write_tokens: row.get(13),
+        main_seg: row.get(14),
+        ..Default::default()
+    }
+}
+
+/// `scanActivity` (terminal/inherited set: 13 cols, no metadata / main_seg).
+fn scan_activity_terminal(row: &tokio_postgres::Row) -> Activity {
+    Activity {
+        id: row.get(0),
+        node_id: row.get(1),
+        worker: row.get(2),
+        kind: row.get(3),
+        tool: row.get(4),
+        tool_use_id: row.get(5),
+        is_error: row.get(6),
+        summary: row.get(7),
+        created_at: row.get(8),
+        input_tokens: row.get(9),
+        output_tokens: row.get(10),
+        cache_read_tokens: row.get(11),
+        cache_write_tokens: row.get(12),
+        ..Default::default()
+    }
+}
+
+/// `scanActivity` (by-ids detail set: 6 cols incl. detail, no summary).
+fn scan_activity_detail(row: &tokio_postgres::Row) -> Activity {
+    Activity {
+        id: row.get(0),
+        node_id: row.get(1),
+        kind: row.get(2),
+        tool: row.get(3),
+        is_error: row.get(4),
+        detail: row.get(5),
+        ..Default::default()
+    }
+}
+
+const ACTIVITY_COLS_FULL: &str = "id, node_id, COALESCE(worker,''), COALESCE(kind,''), \
+    COALESCE(tool,''), COALESCE(tool_use_id,''), is_error, COALESCE(summary,''), metadata, \
+    created_at, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, main_seg";
+
+impl ExplorationStore {
+    /// `AppendActivity`: record one worker step and return its id. Empty text
+    /// fields become NULL (`NULLIF(x,'')`); empty metadata becomes `{}`.
+    pub async fn append_activity(&self, a: Activity) -> Result<i64> {
+        let metadata = if a.metadata.is_null() {
+            serde_json::json!({})
+        } else {
+            a.metadata
+        };
+        let row = self
+            .db
+            .query_one(
+                "INSERT INTO activity(exploration_id, node_id, worker, kind, tool, tool_use_id, \
+             is_error, summary, detail, metadata, input_tokens, output_tokens, \
+             cache_read_tokens, cache_write_tokens, main_seg) \
+             VALUES ($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),$7,\
+             NULLIF($8,''),NULLIF($9,''),$10,$11,$12,$13,$14,$15) RETURNING id",
+                &[
+                    &self.exp_id,
+                    &a.node_id,
+                    &utf8_clean(&a.worker),
+                    &utf8_clean(&a.kind),
+                    &utf8_clean(&a.tool),
+                    &utf8_clean(&a.tool_use_id),
+                    &a.is_error,
+                    &utf8_clean(&a.summary),
+                    &utf8_clean(&a.detail),
+                    &metadata,
+                    &a.input_tokens,
+                    &a.output_tokens,
+                    &a.cache_read_tokens,
+                    &a.cache_write_tokens,
+                    &a.main_seg,
+                ],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `ActivityList`: steps after `since_id` (exclusive), optionally filtered by
+    /// node. Returns the items and the new cursor (max id seen, >= since_id).
+    pub async fn activity_list(
+        &self,
+        node_id: Option<i64>,
+        since_id: i64,
+        limit: i32,
+    ) -> Result<(Vec<Activity>, i64)> {
+        let limit = (if limit <= 0 { 300 } else { limit }) as i64;
+        let sql = if node_id.is_some() {
+            format!(
+                "SELECT {ACTIVITY_COLS_FULL} FROM activity \
+             WHERE exploration_id=$1 AND node_id=$2 AND id>$3 ORDER BY id LIMIT $4"
+            )
+        } else {
+            format!(
+                "SELECT {ACTIVITY_COLS_FULL} FROM activity \
+             WHERE exploration_id=$1 AND id>$2 ORDER BY id LIMIT $3"
+            )
+        };
+        let rows = if let Some(nid) = node_id {
+            self.db
+                .query(&sql, &[&self.exp_id, &nid, &since_id, &limit])
+                .await?
+        } else {
+            self.db
+                .query(&sql, &[&self.exp_id, &since_id, &limit])
+                .await?
+        };
+        let mut out = Vec::with_capacity(rows.len());
+        let mut cursor = since_id;
+        for r in &rows {
+            let a = scan_activity_full(r);
+            if a.id > cursor {
+                cursor = a.id;
+            }
+            out.push(a);
+        }
+        Ok((out, cursor))
+    }
+
+    /// `ActivityListForTerminalIntent`: the inherited incremental-read boundary —
+    /// the intent state check and the read happen in one statement, so a source
+    /// intent reopened between API-level checks cannot expose its new in-flight
+    /// trace. Model reasoning (`thinking`) and accounting (`usage`) rows are never
+    /// inherited.
+    pub async fn activity_list_for_terminal_intent(
+        &self,
+        node_id: i64,
+        since_id: i64,
+        limit: i32,
+    ) -> Result<(Vec<Activity>, i64)> {
+        let limit = (if limit <= 0 { 300 } else { limit }) as i64;
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.worker,''), COALESCE(a.kind,''), \
+             COALESCE(a.tool,''), COALESCE(a.tool_use_id,''), a.is_error, COALESCE(a.summary,''), \
+             a.created_at, a.input_tokens, a.output_tokens, a.cache_read_tokens, a.cache_write_tokens \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND a.node_id=$2 AND a.id>$3 \
+             AND n.kind='intent' AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.kind NOT IN ('thinking','usage') \
+             ORDER BY a.id LIMIT $4",
+                &[&self.exp_id, &node_id, &since_id, &limit],
+            )
+            .await?;
+        let mut out = Vec::with_capacity(rows.len());
+        let mut cursor = since_id;
+        for r in &rows {
+            let a = scan_activity_terminal(r);
+            if a.id > cursor {
+                cursor = a.id;
+            }
+            out.push(a);
+        }
+        Ok((out, cursor))
+    }
+
+    /// `ActivityMaxID`: the task's current maximum activity id (0 when empty). The
+    /// task-level snapshot cursor handed to the SSE stream so history (id<=cursor)
+    /// and the live tail (id>cursor) meet with no gap.
+    pub async fn activity_max_id(&self) -> Result<i64> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT MAX(id) FROM activity WHERE exploration_id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get::<_, Option<i64>>(0).unwrap_or(0))
+    }
+
+    /// `ActivityDetail`: lazily return the full detail blob for one step ("" when
+    /// the row is missing or detail is NULL).
+    pub async fn activity_detail(&self, id: i64) -> Result<String> {
+        let row = self
+            .db
+            .query_opt(
+                "SELECT detail FROM activity WHERE id=$1 AND exploration_id=$2",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        Ok(row
+            .and_then(|r| r.get::<_, Option<String>>(0))
+            .unwrap_or_default())
+    }
+
+    /// `ActivityByIDs`: load full detail for specific step ids (the trace
+    /// drill-down), scoped to this exploration. `thinking` rows are skipped. Order
+    /// is ascending id, not input order. Empty input -> empty.
+    pub async fn activity_by_ids(&self, ids: &[i64]) -> Result<Vec<Activity>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let rows = self
+            .db
+            .query(
+                "SELECT id, node_id, COALESCE(kind,''), COALESCE(tool,''), is_error, \
+             COALESCE(detail,'') FROM activity \
+             WHERE exploration_id=$1 AND kind<>'thinking' AND id = ANY($2::bigint[]) ORDER BY id",
+                &[&self.exp_id, &ids],
+            )
+            .await?;
+        Ok(rows.iter().map(scan_activity_detail).collect())
+    }
+
+    /// `ActivityByIDsForTerminalIntents`: the inherited-detail read boundary —
+    /// excludes node-less planner/main rows, non-intent activities, live source
+    /// work, and thinking/usage. Local callers needing legacy behavior use
+    /// [`activity_by_ids`](Self::activity_by_ids).
+    pub async fn activity_by_ids_for_terminal_intents(&self, ids: &[i64]) -> Result<Vec<Activity>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.kind,''), COALESCE(a.tool,''), \
+             a.is_error, COALESCE(a.detail,'') \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND a.kind NOT IN ('thinking','usage') AND n.kind='intent' \
+             AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.id = ANY($2::bigint[]) ORDER BY a.id",
+                &[&self.exp_id, &ids],
+            )
+            .await?;
+        Ok(rows.iter().map(scan_activity_detail).collect())
+    }
+
+    /// `ActivityPage`: one page for reverse (newest-first) pagination of a session
+    /// — up to `limit` steps ending before id `before` (exclusive; before<=0 = the
+    /// latest page), returned in ASCENDING id order for direct display. The bool
+    /// reports whether still-older steps exist (so a client can stop on scroll-up).
+    /// `node_id` == Some filters to one work; None matches the whole task.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn activity_page(
+        &self,
+        node_id: Option<i64>,
+        main: bool,
+        main_seg: Option<i32>,
+        worker: &str,
+        before: i64,
+        limit: i32,
+    ) -> Result<(Vec<Activity>, bool)> {
+        let limit = (if limit <= 0 { 200 } else { limit }) as i64;
+        // Hoist owned bind values so they outlive the param slice.
+        let node_owned: i64 = node_id.unwrap_or(0);
+        let seg_owned: i32 = main_seg.unwrap_or(0);
+        // Build the session-filter condition (exactly one field is meaningful).
+        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = vec![&self.exp_id];
+        let mut cond = String::new();
+        if node_id.is_some() {
+            params.push(&node_owned);
+            cond = format!(" AND node_id=${}", params.len());
+        } else if main {
+            if seg_owned == 0 {
+                cond = " AND worker='mainagent' AND COALESCE(main_seg,0)=0".to_string();
+            } else {
+                params.push(&seg_owned);
+                cond = format!(" AND worker='mainagent' AND main_seg=${}", params.len());
+            }
+        } else if !worker.is_empty() {
+            params.push(&worker);
+            cond = format!(" AND worker=${}", params.len());
+        }
+        let before_arg = params.len() + 1;
+        params.push(&before);
+        let limit1 = limit + 1; // one extra row to detect older history
+        let limit_arg = params.len() + 1;
+        params.push(&limit1);
+        let sql = format!(
+            "SELECT {ACTIVITY_COLS_FULL} FROM activity WHERE exploration_id=$1{cond} \
+         AND (${before_arg} <= 0::bigint OR id < ${before_arg}) \
+         ORDER BY id DESC LIMIT ${limit_arg}"
+        );
+        let rows = self.db.query(&sql, &params).await?;
+        let mut desc: Vec<Activity> = rows.iter().map(scan_activity_full).collect();
+        let has_more = desc.len() > limit as usize;
+        if has_more {
+            desc.truncate(limit as usize);
+        }
+        // Reverse the newest-first window into ascending id order for display.
+        desc.reverse();
+        Ok((desc, has_more))
+    }
+
+    /// `ActivityPageForTerminalIntent`: the inherited session-history boundary —
+    /// ownership, terminal-state and row-kind checks in one query, closing the race
+    /// where a completed source intent is reopened before paging.
+    pub async fn activity_page_for_terminal_intent(
+        &self,
+        node_id: i64,
+        before: i64,
+        limit: i32,
+    ) -> Result<(Vec<Activity>, bool)> {
+        let limit = (if limit <= 0 { 200 } else { limit }) as i64;
+        let limit1 = limit + 1;
+        let rows = self
+            .db
+            .query(
+                "SELECT a.id, a.node_id, COALESCE(a.worker,''), COALESCE(a.kind,''), \
+             COALESCE(a.tool,''), COALESCE(a.tool_use_id,''), a.is_error, COALESCE(a.summary,''), \
+             a.created_at, a.input_tokens, a.output_tokens, a.cache_read_tokens, a.cache_write_tokens \
+             FROM activity a \
+             JOIN exploration_nodes n ON n.id=a.node_id AND n.exploration_id=a.exploration_id \
+             WHERE a.exploration_id=$1 AND a.node_id=$2 \
+             AND n.kind='intent' AND n.state IN ('done','blocked','exhausted','stopped') \
+             AND a.kind NOT IN ('thinking','usage') \
+             AND ($3 <= 0::bigint OR a.id < $3) \
+             ORDER BY a.id DESC LIMIT $4",
+                &[&self.exp_id, &node_id, &before, &limit1],
+            )
+            .await?;
+        let mut desc: Vec<Activity> = rows.iter().map(scan_activity_terminal).collect();
+        let has_more = desc.len() > limit as usize;
+        if has_more {
+            desc.truncate(limit as usize);
+        }
+        desc.reverse();
+        Ok((desc, has_more))
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
