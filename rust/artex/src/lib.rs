@@ -12,6 +12,7 @@ pub mod harness;
 pub mod intercept;
 pub mod llm;
 pub mod llmpool;
+pub mod llmrec;
 pub mod mcphttp;
 pub mod notify;
 pub mod permission;
