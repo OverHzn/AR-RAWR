@@ -449,3 +449,403 @@ async fn recompute_attribution_tx(tx: &tokio_postgres::Transaction<'_>) -> Resul
         .await?;
     Ok(format_malformed_ip_warning(&rows))
 }
+
+// ---------------------------------------------------------------------------
+// Scope writes (D-3b) — need the company-scope parser (company_scope.rs) and the
+// vendored publicsuffix table, both now available.
+
+use crate::db::company_scope::{parse_scope_input, ParsedScope, ScopeInput};
+
+/// Max runes in one raw scope line / normalized value (Go MaxCompanyScope*Runes).
+pub const MAX_COMPANY_SCOPE_RAW_RUNES: usize = 1024;
+pub const MAX_COMPANY_SCOPE_VALUE_RUNES: usize = 1024;
+
+/// `ScopeWriteResult`: counts + validation feedback from a scope write.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ScopeWriteResult {
+    pub added: i64,
+    pub skipped: i64,
+    pub invalid: i64,
+    pub validation_errors: Vec<String>,
+}
+
+/// `ValidateCompanyScopeInputBounds`: request-wide limit before parsing.
+fn validate_company_scope_input_bounds(inputs: &[ScopeInput]) -> Result<()> {
+    for (i, input) in inputs.iter().enumerate() {
+        if input.value.chars().count() > MAX_COMPANY_SCOPE_RAW_RUNES {
+            return Err(Error::msg(format!(
+                "company scope rule #{} raw value is too long: at most {} characters",
+                i + 1,
+                MAX_COMPANY_SCOPE_RAW_RUNES
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn parse_scope_inputs(inputs: &[ScopeInput]) -> (Vec<ParsedScope>, i64, Vec<String>) {
+    let mut rules = Vec::with_capacity(inputs.len());
+    let mut invalid = 0;
+    let mut errs = Vec::new();
+    for input in inputs {
+        match parse_scope_input(input.clone()) {
+            Ok(rule) => rules.push(rule),
+            Err(e) => {
+                invalid += 1;
+                errs.push(format!("{}: {e}", input.value));
+            }
+        }
+    }
+    (rules, invalid, errs)
+}
+
+fn validate_parsed_scope_bounds(rules: &[ParsedScope]) -> Result<()> {
+    for (i, rule) in rules.iter().enumerate() {
+        if rule.raw.chars().count() > MAX_COMPANY_SCOPE_RAW_RUNES {
+            return Err(Error::msg(format!(
+                "company scope rule #{} raw value is too long: at most {} characters",
+                i + 1,
+                MAX_COMPANY_SCOPE_RAW_RUNES
+            )));
+        }
+        if rule.value.chars().count() > MAX_COMPANY_SCOPE_VALUE_RUNES {
+            return Err(Error::msg(format!(
+                "company scope rule #{} normalized value is too long: at most {} characters",
+                i + 1,
+                MAX_COMPANY_SCOPE_VALUE_RUNES
+            )));
+        }
+    }
+    Ok(())
+}
+
+async fn ensure_company_exists_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    company_id: i64,
+) -> Result<()> {
+    let row = tx
+        .query_one(
+            "SELECT EXISTS(SELECT 1 FROM companies WHERE id=$1)",
+            &[&company_id],
+        )
+        .await?;
+    if !row.get::<_, bool>(0) {
+        return Err(Error::sentinel(
+            ERR_COMPANY_NOT_FOUND,
+            ERR_COMPANY_NOT_FOUND,
+        ));
+    }
+    Ok(())
+}
+
+/// Insert one scope rule; `inserted=false` means a duplicate ignored by ON CONFLICT.
+async fn insert_scope_rule_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    company_id: i64,
+    rule: &ParsedScope,
+    reason: &str,
+) -> Result<bool> {
+    let n = match rule.kind.as_str() {
+        "domain" => {
+            tx.execute(
+                "INSERT INTO company_scope(company_id, kind, domain, raw, reason) \
+                 VALUES ($1, 'domain', $2, $3, $4) \
+                 ON CONFLICT ON CONSTRAINT uq_sv2_domain DO NOTHING",
+                &[&company_id, &rule.domain, &rule.raw, &reason],
+            )
+            .await?
+        }
+        "ip" | "cidr" => {
+            tx.execute(
+                "INSERT INTO company_scope(company_id, kind, net, raw, reason) \
+                 VALUES ($1, $2, ($3::text)::cidr, $4, $5) \
+                 ON CONFLICT ON CONSTRAINT uq_sv2_net DO NOTHING",
+                &[&company_id, &rule.kind, &rule.net, &rule.raw, &reason],
+            )
+            .await?
+        }
+        "icp" | "keyword" => {
+            tx.execute(
+                "INSERT INTO company_scope(company_id, kind, value, raw, reason) \
+                 VALUES ($1, $2, $3, $4, $5) \
+                 ON CONFLICT (company_id, kind, value) WHERE kind IN ('icp','keyword') DO NOTHING",
+                &[&company_id, &rule.kind, &rule.value, &rule.raw, &reason],
+            )
+            .await?
+        }
+        other => {
+            return Err(Error::msg(format!(
+                "unsupported company scope kind {other:?}"
+            )));
+        }
+    };
+    Ok(n > 0)
+}
+
+async fn insert_scope_rules_tx(
+    tx: &deadpool_postgres::Transaction<'_>,
+    company_id: i64,
+    rules: &[ParsedScope],
+    reason: &str,
+) -> Result<(i64, i64, bool)> {
+    let mut added = 0;
+    let mut skipped = 0;
+    let mut needs_attribution = false;
+    for rule in rules {
+        if insert_scope_rule_tx(tx, company_id, rule, reason).await? {
+            added += 1;
+            needs_attribution = needs_attribution || rule.kind != "keyword";
+        } else {
+            skipped += 1;
+        }
+    }
+    Ok((added, skipped, needs_attribution))
+}
+
+impl CompanyStore {
+    /// `CreateCompanyWithScope`: create a company + its valid initial rules +
+    /// derived attribution atomically. Invalid inputs retain the legacy partial
+    /// validation contract (valid rules are still stored).
+    pub async fn create_company_with_scope(
+        &self,
+        name: &str,
+        logo: &str,
+        inputs: &[ScopeInput],
+        reason: &str,
+    ) -> Result<(i64, ScopeWriteResult)> {
+        validate_company_scope_input_bounds(inputs)?;
+        let (rules, invalid, errs) = parse_scope_inputs(inputs);
+        let mut out = ScopeWriteResult {
+            invalid,
+            validation_errors: errs,
+            ..ScopeWriteResult::default()
+        };
+        validate_parsed_scope_bounds(&rules)?;
+
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        let run = async {
+            tx.execute(
+                "SELECT pg_advisory_xact_lock($1)",
+                &[&COMPANY_SCOPE_MUTATION_LOCK],
+            )
+            .await?;
+            let logo_val: Option<&str> = if logo.is_empty() { None } else { Some(logo) };
+            let row = tx
+                .query_opt(
+                    "INSERT INTO companies(name, nkey, logo) VALUES ($1, $2, $3) \
+                     ON CONFLICT (nkey) DO NOTHING RETURNING id",
+                    &[&name, &company_n_key(name), &logo_val],
+                )
+                .await?;
+            let Some(row) = row else {
+                return Err(Error::sentinel(
+                    ERR_COMPANY_NAME_CONFLICT,
+                    ERR_COMPANY_NAME_CONFLICT,
+                ));
+            };
+            let id: i64 = row.get(0);
+            let (added, skipped, needs_attr) =
+                insert_scope_rules_tx(&tx, id, &rules, reason).await?;
+            if needs_attr {
+                let warning = recompute_attribution_tx(&tx).await?;
+                log_attribution_warning(&warning);
+            }
+            Ok::<_, Error>((id, added, skipped))
+        }
+        .await;
+        match run {
+            Ok((id, added, skipped)) => {
+                tx.commit().await?;
+                out.added = added;
+                out.skipped = skipped;
+                Ok((id, out))
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `AddScopeInputsChecked`: insert structured scope rules, keeping validation
+    /// feedback separate from storage/transaction errors.
+    pub async fn add_scope_inputs_checked(
+        &self,
+        company_id: i64,
+        inputs: &[ScopeInput],
+        reason: &str,
+    ) -> Result<ScopeWriteResult> {
+        validate_company_scope_input_bounds(inputs)?;
+        let (rules, invalid, errs) = parse_scope_inputs(inputs);
+        let mut out = ScopeWriteResult {
+            invalid,
+            validation_errors: errs,
+            ..ScopeWriteResult::default()
+        };
+        validate_parsed_scope_bounds(&rules)?;
+
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        let run = async {
+            tx.execute(
+                "SELECT pg_advisory_xact_lock($1)",
+                &[&COMPANY_SCOPE_MUTATION_LOCK],
+            )
+            .await?;
+            ensure_company_exists_tx(&tx, company_id).await?;
+            if rules.is_empty() {
+                return Ok::<_, Error>((0, 0));
+            }
+            let (added, skipped, needs_attr) =
+                insert_scope_rules_tx(&tx, company_id, &rules, reason).await?;
+            if needs_attr {
+                let warning = recompute_attribution_tx(&tx).await?;
+                log_attribution_warning(&warning);
+            }
+            Ok((added, skipped))
+        }
+        .await;
+        match run {
+            Ok((added, skipped)) => {
+                tx.commit().await?;
+                out.added = added;
+                out.skipped = skipped;
+                Ok(out)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `AddScopeInputs`: as checked, but storage errors are folded into the
+    /// validation-error list (legacy partial-validation contract).
+    pub async fn add_scope_inputs(
+        &self,
+        company_id: i64,
+        inputs: &[ScopeInput],
+        reason: &str,
+    ) -> ScopeWriteResult {
+        match self
+            .add_scope_inputs_checked(company_id, inputs, reason)
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => ScopeWriteResult {
+                validation_errors: vec![e.to_string()],
+                ..ScopeWriteResult::default()
+            },
+        }
+    }
+
+    /// `AddScope`: parse and insert raw scope lines for a company.
+    pub async fn add_scope(
+        &self,
+        company_id: i64,
+        lines: &[String],
+        reason: &str,
+    ) -> ScopeWriteResult {
+        let inputs: Vec<ScopeInput> = lines
+            .iter()
+            .map(|line| ScopeInput {
+                value: line.clone(),
+                ..ScopeInput::default()
+            })
+            .collect();
+        self.add_scope_inputs(company_id, &inputs, reason).await
+    }
+
+    /// `UpdateScopeInputsChecked`: replace all rules atomically. Any invalid rule
+    /// aborts the whole replacement (existing scope untouched).
+    pub async fn update_scope_inputs_checked(
+        &self,
+        company_id: i64,
+        inputs: &[ScopeInput],
+        reason: &str,
+    ) -> Result<ScopeWriteResult> {
+        validate_company_scope_input_bounds(inputs)?;
+        let (rules, invalid, errs) = parse_scope_inputs(inputs);
+        let mut out = ScopeWriteResult {
+            invalid,
+            validation_errors: errs,
+            ..ScopeWriteResult::default()
+        };
+        if invalid > 0 {
+            return Err(Error::msg(format!(
+                "company scope contains {invalid} invalid rules; the existing scope was not overwritten"
+            )));
+        }
+        validate_parsed_scope_bounds(&rules)?;
+
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        let run = async {
+            tx.execute(
+                "SELECT pg_advisory_xact_lock($1)",
+                &[&COMPANY_SCOPE_MUTATION_LOCK],
+            )
+            .await?;
+            ensure_company_exists_tx(&tx, company_id).await?;
+            tx.execute(
+                "DELETE FROM company_scope WHERE company_id=$1",
+                &[&company_id],
+            )
+            .await?;
+            let (added, _, _) = insert_scope_rules_tx(&tx, company_id, &rules, reason).await?;
+            // Rebuild even for an empty replacement: removing rules may detach assets.
+            let warning = recompute_attribution_tx(&tx).await?;
+            log_attribution_warning(&warning);
+            Ok::<_, Error>(added)
+        }
+        .await;
+        match run {
+            Ok(added) => {
+                tx.commit().await?;
+                out.added = added;
+                Ok(out)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `UpdateScopeInputs`: as checked, folding storage errors into validation errors.
+    pub async fn update_scope_inputs(
+        &self,
+        company_id: i64,
+        inputs: &[ScopeInput],
+        reason: &str,
+    ) -> ScopeWriteResult {
+        match self
+            .update_scope_inputs_checked(company_id, inputs, reason)
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => ScopeWriteResult {
+                validation_errors: vec![e.to_string()],
+                ..ScopeWriteResult::default()
+            },
+        }
+    }
+
+    /// `UpdateScope`: replace all rules from raw scope lines.
+    pub async fn update_scope(
+        &self,
+        company_id: i64,
+        lines: &[String],
+        reason: &str,
+    ) -> ScopeWriteResult {
+        let inputs: Vec<ScopeInput> = lines
+            .iter()
+            .map(|line| ScopeInput {
+                value: line.clone(),
+                ..ScopeInput::default()
+            })
+            .collect();
+        self.update_scope_inputs(company_id, &inputs, reason).await
+    }
+}
