@@ -19,6 +19,7 @@
 use std::time::SystemTime;
 
 use crate::db::error::{Error, Result};
+use crate::db::exploration::{utf8_clean, Activity, ExplorationStore};
 use crate::db::DB;
 
 // Finding triage states (`findings.status`).
@@ -939,5 +940,145 @@ impl DB {
             out.insert(nid, q);
         }
         Ok(out)
+    }
+}
+
+/// `ERR_FINDING_ORIGIN_UNAVAILABLE`: a retained finding no longer has a live owning
+/// task + finding node from which a follow-up intent can be derived.
+pub const ERR_FINDING_ORIGIN_UNAVAILABLE: &str = "finding origin is no longer available";
+
+impl ExplorationStore {
+    /// `AddFindingFollowUpIntent`: atomically create a priority-10 human intent from
+    /// a LIVE finding node, copy that finding's asset anchors, record the
+    /// finding --derived_from--> intent lineage edge, and persist the audit activity.
+    /// The returned activity is the committed row (id + created_at filled) and can be
+    /// broadcast as-is. A retained finding whose origin is gone is rejected with
+    /// [`ERR_FINDING_ORIGIN_UNAVAILABLE`].
+    #[allow(clippy::too_many_arguments)]
+    pub async fn add_finding_follow_up_intent(
+        &self,
+        finding_id: i64,
+        finding_node_id: i64,
+        description: &str,
+        mut audit: Activity,
+    ) -> Result<(i64, Activity)> {
+        let exp_id = self.id();
+        let mut client = self.db().pool.get().await?;
+        let tx = client.transaction().await?;
+        let result = async {
+            // Verify the finding's origin is still live and lock all three rows.
+            let row = tx
+                .query_opt(
+                    "SELECT n.id FROM findings f \
+                     JOIN tasks t ON t.id=f.task_id \
+                     JOIN exploration_nodes n ON n.id=f.node_id AND n.exploration_id=t.exploration_id \
+                     WHERE f.id=$1 AND f.node_id=$2 AND t.exploration_id=$3 AND n.kind='finding' \
+                     FOR SHARE OF f, t, n",
+                    &[&finding_id, &finding_node_id, &exp_id],
+                )
+                .await?;
+            let Some(row) = row else {
+                return Err(Error::sentinel(ERR_FINDING_ORIGIN_UNAVAILABLE, ERR_FINDING_ORIGIN_UNAVAILABLE));
+            };
+            let live_node_id: i64 = row.get(0);
+
+            // Copy the finding's asset anchors into the payload + onto the new intent.
+            let anchor_rows = tx
+                .query(
+                    "SELECT asset_id FROM exploration_anchors WHERE node_id=$1 ORDER BY asset_id",
+                    &[&live_node_id],
+                )
+                .await?;
+            let anchors: Vec<i64> = anchor_rows.iter().map(|r| r.get(0)).collect();
+
+            let mut payload = serde_json::json!({
+                "summary": description,
+                "source_finding_id": finding_id,
+                "source_finding_node_id": live_node_id,
+            });
+            if !anchors.is_empty() {
+                payload["asset_ids"] = serde_json::json!(anchors);
+            }
+
+            // Insert the intent node.
+            let intent_row = tx
+                .query_one(
+                    "INSERT INTO exploration_nodes(exploration_id,kind,payload,priority,state,origin) \
+                     VALUES ($1,'intent',$2,10,'open','human') RETURNING id",
+                    &[&exp_id, &payload],
+                )
+                .await?;
+            let intent_id: i64 = intent_row.get(0);
+
+            // Copy anchors and record the lineage edge.
+            tx.execute(
+                "INSERT INTO exploration_anchors(node_id,asset_id) \
+                 SELECT $1, asset_id FROM exploration_anchors WHERE node_id=$2 \
+                 ON CONFLICT DO NOTHING",
+                &[&intent_id, &live_node_id],
+            )
+            .await?;
+            tx.execute(
+                "INSERT INTO exploration_edges(exploration_id,src_id,rel,dst_id) \
+                 VALUES ($1,$2,$3,$4)",
+                &[&exp_id, &live_node_id, &crate::db::constants::REL_DERIVED_FROM, &intent_id],
+            )
+            .await?;
+
+            // Persist the audit activity inside the same transaction.
+            audit.node_id = Some(intent_id);
+            let summary = audit.summary.trim();
+            audit.summary = if summary.is_empty() {
+                String::new()
+            } else {
+                format!("{summary} #{intent_id}")
+            };
+            let metadata = if audit.metadata.is_null() {
+                serde_json::json!({})
+            } else {
+                audit.metadata.clone()
+            };
+            let act_row = tx
+                .query_one(
+                    "INSERT INTO activity(exploration_id, node_id, worker, kind, tool, tool_use_id, \
+                     is_error, summary, detail, metadata, input_tokens, output_tokens, \
+                     cache_read_tokens, cache_write_tokens) \
+                     VALUES ($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),$7, \
+                     NULLIF($8,''),NULLIF($9,''),$10,$11,$12,$13,$14) \
+                     RETURNING id, created_at",
+                    &[
+                        &exp_id,
+                        &audit.node_id,
+                        &utf8_clean(&audit.worker),
+                        &utf8_clean(&audit.kind),
+                        &utf8_clean(&audit.tool),
+                        &utf8_clean(&audit.tool_use_id),
+                        &audit.is_error,
+                        &utf8_clean(&audit.summary),
+                        &utf8_clean(&audit.detail),
+                        &metadata,
+                        &audit.input_tokens,
+                        &audit.output_tokens,
+                        &audit.cache_read_tokens,
+                        &audit.cache_write_tokens,
+                    ],
+                )
+                .await?;
+            audit.id = act_row.get(0);
+            audit.created_at = act_row.get(1);
+            audit.metadata = metadata;
+            Ok((intent_id, audit))
+        }
+        .await;
+        match result {
+            Ok(v) => {
+                tx.commit().await?;
+                Ok(v)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
     }
 }
