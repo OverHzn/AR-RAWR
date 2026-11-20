@@ -72,3 +72,35 @@ fn retryable_worker_model_error_cases() {
         &WorkerModelError::Generic
     ));
 }
+
+#[test]
+fn decode_body_cap_and_response_helpers() {
+    use artex::server::helpers::{
+        decode_json_body, is_multipart, write_err, write_json, DecodeError, DECODE_MAX_BYTES,
+    };
+
+    let v = decode_json_body(br#"{"x":"ok"}"#, "application/json").unwrap();
+    assert_eq!(v["x"], "ok");
+
+    let huge = format!(r#"{{"x":"{}"}}"#, "a".repeat(DECODE_MAX_BYTES));
+    assert_eq!(
+        decode_json_body(huge.as_bytes(), "application/json").unwrap_err(),
+        DecodeError::TooLarge {
+            size: huge.len(),
+            max: DECODE_MAX_BYTES
+        }
+    );
+    assert!(matches!(
+        decode_json_body(b"{bad", "application/json").unwrap_err(),
+        DecodeError::InvalidJson(_)
+    ));
+    assert!(is_multipart("multipart/form-data; boundary=abc"));
+    assert!(!is_multipart("application/json"));
+
+    let ok = write_json(200, &serde_json::json!({"x": 1}));
+    assert_eq!(ok.status, 200);
+    assert_eq!(ok.body, br#"{"x":1}"#);
+    let err = write_err(400, "bad request");
+    assert_eq!(err.status, 400);
+    assert_eq!(err.body, br#"{"error":"bad request"}"#);
+}

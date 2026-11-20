@@ -78,3 +78,48 @@ impl WorkerModelError {
 pub fn retryable_worker_model_error(is_model_error: bool, err: &WorkerModelError) -> bool {
     is_model_error && !matches!(err, WorkerModelError::NoaBudget | WorkerModelError::TaskLlm)
 }
+
+// Request decode limits + response shaping (server/server_mgmt.go, server.go).
+
+pub const DECODE_MAX_BYTES: usize = 32 * 1024 * 1024;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DecodeError {
+    TooLarge { size: usize, max: usize },
+    InvalidJson(String),
+}
+
+/// Multipart uploads are streamed separately, not capped by the JSON limit.
+pub fn is_multipart(content_type: &str) -> bool {
+    content_type.trim().to_lowercase().starts_with("multipart/")
+}
+
+/// `decode`: parse a JSON body with the 32 MiB cap. Multipart callers must not
+/// route through this function.
+pub fn decode_json_body(body: &[u8], content_type: &str) -> Result<serde_json::Value, DecodeError> {
+    if !is_multipart(content_type) && body.len() > DECODE_MAX_BYTES {
+        return Err(DecodeError::TooLarge {
+            size: body.len(),
+            max: DECODE_MAX_BYTES,
+        });
+    }
+    serde_json::from_slice(body).map_err(|e| DecodeError::InvalidJson(e.to_string()))
+}
+
+/// A minimal HTTP response shape (no server started).
+#[derive(Debug, Clone, PartialEq)]
+pub struct JsonResponse {
+    pub status: u16,
+    pub body: Vec<u8>,
+}
+
+pub fn write_json(status: u16, value: &impl serde::Serialize) -> JsonResponse {
+    JsonResponse {
+        status,
+        body: serde_json::to_vec(value).unwrap_or_default(),
+    }
+}
+
+pub fn write_err(status: u16, msg: &str) -> JsonResponse {
+    write_json(status, &serde_json::json!({ "error": msg }))
+}

@@ -806,6 +806,8 @@ resume without re-deriving state.
 
 - **S-4 HTTP router foundation (this commit):** new `src/server/router.rs` — first server API slice (no server started). `Route`/`Match`/`Router` matching `"METHOD /path/{param}"` patterns with Go ServeMux-style specificity (literal segments beat wildcards), path params, 405 analogue. Spec: `tests/server_router_test.rs` (3) — representative `server/server.go` routes, literal vs wildcard, 404/405. artex **564 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-5 server decode/response helpers (this commit):** extended `src/server/helpers.rs` with `DECODE_MAX_BYTES` (32 MiB), `is_multipart`, `decode_json_body` (TooLarge vs InvalidJson, multipart bypass) and `JsonResponse`/`write_json`/`write_err`. Spec: 1 test — small body, cap, invalid JSON, multipart, JSON/error responses. artex **565 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
