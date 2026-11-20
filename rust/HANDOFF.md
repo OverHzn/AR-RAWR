@@ -555,6 +555,18 @@ resume without re-deriving state.
   w1 14/.. from intent+fact rows), by_session (main:1/main:2/plan/intent:<a>/intent:<b>, fact-row
   excluded, no empty key) + ordered. artex **250 tests** green, clippy clean, fmt clean, gate 30/30.
   (Gotcha: activity token cols are INTEGER/int4 → seed token values bind `as i32`.)
+- **D-2a DB-level exploration aggregates (this commit):** `src/db/exploration.rs` extended — `DB::{exploration_diag(exp_id -> (exp_exists, task_refs, max_exp_id); stuck-task diagnostic distinguishing DB-reset vs broken-FK vs stale-id),
+  token_totals_all (-> HashMap<exp_id,TokenUsage>; whole-task sums for the task list),
+  last_activity_all (-> HashMap<exp_id,i64 epoch>; EXTRACT(EPOCH FROM MAX(created_at))::bigint,
+  persisted run-duration "ran until"), goal_counts_all (-> HashMap<exp_id,GoalCounts>;
+  COUNT(*) + COUNT(*) FILTER (state='met') per exploration)}` + `pub struct GoalCounts {total,met}`.
+  Spec: `tests/db_exploration_db_aggregates_test.rs` (1) — two explorations with goals (one met) +
+  result rows at distinct RFC3339 timestamps + a task on e1; goal_counts_all {e1:2/1, e2:1/0},
+  token_totals_all sums, last_activity_all exact epochs + ordering, exploration_diag live (exists+1
+  ref) vs missing (no exists, 0 refs). Cleanup tasks-before-explorations (RESTRICT). artex **251
+  tests** green, clippy clean, fmt clean, gate 30/30. (Gotcha: timestamptz params bind a
+  `SystemTime` via `gotime::parse_rfc3339`, NOT a `&str` — tokio-postgres can't serialize text
+  into a timestamptz placeholder.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

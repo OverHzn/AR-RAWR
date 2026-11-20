@@ -1502,6 +1502,113 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// DB-level exploration aggregates (port of the `*DB` exploration stat methods in
+// `db/exploration.go`): one-query roll-ups across all explorations for the task
+// list, plus a stuck-task diagnostic.
+// ---------------------------------------------------------------------------
+
+/// `GoalCounts`: the goal summary (total / met) for one exploration.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct GoalCounts {
+    pub total: i64,
+    pub met: i64,
+}
+
+impl DB {
+    /// `ExplorationDiag`: diagnostic for a stuck task. `(exp_exists, task_refs,
+    /// max_exp_id)` tells apart the failure modes — no row + no task refs = the
+    /// whole row set is gone (DB reset / wrong DB); no row + task refs = a broken
+    /// FK (impossible under RESTRICT); row exists = the write's id is stale/wrong
+    /// (compare against the in-memory store's id).
+    pub async fn exploration_diag(&self, exp_id: i64) -> Result<(bool, i64, i64)> {
+        let row = self
+            .query_one(
+                "SELECT \
+             EXISTS(SELECT 1 FROM explorations WHERE id=$1), \
+             (SELECT COUNT(*) FROM tasks WHERE exploration_id=$1), \
+             COALESCE((SELECT MAX(id) FROM explorations),0)",
+                &[&exp_id],
+            )
+            .await?;
+        Ok((row.get(0), row.get(1), row.get(2)))
+    }
+
+    /// `TokenTotalsAll`: the whole-task token total for every exploration in one
+    /// query (`exploration_id -> total`), so the task list shows per-task
+    /// consumption without a query per row.
+    pub async fn token_totals_all(&self) -> Result<std::collections::HashMap<i64, TokenUsage>> {
+        let rows = self
+            .query(
+                "SELECT exploration_id, \
+             COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), \
+             COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_write_tokens),0) \
+             FROM activity WHERE kind='result' GROUP BY exploration_id",
+                &[],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(
+                r.get::<_, i64>(0),
+                TokenUsage {
+                    worker: String::new(),
+                    input: r.get(1),
+                    output: r.get(2),
+                    cache_read: r.get(3),
+                    cache_write: r.get(4),
+                },
+            );
+        }
+        Ok(out)
+    }
+
+    /// `LastActivityAll`: the unix time of the most recent activity per
+    /// exploration (`exploration_id -> max created_at epoch`), one query for all
+    /// tasks. Persisted (unlike the in-memory engine map), so it survives restarts
+    /// and gives terminal-state tasks a stable "ran until" time for run duration.
+    pub async fn last_activity_all(&self) -> Result<std::collections::HashMap<i64, i64>> {
+        let rows = self
+            .query(
+                "SELECT exploration_id, EXTRACT(EPOCH FROM MAX(created_at))::bigint \
+             FROM activity GROUP BY exploration_id",
+                &[],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, i64>(0), r.get::<_, i64>(1));
+        }
+        Ok(out)
+    }
+
+    /// `GoalCountsAll`: goal totals (total / met) per exploration id, one query for
+    /// all tasks — used by `listTasks` so the task list shows progress for every
+    /// task.
+    pub async fn goal_counts_all(&self) -> Result<std::collections::HashMap<i64, GoalCounts>> {
+        let rows = self
+            .query(
+                "SELECT exploration_id, \
+             COUNT(*) AS total, \
+             COUNT(*) FILTER (WHERE state = 'met') AS met \
+             FROM exploration_nodes WHERE kind = 'goal' GROUP BY exploration_id",
+                &[],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(
+                r.get::<_, i64>(0),
+                GoalCounts {
+                    total: r.get(1),
+                    met: r.get(2),
+                },
+            );
+        }
+        Ok(out)
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
