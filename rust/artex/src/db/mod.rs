@@ -57,6 +57,7 @@ pub mod task_templates;
 pub mod tasks;
 pub mod tool_usage;
 pub mod tools;
+pub mod traffic_rewrite;
 pub mod triggers;
 
 /// Serde adapter module path alias used by `SkillStat`'s `#[serde(with = …)]`.
