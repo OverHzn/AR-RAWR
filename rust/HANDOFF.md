@@ -746,6 +746,8 @@ resume without re-deriving state.
 
 - **S-1 server pure JSON helpers (this commit):** new `src/server/mod.rs` + `src/server/helpers.rs` — first slice of the server layer. `decode_str_map` (JSON null/invalid/empty -> writable empty map so callers can assign env vars), `encode_json`. Spec: `tests/server_helpers_test.rs` (2) — port of TestDecodeStrMapJSONNull + encode round trip. artex **507 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-2 goal ambiguity gate (this commit):** extended `src/server/helpers.rs` with `goal_gate_check` — port of `server/goal_gate.go` (#99). Literal [targetless] opt-out, 80-char floor, then target presence (URL / domain / IPv4 / localhost:port / absolute path). Spec: port of TestGoalGateCheck (good + bad tables). artex **508 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
