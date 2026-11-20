@@ -51,3 +51,24 @@ fn goal_gate_check_cases() {
         assert!(goal_gate_check(g).is_err(), "expected rejection: {g}");
     }
 }
+
+#[test]
+fn retryable_worker_model_error_cases() {
+    use artex::server::helpers::{retryable_worker_model_error, WorkerModelError};
+    assert!(!retryable_worker_model_error(
+        true,
+        &WorkerModelError::noa_budget()
+    ));
+    assert!(!retryable_worker_model_error(
+        true,
+        &WorkerModelError::task_llm()
+    ));
+    assert!(retryable_worker_model_error(
+        true,
+        &WorkerModelError::Generic
+    ));
+    assert!(!retryable_worker_model_error(
+        false,
+        &WorkerModelError::Generic
+    ));
+}

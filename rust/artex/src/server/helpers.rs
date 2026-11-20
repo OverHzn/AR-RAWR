@@ -53,3 +53,28 @@ pub fn goal_gate_check(goal: &str) -> Result<(), String> {
     }
     Err("goal names no target: include the URL/host/IP/path under test (or the literal marker [targetless] for target-less analysis tasks) so workers cannot be dispatched against an unrelated asset".to_string())
 }
+
+// Worker model-error retry classification (server/engine.go).
+
+/// Error kinds that make a worker model error non-retryable.
+#[derive(Debug, Clone, PartialEq)]
+pub enum WorkerModelError {
+    NoaBudget,
+    TaskLlm,
+    Generic,
+}
+
+impl WorkerModelError {
+    pub fn noa_budget() -> Self {
+        WorkerModelError::NoaBudget
+    }
+    pub fn task_llm() -> Self {
+        WorkerModelError::TaskLlm
+    }
+}
+
+/// `retryableWorkerModelError`: only model errors that are neither a NOA budget
+/// refusal nor a task-LLM runtime error are retried.
+pub fn retryable_worker_model_error(is_model_error: bool, err: &WorkerModelError) -> bool {
+    is_model_error && !matches!(err, WorkerModelError::NoaBudget | WorkerModelError::TaskLlm)
+}

@@ -760,6 +760,8 @@ resume without re-deriving state.
 
 - **E-20 argv pattern + arity helpers (this commit):** new `src/intercept/argv.rs` (pure slice of `intercept/argv.go`), registered in intercept/mod.rs. `argv_prefix_len`/`argv_prefix_of` (code-owned arity table, longest match wins, default 1), `parse_argv_pattern` (1-8 token JSON array, no flags/metacharacters/whitespace) + `check_argv_token`. Full Bash parser (`ArgvPrefix`) still deferred. Spec: `tests/intercept_argv_pattern_test.rs` (2) — ports of TestArgvArityTable (13 cases) + TestParseArgvPattern (19 invalid cases). artex **521 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **S-3 worker model-error retry classification (this commit):** extended `src/server/helpers.rs` with `WorkerModelError` (NoaBudget / TaskLlm / Generic) + `retryable_worker_model_error` — only model errors that are neither a NOA budget refusal nor a task-LLM runtime error are retried. Spec: port of TestWorkerModelErrorRetrySkipsNoaBudget. artex **522 tests** green, clippy clean, fmt clean, gate 30/30.
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
