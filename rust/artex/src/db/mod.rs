@@ -18,6 +18,7 @@
 
 pub mod activity_outbox;
 pub mod asset_dsl;
+pub mod asset_helpers;
 pub mod asset_intercept;
 pub mod asset_intercept_match;
 pub mod browser_mcp;
