@@ -66,7 +66,8 @@ impl ExplorationStore {
 // ---------------------------------------------------------------------------
 
 use crate::db::constants::{
-    KIND_FACT, KIND_FINDING, KIND_GOAL, KIND_INTENT, REL_DERIVED_FROM, REL_YIELDS, STATE_ORIGIN,
+    KIND_DIGEST, KIND_FACT, KIND_FINDING, KIND_GOAL, KIND_INTENT, REL_COVERS, REL_DERIVED_FROM,
+    REL_YIELDS, STATE_DIGEST_ACTIVE, STATE_DIGEST_SUPERSEDED, STATE_ORIGIN,
 };
 use crate::db::error::Error;
 use crate::db::gotime;
@@ -2649,4 +2650,254 @@ async fn check_fact_anchor_assets(
         )));
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Cold-digest persistence (port of `db/digest.go`: BumpRound / RoundNo /
+// ColdStamps / ApplyStampOps / ContentVersions / ActiveDigests / AddDigest /
+// CoveredMembers / DigestMembers / SupersedeDigests / NodeAssets). These are the
+// round counter, cold_since_round stamps, content versions, digest nodes and the
+// covers edges that are the source of truth for "which digest folds node X".
+// ---------------------------------------------------------------------------
+
+/// `StampOp`: one `cold_since_round` change — `set` stamps `round`; `!set` clears.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StampOp {
+    pub id: i64,
+    pub set: bool,
+    pub round: i64,
+}
+
+impl ExplorationStore {
+    /// `BumpRound`: advance this exploration's planner-round counter, returning the
+    /// new value (called once per planner wake-up).
+    pub async fn bump_round(&self) -> Result<i64> {
+        let row = self
+            .db
+            .query_one(
+                "UPDATE explorations SET round_no = round_no + 1 WHERE id=$1 RETURNING round_no",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `RoundNo`: the current planner-round counter.
+    pub async fn round_no(&self) -> Result<i64> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT round_no FROM explorations WHERE id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `ColdStamps`: `cold_since_round` for every foldable node (intent/fact) as
+    /// `id -> Some(round)` or `id -> None` (hot / unstamped). Used for the ≥R
+    /// debounce and to know which stamps to set/clear this round.
+    pub async fn cold_stamps(&self) -> Result<std::collections::HashMap<i64, Option<i64>>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT id, cold_since_round FROM exploration_nodes \
+             WHERE exploration_id=$1 AND kind IN ('intent','fact')",
+                &[&self.exp_id],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, i64>(0), r.get::<_, Option<i64>>(1));
+        }
+        Ok(out)
+    }
+
+    /// `ApplyStampOps`: write a batch of `cold_since_round` changes in one
+    /// transaction. Empty input is a no-op.
+    pub async fn apply_stamp_ops(&self, ops: &[StampOp]) -> Result<()> {
+        if ops.is_empty() {
+            return Ok(());
+        }
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        for o in ops {
+            if o.set {
+                tx.execute(
+                    "UPDATE exploration_nodes SET cold_since_round=$1 \
+                 WHERE id=$2 AND exploration_id=$3",
+                    &[&o.round, &o.id, &self.exp_id],
+                )
+                .await?;
+            } else {
+                tx.execute(
+                    "UPDATE exploration_nodes SET cold_since_round=NULL \
+                 WHERE id=$1 AND exploration_id=$2",
+                    &[&o.id, &self.exp_id],
+                )
+                .await?;
+            }
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// `ContentVersions`: `id -> content_version` for all nodes (the §5.3 digest
+    /// signature).
+    pub async fn content_versions(&self) -> Result<std::collections::HashMap<i64, i32>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT id, content_version FROM exploration_nodes WHERE exploration_id=$1",
+                &[&self.exp_id],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            out.insert(r.get::<_, i64>(0), r.get::<_, i32>(1));
+        }
+        Ok(out)
+    }
+
+    /// `ActiveDigests`: the exploration's live digest nodes (`state='active'`),
+    /// oldest first.
+    pub async fn active_digests(&self) -> Result<Vec<Node>> {
+        let sql = format!(
+            "SELECT {NODE_COLS} FROM exploration_nodes \
+         WHERE exploration_id=$1 AND kind=$2 AND state=$3 ORDER BY id"
+        );
+        let rows = self
+            .db
+            .query(&sql, &[&self.exp_id, &KIND_DIGEST, &STATE_DIGEST_ACTIVE])
+            .await?;
+        Ok(scan_nodes(&rows))
+    }
+
+    /// `AddDigest`: write one digest node and its covers edges (digest->member) in
+    /// a single transaction, returning the new digest id. `payload` is the digest
+    /// body + member_ids + generation + signature (cold-digest §1).
+    pub async fn add_digest(&self, payload: &Value, member_ids: &[i64]) -> Result<i64> {
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        let row = tx
+            .query_one(
+                "INSERT INTO exploration_nodes(exploration_id, kind, payload, priority, state, origin) \
+             VALUES ($1, $2, $3, 0, $4, 'compactor') RETURNING id",
+                &[&self.exp_id, &KIND_DIGEST, &payload, &STATE_DIGEST_ACTIVE],
+            )
+            .await?;
+        let id: i64 = row.get(0);
+        for m in member_ids {
+            if *m == id {
+                continue;
+            }
+            tx.execute(
+                "INSERT INTO exploration_edges(exploration_id, src_id, rel, dst_id) \
+             VALUES ($1,$2,$3,$4) ON CONFLICT (exploration_id, src_id, rel, dst_id) DO NOTHING",
+                &[&self.exp_id, &id, &REL_COVERS, m],
+            )
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(id)
+    }
+
+    /// `CoveredMembers`: `member id -> covering digest id` for ACTIVE digests
+    /// only. A node folded by two digests (a torn major write) resolves to the
+    /// lowest digest id deterministically.
+    pub async fn covered_members(&self) -> Result<std::collections::HashMap<i64, i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT e.dst_id, e.src_id \
+             FROM exploration_edges e \
+             JOIN exploration_nodes d ON d.id=e.src_id AND d.exploration_id=e.exploration_id \
+             WHERE e.exploration_id=$1 AND e.rel=$2 AND d.kind=$3 AND d.state=$4 \
+             ORDER BY e.src_id",
+                &[
+                    &self.exp_id,
+                    &REL_COVERS,
+                    &KIND_DIGEST,
+                    &STATE_DIGEST_ACTIVE,
+                ],
+            )
+            .await?;
+        let mut out = std::collections::HashMap::new();
+        for r in &rows {
+            let member: i64 = r.get(0);
+            let digest: i64 = r.get(1);
+            // First (lowest digest id) wins.
+            out.entry(member).or_insert(digest);
+        }
+        Ok(out)
+    }
+
+    /// `DigestMembers`: the member ids a digest covers (covers edges), sorted.
+    pub async fn digest_members(&self, digest_id: i64) -> Result<Vec<i64>> {
+        let rows = self
+            .db
+            .query(
+                "SELECT dst_id FROM exploration_edges \
+             WHERE exploration_id=$1 AND src_id=$2 AND rel=$3",
+                &[&self.exp_id, &digest_id, &REL_COVERS],
+            )
+            .await?;
+        let mut ids: Vec<i64> = rows.iter().map(|r| r.get(0)).collect();
+        ids.sort_unstable();
+        Ok(ids)
+    }
+
+    /// `SupersedeDigests`: retire digest nodes (`state->superseded`) AND remove
+    /// their covers edges atomically, so the active-coverage set never double-counts
+    /// a member during a major recompaction. The digest node itself is kept.
+    pub async fn supersede_digests(&self, ids: &[i64]) -> Result<()> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let mut client = self.db.pool.get().await?;
+        let tx = client.transaction().await?;
+        for id in ids {
+            tx.execute(
+                "DELETE FROM exploration_edges WHERE exploration_id=$1 AND src_id=$2 AND rel=$3",
+                &[&self.exp_id, id, &REL_COVERS],
+            )
+            .await?;
+            tx.execute(
+                "UPDATE exploration_nodes SET state=$1 \
+             WHERE id=$2 AND exploration_id=$3 AND kind=$4",
+                &[&STATE_DIGEST_SUPERSEDED, id, &self.exp_id, &KIND_DIGEST],
+            )
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// `NodeAssets`: `node id -> asset ids it is anchored to` for the given node
+    /// ids (used to group cold digests by asset, §6.2). Empty input -> empty.
+    pub async fn node_assets(
+        &self,
+        ids: &[i64],
+    ) -> Result<std::collections::HashMap<i64, Vec<i64>>> {
+        let mut out: std::collections::HashMap<i64, Vec<i64>> = std::collections::HashMap::new();
+        if ids.is_empty() {
+            return Ok(out);
+        }
+        let rows = self
+            .db
+            .query(
+                "SELECT a.node_id, a.asset_id \
+             FROM exploration_anchors a \
+             JOIN exploration_nodes n ON n.id=a.node_id \
+             WHERE n.exploration_id=$1 AND a.node_id = ANY($2::bigint[])",
+                &[&self.exp_id, &ids],
+            )
+            .await?;
+        for r in &rows {
+            let node: i64 = r.get(0);
+            let asset: i64 = r.get(1);
+            out.entry(node).or_default().push(asset);
+        }
+        Ok(out)
+    }
 }
