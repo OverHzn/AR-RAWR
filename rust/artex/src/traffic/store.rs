@@ -829,6 +829,81 @@ impl TrafficStore {
     }
 }
 
+/// A reversible exact-host deletion. The selected rows are counted at stage
+/// time; the actual delete happens on `commit` (rollback is a no-op).
+pub struct HostDeleteStage<'a> {
+    store: &'a TrafficStore,
+    hosts: Vec<String>,
+    deleted: i64,
+    done: bool,
+}
+
+impl<'a> HostDeleteStage<'a> {
+    pub fn deleted(&self) -> i64 {
+        if self.done {
+            0
+        } else {
+            self.deleted
+        }
+    }
+
+    pub fn commit(mut self) -> Result<i64> {
+        if self.done {
+            return Ok(0);
+        }
+        self.done = true;
+        let n = self.store.delete_hosts_exact(&self.hosts)?;
+        Ok(n)
+    }
+
+    pub fn rollback(mut self) {
+        self.done = true;
+    }
+}
+
+impl TrafficStore {
+    /// `StageDeleteHostsExact`: prepare a reversible exact-host deletion.
+    pub fn stage_delete_hosts_exact(&self, hosts: &[String]) -> Result<HostDeleteStage<'_>> {
+        let mut unique = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        for h in hosts {
+            if seen.insert(h.clone()) {
+                unique.push(h.clone());
+            }
+        }
+        let mut deleted = 0i64;
+        for h in &unique {
+            deleted += self.query(
+                "SELECT COUNT(*) FROM exchanges WHERE host=?",
+                &[Value::Text(h.clone())],
+            )?[0]
+                .int(0);
+        }
+        Ok(HostDeleteStage {
+            store: self,
+            hosts: unique,
+            deleted,
+            done: false,
+        })
+    }
+
+    /// `reclaim`: one bounded space-reclamation pass (FTS merge + incremental
+    /// vacuum + WAL truncation). Returns whether pages were freed.
+    pub fn reclaim(&self, n: i64) -> Result<bool> {
+        let db = self.db.lock().unwrap();
+        if self.fts {
+            let _ = db.exec("INSERT INTO ex_fts(ex_fts) VALUES('optimize')");
+            let _ = db.exec("INSERT INTO ex_fts(ex_fts,rank) VALUES('merge', -256)");
+        }
+        let before = self.index_bytes();
+        // incremental_vacuum's argument cannot be bound; `n` is a caller-owned
+        // integer from a fixed code path, never user input.
+        let _ = db.exec(&format!("PRAGMA incremental_vacuum({n})"));
+        let _ = db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+        Ok(self.index_bytes() < before)
+    }
+}
+
 /// `assembleRaw`: head + blank line + body, plus a blob pointer when spilled.
 fn assemble_raw(head: &str, body: &[u8], blob: Option<String>, total: i64) -> String {
     let mut out = String::new();

@@ -376,3 +376,37 @@ fn stream_messages_round_trip() {
     assert_eq!(page.len(), 1);
     assert_eq!(page[0].seq, 1);
 }
+
+#[test]
+fn staged_delete_commit_and_rollback() {
+    let s = TrafficStore::open_temp().unwrap();
+    for (i, host) in ["a.test", "b.test", "a.test"].iter().enumerate() {
+        let m = meta(
+            &format!("1700000000-{i:04}"),
+            host,
+            200,
+            &format!("https://{host}/x"),
+        );
+        insert(&s, &m, b"req", b"resp", "text/plain");
+    }
+    let stage = s
+        .stage_delete_hosts_exact(&["a.test".to_string(), "a.test".to_string()])
+        .unwrap();
+    assert_eq!(stage.deleted(), 2);
+    // Rollback leaves the index untouched.
+    stage.rollback();
+    assert_eq!(s.count().unwrap(), 3);
+
+    let stage = s.stage_delete_hosts_exact(&["b.test".to_string()]).unwrap();
+    assert_eq!(stage.deleted(), 1);
+    assert_eq!(stage.commit().unwrap(), 1);
+    assert_eq!(s.count().unwrap(), 2);
+    assert_eq!(
+        s.query("SELECT DISTINCT host FROM exchanges", &[])
+            .unwrap()
+            .len(),
+        1
+    );
+
+    let _ = s.reclaim(10).unwrap();
+}

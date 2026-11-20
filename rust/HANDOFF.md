@@ -774,6 +774,8 @@ resume without re-deriving state.
 
 - **T-4 rewrite trace + stream messages (this commit):** extended `src/traffic/store.rs` with `spill_trace`/`insert_trace` (blob refs for spilled After values + ordered `exchange_rewrites` rows), `rewrite_info` (applied flag + distinct rule ids), `StreamMessage` + `insert_stream_message`/`stream_messages` (paged, clamped limit 1..200, spill at 1 MiB). Spec: 2 tests — trace round trip/info, stream round trip/paging. artex **535 tests** green, clippy clean, fmt clean, gate 30/30.
 
+- **T-5 staged host delete + reclaim (this commit):** extended `src/traffic/store.rs` with `HostDeleteStage` (count-at-stage, deferred delete on commit, no-op rollback, duplicate host dedup) + `stage_delete_hosts_exact` and `reclaim(n)` (FTS optimize/merge, bounded incremental_vacuum with caller-owned integer, WAL TRUNCATE). Spec: 1 test — stage count/rollback/commit + reclaim. artex **536 tests** green, clippy clean, fmt clean, gate 30/30. (Note: filesystem tree staging/journal recovery from the Go version is not yet ported.)
+
 ## Next- db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they
   exist, else new `artex/src/db/` modules + ported Go specs) → intercept → egress → traffic →
   evidence/guard/enrich/report/llmrec → agent → server (see MAP.md). The full
