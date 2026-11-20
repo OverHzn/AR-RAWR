@@ -432,6 +432,20 @@ resume without re-deriving state.
   validation rollback (missing asset -> error, tx rolls back, no node left). artex **241
   tests** green, clippy clean, fmt clean, gate 30/30. (Note: exploration_anchors.asset_id
   FKs assets(id) so anchors always need real assets, for any kind — not just fact.)
+- **D-1s exploration intent state transitions (this commit):** `src/db/exploration.rs`
+  extended — `ExplorationStore::{reset_running_intents (take over expired/NULL-heartbeat
+  running claims in one atomic UPDATE; clears unclaim_token), reopen_intent (blocked/
+  exhausted/stopped->open, returns changed), reopen_blocked_intents (batch blocked->open,
+  count), set_intent_state (terminal states done/blocked/exhausted/stopped stamp
+  completed_at via CASE WHEN, else NULL; bumps content_version, clears blocked_reason;
+  WHERE kind='intent'), compare_and_set_intent_state (CAS on state=expected, returns
+  changed==1), count_finished_intents (done/blocked/exhausted, excludes stopped),
+  count_open_intents}` + `pub const INTENT_CLAIM_TTL_SECS: f64 = 90.0` (Go IntentClaimTTL,
+  bound as `$2 * INTERVAL '1 second'`) + private `is_terminal_intent_state`. Specs:
+  `tests/db_exploration_intent_state_test.rs` (2) — full state machine (set/CAS/reopen/
+  reset/count + completed_at stamping) + kind/exploration scoping (SetIntentState is a
+  no-op on a goal or a foreign exploration's intent). artex **243 tests** green, clippy
+  clean, fmt clean, gate 30/30. (Next: SoftDeleteIntent, then CancelIntent + token-rollup.)
 
 ## Next
 - db resource groups (tasks/assets/findings/… — the `*-rs` parity crates' `port::*` where they

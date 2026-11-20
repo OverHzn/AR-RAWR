@@ -236,6 +236,145 @@ impl ExplorationStore {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Intent lifecycle — state transitions (port of the `*ExplorationStore` intent
+// state methods in `db/exploration.go`). Soft-delete and cancel (which rewrite
+// lineage / roll up tokens) are separate units.
+// ---------------------------------------------------------------------------
+
+/// `IntentClaimTTL`: how long an intent claim stays valid without a heartbeat,
+/// in seconds. Go's `IntentClaimTTL = 90 * time.Second`; bound into the
+/// takeover query as `$2 * INTERVAL '1 second'`.
+pub const INTENT_CLAIM_TTL_SECS: f64 = 90.0;
+
+/// An intent is terminal (stamps `completed_at`) in these states; reopening
+/// (open/running/paused) clears it. Mirrors Go's inline check.
+fn is_terminal_intent_state(state: &str) -> bool {
+    matches!(state, "done" | "blocked" | "exhausted" | "stopped")
+}
+
+impl ExplorationStore {
+    /// `ResetRunningIntents`: reopen running intents whose claim expired (or was
+    /// never heartbeated — a legacy row), returning the number taken over. The
+    /// expiry check and takeover are one atomic UPDATE on the database clock;
+    /// clearing `unclaim_token` fences the previous claimer out.
+    pub async fn reset_running_intents(&self) -> Result<i64> {
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+              SET state='open', completed_at=NULL, blocked_reason=NULL, unclaim_token=NULL \
+              WHERE exploration_id=$1 AND kind='intent' AND state='running' \
+                AND (last_heartbeat_at IS NULL OR last_heartbeat_at < now() - $2 * INTERVAL '1 second')",
+                &[&self.exp_id, &INTENT_CLAIM_TTL_SECS],
+            )
+            .await?;
+        Ok(n as i64)
+    }
+
+    /// `ReopenIntent`: flip ONE not-successfully-finished intent
+    /// (blocked/exhausted/stopped) back to 'open' so a worker re-claims it.
+    /// done/open/running are left untouched. Returns whether a row changed.
+    pub async fn reopen_intent(&self, id: i64) -> Result<bool> {
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+              SET state='open', completed_at=NULL, blocked_reason=NULL \
+              WHERE id=$1 AND exploration_id=$2 AND kind='intent' \
+                AND state IN ('blocked','exhausted','stopped')",
+                &[&id, &self.exp_id],
+            )
+            .await?;
+        Ok(n > 0)
+    }
+
+    /// `ReopenBlockedIntents`: flip EVERY 'blocked' intent in this exploration
+    /// back to 'open' (batch rerun after a mass outage). Returns the number
+    /// reopened.
+    pub async fn reopen_blocked_intents(&self) -> Result<i64> {
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+              SET state='open', completed_at=NULL, blocked_reason=NULL \
+              WHERE exploration_id=$1 AND kind='intent' AND state='blocked'",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(n as i64)
+    }
+
+    /// `SetIntentState`: set one intent's state. Terminal states stamp
+    /// `completed_at`; reopening (open/running/paused) clears it. Bumps
+    /// `content_version` and clears `blocked_reason`. No-op if the id is not an
+    /// intent of this exploration.
+    pub async fn set_intent_state(&self, id: i64, state: &str) -> Result<()> {
+        let terminal = is_terminal_intent_state(state);
+        self.db
+            .execute(
+                "UPDATE exploration_nodes \
+              SET state=$1, blocked_reason=NULL, content_version=content_version+1, \
+                  completed_at = CASE WHEN $4 THEN now() ELSE NULL END \
+              WHERE id=$2 AND exploration_id=$3 AND kind='intent'",
+                &[&state, &id, &self.exp_id, &terminal],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// `CompareAndSetIntentState`: transition one local intent only when its
+    /// current state still matches `expected` (the pause/resume + worker
+    /// settlement boundary, so a stale read can't overwrite a concurrent finish).
+    /// Returns whether the row changed.
+    pub async fn compare_and_set_intent_state(
+        &self,
+        id: i64,
+        expected: &str,
+        state: &str,
+    ) -> Result<bool> {
+        let terminal = is_terminal_intent_state(state);
+        let n = self
+            .db
+            .execute(
+                "UPDATE exploration_nodes \
+              SET state=$1, blocked_reason=NULL, content_version=content_version+1, \
+                  completed_at = CASE WHEN $5 THEN now() ELSE NULL END \
+              WHERE id=$2 AND exploration_id=$3 AND kind='intent' AND state=$4",
+                &[&state, &id, &self.exp_id, &expected, &terminal],
+            )
+            .await?;
+        Ok(n == 1)
+    }
+
+    /// `CountFinishedIntents`: intents in a terminal *explored* state
+    /// (done/blocked/exhausted) — excludes 'stopped' (killed/deleted).
+    pub async fn count_finished_intents(&self) -> Result<i64> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT COUNT(*) FROM exploration_nodes \
+              WHERE exploration_id=$1 AND kind='intent' AND state IN ('done','blocked','exhausted')",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+
+    /// `CountOpenIntents`: this exploration's open intents.
+    pub async fn count_open_intents(&self) -> Result<i64> {
+        let row = self
+            .db
+            .query_one(
+                "SELECT COUNT(*) FROM exploration_nodes \
+              WHERE exploration_id=$1 AND kind='intent' AND state='open'",
+                &[&self.exp_id],
+            )
+            .await?;
+        Ok(row.get(0))
+    }
+}
+
 /// `checkFactAnchorAssets`: verify every anchor asset exists, locking the rows with
 /// `FOR KEY SHARE` so a concurrent delete can't slip in before commit.
 async fn check_fact_anchor_assets(
