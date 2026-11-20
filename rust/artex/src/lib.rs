@@ -8,6 +8,7 @@
 pub mod config;
 pub mod db;
 pub mod harness;
+pub mod intercept;
 pub mod llm;
 pub mod llmpool;
 pub mod mcphttp;

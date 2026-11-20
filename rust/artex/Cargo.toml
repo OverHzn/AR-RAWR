@@ -51,6 +51,7 @@ aes-gcm = "0.10"
 rand = "0.8"
 url = "2"
 idna = "1.1"
+regex = "1.13"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
